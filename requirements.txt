@@ -1,0 +1,3 @@
+# Precip dependencies 
+netCDF4        # for nc4 files
+asf_search
