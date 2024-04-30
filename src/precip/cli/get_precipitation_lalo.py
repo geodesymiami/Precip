@@ -23,6 +23,7 @@ import time
 import subprocess
 from scipy.interpolate import interp2d
 import pygmt
+from precip.src.precip.helper_functions import plot_steps
 
 
 EXAMPLE = """
@@ -261,34 +262,19 @@ def prompt_subplots(inps):
         dload_site_list_parallel(gpm_dir, generate_date_list(inps.download[0], inps.download[1]))
     
     if inps.plot_daily:
-        inps.plot_daily[0], inps.plot_daily[1] = adapt_coordinates(inps.plot_daily[0], inps.plot_daily[1])
-        date_list = generate_date_list(inps.plot_daily[2], inps.plot_daily[3])
-        prec = create_map(inps.plot_daily[0], inps.plot_daily[1], date_list, gpm_dir)
-        bar_plot(prec, inps.plot_daily[0], inps.plot_daily[1])
+        plot_steps(inps.plot_daily, date_list, gpm_dir)
         prompt_plots.append('plot_daily')
 
     if inps.plot_weekly:
-        inps.plot_weekly[0], inps.plot_weekly[1] = adapt_coordinates(inps.plot_weekly[0], inps.plot_weekly[1])
-        date_list = generate_date_list(inps.plot_weekly[2], inps.plot_weekly[3])
-        prec = create_map(inps.plot_weekly[0], inps.plot_weekly[1], date_list, gpm_dir)
-        prec = weekly_monthly_yearly_precipitation(prec, "W")
-        bar_plot(prec, inps.plot_weekly[0], inps.plot_weekly[1])
+        plot_steps(inps.plot_weekly, date_list, gpm_dir, "W")
         prompt_plots.append('plot_weekly')
 
     if inps.plot_monthly:
-        inps.plot_monthly[0], inps.plot_monthly[1] = adapt_coordinates(inps.plot_monthly[0], inps.plot_monthly[1])
-        date_list = generate_date_list(inps.plot_monthly[2], inps.plot_monthly[3])
-        prec = create_map(inps.plot_monthly[0], inps.plot_monthly[1], date_list, gpm_dir)
-        prec = weekly_monthly_yearly_precipitation(prec, "M")
-        bar_plot(prec, inps.plot_monthly[0], inps.plot_monthly[1])
+        plot_steps(inps.plot_monthly, date_list, gpm_dir, "M")
         prompt_plots.append('plot_monthly')
 
     if inps.plot_yearly:    
-        inps.plot_yearly[2], inps.plot_yearly[3] = adapt_coordinates(inps.plot_yearly[2], inps.plot_yearly[3])
-        date_list = generate_date_list(inps.plot_yearly[0], inps.plot_yearly[1])
-        prec = create_map(inps.plot_yearly[2], inps.plot_yearly[3], date_list, gpm_dir)
-        prec = yearly_precipitation(prec) #weekly_monthly_yearly_precipitation(prec, "Y")
-        bar_plot(prec, inps.plot_yearly[2], inps.plot_yearly[3])
+        plot_steps(inps.plot_yearly, date_list, gpm_dir, "Y")
         prompt_plots.append('plot_yearly')
 
     if inps.volcano:
@@ -804,10 +790,12 @@ def dload_site_list_parallel(folder, date_list):
                         subprocess.run(['wget', url, '-P', folder], check=True)
                         print(f"Finished download of {url} on {threading.current_thread().name}")
                         break
+
                     except subprocess.CalledProcessError:
                         attempts += 1
                         print(f"Download attempt {attempts} failed for {url}. Retrying...")
                         time.sleep(1)
+                        
                 else:
                     print(f"Failed to download {url} after {attempts} attempts. Exiting...")
                     sys.exit(1)
@@ -1136,7 +1124,7 @@ def weekly_monthly_yearly_precipitation(dictionary, time_period=None):
     else:
         raise KeyError('Error: Precipitation field not found in the dictionary')
 
-
+# TODO to remove
 def weekly_precipitation(dictionary):
     df = pd.DataFrame.from_dict(dictionary)
     df['Date'] = pd.to_datetime(df['Date'])
@@ -1153,7 +1141,7 @@ def weekly_precipitation(dictionary):
 
     return weekly_precipitation
 
-
+# TODO to remove
 def monthly_precipitation(dictionary):
     df = pd.DataFrame.from_dict(dictionary)
     df['Date'] = pd.to_datetime(df['Date'])
@@ -1170,7 +1158,7 @@ def monthly_precipitation(dictionary):
     print(monthly_precipitation)
     return monthly_precipitation
 
-
+# TODO to remove
 def yearly_precipitation(dictionary):
     df = pd.DataFrame.from_dict(dictionary)
     df['Date'] = pd.to_datetime(df['Date'])
