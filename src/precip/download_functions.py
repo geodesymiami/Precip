@@ -3,16 +3,17 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import sys
 import os
+import re
 import concurrent.futures
 import threading
 import subprocess
 import time
 import netCDF4 as nc
-from helper_functions import ask_user 
-from config import config
+from precip.helper_functions import ask_user
+from precip.config import json_download_url, final06, final07
 
 
-def crontab_volcano_json(json_path, config=config):
+def crontab_volcano_json(json_path, json_download_url=json_download_url):
     """
     Downloads a JSON file containing volcano eruption data from a specified URL and saves it to the given file path.
 
@@ -28,7 +29,7 @@ def crontab_volcano_json(json_path, config=config):
     """
     # TODO add crontab to update json file every ???
     # TODO call the variable from the config file 
-    json_download_url = config.json_download_url
+    json_download_url = json_download_url
     
     try:
         result = requests.get(json_download_url)
@@ -53,10 +54,10 @@ def crontab_volcano_json(json_path, config=config):
         print('Cannot create json file')
 
 
-def generate_url_download(date, config=config):
+def generate_url_download(date, final06=final06, final07=final07):
     # Creates gpm_data folder if it doesn't exist
-    intervals = {"Final06": datetime.strptime(config.final06, '%Y-%m-%d').date(),
-                 "Final07": datetime.strptime(config.final07, '%Y-%m-%d').date(),
+    intervals = {"Final06": datetime.strptime(final06, '%Y-%m-%d').date(),
+                 "Final07": datetime.strptime(final07, '%Y-%m-%d').date(),
                  "Late06": datetime.today().date() - relativedelta(days=1)}
     
     # Final Run 06
@@ -131,6 +132,7 @@ def dload_site_list_parallel(folder, date_list):
             if not os.path.exists(file_path):
                 print(f"Starting download of {url} on {threading.current_thread().name}")
                 attempts = 0
+
                 while attempts < 3:
                     try:
                         subprocess.run(['wget', url, '-P', folder], check=True)
@@ -148,15 +150,14 @@ def dload_site_list_parallel(folder, date_list):
             else:
                 print(f"File {filename} already exists, skipping download")
 
-    if ask_user('check'):
-        check_nc4_files(folder)
-    
-
+    # if ask_user('check'):
+    #     check_nc4_files(folder)    
 
 
 def check_nc4_files(folder):
     # Get a list of all .nc4 files in the directory
     files = [folder + '/' + f for f in os.listdir(folder) if f.endswith('.nc4')]
+    corrupted_files = []
     print('Checking for corrupted files...')
 
     # Check if each file exists and is not corrupted
@@ -171,3 +172,18 @@ def check_nc4_files(folder):
             # Delete the corrupted file
             os.remove(file)
             print(f"Corrupted file has been deleted: {file}")
+            corrupted_files.append(file)
+
+    if len(corrupted_files) > 0:
+        print(f"Corrupted files found: {corrupted_files}")
+        print(f"Total corrupted files: {len(corrupted_files)}")
+        print('Retrying download of corrupted files...')
+        date_list=[]
+
+        for f in corrupted_files:
+            d = re.search('\d{8}', f)
+            date_list.append(datetime.strptime(d.group(0), "%Y%m%d").date())
+
+        dload_site_list_parallel(folder, date_list)
+
+    print('All files have been checked')

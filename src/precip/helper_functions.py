@@ -4,7 +4,7 @@ import calendar
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 import threading
-from precip.src.precip.plotter_functions import bar_plot, create_map
+
 
 
 def date_to_decimal_year(date_str):
@@ -22,7 +22,12 @@ def date_to_decimal_year(date_str):
     2022.0
     """
     if type(date_str) == str:
-        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+        try:
+            date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+
+        except:
+            date_obj = datetime.strptime(date_str, '%Y%m%d')
+            
     else:
         date_obj = date_str
 
@@ -238,6 +243,16 @@ def generate_date_list(start, end=None, average='M'):
 
 
 def ask_user(operation):
+    """
+    Asks the user for input to perform a specific operation.
+
+    Args:
+        operation (str): The operation to be performed.
+
+    Returns:
+        bool: True if the user's answer is 'yes', False otherwise.
+    """
+
     if operation == 'check':
         msg = "Do you want to run a check on files integrity?"
 
@@ -252,12 +267,3 @@ def ask_user(operation):
     t.start()
     t.join(timeout=10)  # Wait for 10 seconds
     return answer.lower() == 'yes'
-
-
-def plot_steps(inps, date_list, directory, average=None):
-    inps[0], inps[1] = adapt_coordinates(inps[0], inps[1])
-    date_list = generate_date_list(inps[2], inps[3])
-    prec = create_map(inps[0], inps[1], date_list, directory)
-    if average:
-        prec = weekly_monthly_yearly_precipitation(prec, average)
-    bar_plot(prec, inps[0], inps[1])

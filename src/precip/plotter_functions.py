@@ -1,4 +1,3 @@
-from download_functions import crontab_volcano_json
 import os
 import json
 from datetime import datetime
@@ -6,13 +5,13 @@ import sys
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 import matplotlib.pyplot as plt
-from helper_functions import date_to_decimal_year
 import numpy as np
 from scipy.interpolate import interp2d
 import re
 import netCDF4 as nc
 import pygmt
-from precip.src.precip.helper_functions import generate_coordinate_array
+from precip.helper_functions import *
+from precip.download_functions import *
 
 
 def volcanoes_list(jsonfile):
@@ -296,7 +295,7 @@ def add_isolines(region, levels=0, inline=False):
     grid[:] = grid_np
 
     # Plot the data
-    cont = plt.contour(grid, levels=levels, colors='white', extent=region)
+    cont = plt.contour(grid, levels=levels, colors='white', extent=region, linewidths=0.5)
 
     if levels !=0:
         plt.clabel(cont, inline=inline, fontsize=8)
@@ -367,3 +366,91 @@ def map_precipitation(precipitation_series, lo, la, date, work_dir, colorbar, le
     
     plt.show()
     print('DONE')
+
+
+def plot_steps(inps, directory, event=None, average=None):
+    """
+    Plot the precipitation steps.
+
+    Args:
+        inps (list): List of input parameters.
+        date_list (list): List of dates.
+        directory (str): Directory path.
+        average (str, optional): Type of average. Defaults to None.
+    """
+    
+    inps[0], inps[1] = adapt_coordinates(inps[0], inps[1])
+    date_list = generate_date_list(inps[2], inps[3])
+    prec = create_map(inps[0], inps[1], date_list, directory)
+    if average:
+        prec = weekly_monthly_yearly_precipitation(prec, average)
+    bar_plot(prec, inps[0], inps[1])
+
+    if event:
+        plot_eruptions(event)
+
+
+# TODO Should be here??
+def prompt_subplots(inps, jsonVolcano):
+    prompt_plots = []
+    gpm_dir = inps.dir
+    volcano_json_dir = inps.dir + '/' + jsonVolcano
+
+    if inps.latitude and inps.longitude:
+        inps.latitude, inps.longitude = adapt_coordinates(inps.latitude, inps.longitude)
+
+    if inps.download:
+        dload_site_list_parallel(gpm_dir, generate_date_list(inps.download[0], inps.download[1]))
+    
+    if inps.plot_daily:
+        plot_steps(inps.plot_daily, gpm_dir, inps.add_event)
+        prompt_plots.append('plot_daily')
+
+    if inps.plot_weekly:
+        plot_steps(inps.plot_weekly, gpm_dir, inps.add_event,"W")
+        prompt_plots.append('plot_weekly')
+
+    if inps.plot_monthly:
+        plot_steps(inps.plot_monthly, gpm_dir, inps.add_event, "M")
+        prompt_plots.append('plot_monthly')
+
+    if inps.plot_yearly:    
+        plot_steps(inps.plot_yearly, gpm_dir, inps.add_event, "Y")
+        prompt_plots.append('plot_yearly')
+
+    if inps.volcano:
+        eruption_dates, date_list, lola = extract_volcanoes_info(volcano_json_dir, inps.volcano[0])
+        lo, la = adapt_coordinates(lola[0], lola[1])
+        dload_site_list_parallel(gpm_dir, date_list)
+        prec = create_map(lo, la, date_list, gpm_dir)
+        bar_plot(prec, la, lo, volcano=inps.volcano[0])
+        plot_eruptions(eruption_dates) 
+        plt.show()
+        prompt_plots.append('volcano')
+
+    if inps.list:
+        volcanoes_list(volcano_json_dir)
+
+        prompt_plots.append('list')
+
+    if inps.colormap:
+        la, lo = adapt_coordinates(inps.latitude, inps.longitude)
+        date_list = generate_date_list(inps.colormap[0], inps.colormap[1], inps.average)
+       
+        dataset = create_map(la, lo, date_list, gpm_dir)
+
+        # Readapt date_list if dataset is does not cover the whole period
+        date_list = generate_date_list(dataset['Date'].iloc[0], dataset['Date'].iloc[-1], inps.average)
+        dataset = weekly_monthly_yearly_precipitation(dataset, inps.average)
+
+        if inps.interpolate:
+            dataset = interpolate_map(dataset, int(inps.interpolate[0]))
+
+        map_precipitation(dataset, lo, la, date_list, './ne_10m_land', inps.colorbar, inps.isolines ,inps.vlim)
+
+    if inps.check:
+        check_nc4_files(gpm_dir)
+
+    # TODO to remove or change
+    plt.show()
+    # return plt
