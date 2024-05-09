@@ -267,3 +267,8 @@ def ask_user(operation):
     t.start()
     t.join(timeout=10)  # Wait for 10 seconds
     return answer.lower() == 'yes'
+
+
+def vprint(msg, verbose):
+    if verbose:
+        print(msg)

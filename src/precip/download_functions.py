@@ -186,4 +186,7 @@ def check_nc4_files(folder):
 
         dload_site_list_parallel(folder, date_list)
 
+    else:
+        print('No corrupted files found')
+
     print('All files have been checked')

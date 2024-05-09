@@ -24,18 +24,27 @@ Example:
   
   get_precipitation_lalo.py --plot-daily 19.5 -156.5 20190101 20210929
   get_precipitation_lalo.py --plot-daily 19.5 -156.5 --start-date 20190101 --end-date 20210929
+  get_precipitation_lalo.py --plot-daily --lalo 19.5:-156.5 20190101 20210929
+  get_precipitation_lalo.py --plot-daily --lalo 19.5:-156.5 ---period 20190101:20210929
+  get_precipitation_lalo.py --plot-daily --lalo 19.5,-156.5 ---period 20190101,20210929
   get_precipitation_lalo.py --plot-daily 20190101 20210929 --latitude 19.5 --longitude -156.5
   get_precipitation_lalo.py --plot-daily 20190101 20210929 --latitude=19.5 --longitude=-156.5
   get_precipitation_lalo.py --plot-daily 20190101 20210929 --polygon 'POLYGON((113.4496 -8.0893,113.7452 -8.0893,113.7452 -7.817,113.4496 -7.817,113.4496 -8.0893))'
+
+  get_precipitation_lalo.py --download
   get_precipitation_lalo.py --download 20190101 20210929
+  get_precipitation_lalo.py --period 20190101:20210929
   get_precipitation_lalo.py --download 20190101 20210929 --dir '/home/user/Downloads'
+
   get_precipitation_lalo.py --volcano 'Cerro Azul'
+  
   get_precipitation_lalo.py --list
-  get_precipitation_lalo.py --colormap 20000601 --latitude=-2.11:2.35 --longitude=-92.68:-88.49
-  get_precipitation_lalo.py --colormap 20000601 --latitude 19.5:20.05 --longitude 156.5:158.05 --vlim 0 10
-  get_precipitation_lalo.py --colormap 20000601 --latitude 19.5:20.05 --longitude 156.5:158.05 --vlim 0 10 --interpolate 5
-  get_precipitation_lalo.py --colormap 20000601 --polygon 'POLYGON((113.4496 -8.0893,113.7452 -8.0893,113.7452 -7.817,113.4496 -7.817,113.4496 -8.0893))'
-  get_precipitation_lalo.py --colormap 20000601 --latitude=-2.11:2.35 --longitude=-92.68:-88.49 --colorbar jet
+
+  get_precipitation_lalo.py --heatmap 20000601 --latitude=-2.11:2.35 --longitude=-92.68:-88.49
+  get_precipitation_lalo.py --heatmap 20000601 --latitude 19.5:20.05 --longitude 156.5:158.05 --vlim 0 10
+  get_precipitation_lalo.py --heatmap 20000601 --latitude 19.5:20.05 --longitude 156.5:158.05 --vlim 0 10 --interpolate 5
+  get_precipitation_lalo.py --heatmap 20000601 --polygon 'POLYGON((113.4496 -8.0893,113.7452 -8.0893,113.7452 -7.817,113.4496 -7.817,113.4496 -8.0893))'
+  get_precipitation_lalo.py --heatmap 20000601 --latitude=-2.11:2.35 --longitude=-92.68:-88.49 --colorbar jet
 
 """
 
@@ -77,11 +86,14 @@ def create_parser():
                         metavar=( 'LATITUDE, LONGITUDE, STARTDATE, ENDDATE'), 
                         help='Bar plot with yearly precipitation data')
     parser.add_argument('--start-date', 
-                        metavar='DATE', 
+                        metavar='YYYYMMDD', 
                         help='Start date of the search')
     parser.add_argument('--end-date', 
-                        metavar='DATE', 
+                        metavar='YYYYMMDD', 
                         help='End date of the search')
+    parser.add_argument('--period',
+                        metavar='YYYYMMDD:YYYYMMDD, YYYYMMDD,YYYYMMDD',
+                        help='Period of the search')
     parser.add_argument('--latitude', 
                         nargs='+',  
                         metavar=('MIN', 'MAX'),
@@ -90,6 +102,10 @@ def create_parser():
                         nargs='+', 
                         metavar=('MIN', 'MAX'), 
                         help='Longitude')
+    parser.add_argument('--lalo',
+                        nargs=1,
+                        metavar=('LATITUDE:LONGITUDE, LATITUDE,LONGITUDE'),
+                        help='Latitude and longitude')
     parser.add_argument('--list', 
                         action='store_true', 
                         help='List volcanoes')
@@ -97,14 +113,14 @@ def create_parser():
                         nargs='*',
                         metavar=('YYYYMMDD, YYYY-MM-DD'),
                         help='Add event to the time series')
-    parser.add_argument('--colormap', 
+    parser.add_argument('--heatmap', 
                         nargs='+', 
                         metavar=('DATE, use polygon or latitude/longitude args'), 
                         help='Heat map of precipitation')
     parser.add_argument('--dir', 
                         nargs=1, 
                         metavar=('PATH'), 
-                        help='Specify path to download the data, if not specified, the data will be downloaded either in WORKDIR or HOME directory')
+                        help='Specify path to download the data, if not specified, the data will be downloaded either in $WORKDIR or $HOME directory')
     parser.add_argument("--vlim", 
                         nargs=2, 
                         metavar=("VMIN", "VMAX"), 
@@ -144,9 +160,22 @@ def create_parser():
     else:
         inps.dir = inps.dir[0]
 
-    inps.start_date = datetime.strptime(inps.start_date[0], '%Y%m%d').date() if inps.start_date else datetime.strptime('20000601', '%Y%m%d').date()
+    if not inps.period:
+        inps.start_date = datetime.strptime(inps.start_date[0], '%Y%m%d').date() if inps.start_date else datetime.strptime('20000601', '%Y%m%d').date()
+        inps.end_date = datetime.strptime(inps.end_date[0], '%Y%m%d').date() if inps.end_date else datetime.today().date() - relativedelta(days=1)
 
-    inps.end_date = datetime.strptime(inps.end_date[0], '%Y%m%d').date() if inps.end_date else datetime.today().date() - relativedelta(days=1)
+    else:
+        if ':' in inps.period:
+            dates = inps.period.split(':')
+
+        elif ',' in inps.period:
+            dates = inps.period.split(',')
+
+        elif ' ' in inps.period:
+            dates = inps.period.split(' ')
+
+        inps.start_date = datetime.strptime(dates[0], '%Y%m%d').date()
+        inps.end_date = datetime.strptime(dates[1], '%Y%m%d').date()
 
     if inps.download is None:
         pass
@@ -185,35 +214,47 @@ def create_parser():
             else:
                 parser.error("--longitude requires 1 or 2 arguments")
 
+        if inps.lalo:
+            coordinates = parse_coordinates(inps.lalo[0])
+            inps.latitude = [coordinates[0], coordinates[0]]
+            inps.longitude = [coordinates[1], coordinates[1]]
+
     else:
             inps.latitude, inps.longitude = parse_polygon(inps.polygon)
 
-    if inps.plot_daily:
+    if inps.plot_daily is not None:
         inps.plot_daily = parse_plot(inps.plot_daily, inps.latitude, inps.longitude, inps.start_date, inps.end_date)
 
-    if inps.plot_weekly:
+    if inps.plot_weekly is not None:
         inps.plot_weekly = parse_plot(inps.plot_weekly, inps.latitude, inps.longitude, inps.start_date, inps.end_date)
 
-    if inps.plot_monthly:
+    if inps.plot_monthly is not None:
         inps.plot_monthly = parse_plot(inps.plot_monthly, inps.latitude, inps.longitude, inps.start_date, inps.end_date)
 
-    if inps.plot_yearly:
+    if inps.plot_yearly is not None:
         inps.plot_yearly = parse_plot(inps.plot_yearly, inps.latitude, inps.longitude, inps.start_date, inps.end_date)    
 
-    if inps.colormap:
-        if len(inps.colormap) == 1:
+    if inps.heatmap is not None:
+        if len(inps.heatmap) == 0:
+            if inps.end_date:
+                inps.heatmap = inps.start_date, inps.end_date
+            
+            else:
+                inps.heatmap = inps.start_date, None
+
+        elif len(inps.heatmap) == 1:
             try:
-                inps.colormap = datetime.strptime(inps.colormap[0], '%Y%m%d').date(), None
+                inps.heatmap = datetime.strptime(inps.heatmap[0], '%Y%m%d').date(), None
 
             except ValueError:
                 print('Error: Date format not valid, if only 1 argument is given, it must be in the format YYYYMMDD')
                 sys.exit(1)
 
-        elif len(inps.colormap) == 2:
+        elif len(inps.heatmap) == 2:
             try:
-                inps.colormap = datetime.strptime(inps.colormap[0], '%Y%m%d').date(), datetime.strptime(inps.colormap[1], '%Y%m%d').date()
+                inps.heatmap = datetime.strptime(inps.heatmap[0], '%Y%m%d').date(), datetime.strptime(inps.heatmap[1], '%Y%m%d').date()
                 
-                if inps.colormap[1]:
+                if inps.heatmap[1]:
                     inps.average = None
             
             except ValueError:
@@ -221,7 +262,7 @@ def create_parser():
                 sys.exit(1)
      
         else:
-            parser.error("--colormap requires 1 or 2 arguments")
+            parser.error("--heatmap requires 0, 1 or 2 arguments")
 
     if not inps.colorbar:
         inps.colorbar = 'viridis'
@@ -277,7 +318,10 @@ def parse_plot(plot, latitudes, longitudes, start_date=None, end_date=None):
     Returns:
         list: The parsed plot parameters.
     """
-    if len(plot) == 1:
+    if len(plot) == 0: 
+            plot = [latitudes[0], longitudes[0], start_date, end_date]
+    
+    elif len(plot) == 1:
         print("--plot-[daily, weekly, monthly, yearly] requires at least LATITUDE LONGITUDE arguments \n"
                      " --plot-daily LATITUDE LONGITUDE arguments \n"
                      " --plot-weekly --latitude LATITUDE -- longitude LONGITUDE \n"
@@ -341,12 +385,10 @@ def parse_coordinates(coordinates):
 
         elif ':' in coordinates:
             coordinates = coordinates.split(':')
-            print(coordinates)
             coordinates = [float(i) for i in coordinates]
 
         elif ' ' in coordinates:
             coordinates = coordinates.split(' ')
-            print(coordinates)
             coordinates = [float(i) for i in coordinates]
 
         else:

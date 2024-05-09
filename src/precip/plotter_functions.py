@@ -14,6 +14,71 @@ from precip.helper_functions import *
 from precip.download_functions import *
 
 
+def prompt_subplots(inps, jsonVolcano):
+    prompt_plots = []
+    gpm_dir = inps.dir
+    volcano_json_dir = inps.dir + '/' + jsonVolcano
+
+    if inps.latitude and inps.longitude:
+        inps.latitude, inps.longitude = adapt_coordinates(inps.latitude, inps.longitude)
+
+    if inps.download:
+        dload_site_list_parallel(gpm_dir, generate_date_list(inps.download[0], inps.download[1]))
+    
+    if inps.plot_daily:
+        plot_steps(inps.plot_daily, gpm_dir, inps.add_event)
+        prompt_plots.append('plot_daily')
+
+    if inps.plot_weekly:
+        plot_steps(inps.plot_weekly, gpm_dir, inps.add_event,"W")
+        prompt_plots.append('plot_weekly')
+
+    if inps.plot_monthly:
+        plot_steps(inps.plot_monthly, gpm_dir, inps.add_event, "M")
+        prompt_plots.append('plot_monthly')
+
+    if inps.plot_yearly:    
+        plot_steps(inps.plot_yearly, gpm_dir, inps.add_event, "Y")
+        prompt_plots.append('plot_yearly')
+
+    if inps.volcano:
+        eruption_dates, date_list, lola = extract_volcanoes_info(volcano_json_dir, inps.volcano[0])
+        lo, la = adapt_coordinates(lola[0], lola[1])
+        dload_site_list_parallel(gpm_dir, date_list)
+        prec = create_map(lo, la, date_list, gpm_dir)
+        bar_plot(prec, la, lo, volcano=inps.volcano[0])
+        plot_eruptions(eruption_dates) 
+        plt.show()
+        prompt_plots.append('volcano')
+
+    if inps.list:
+        volcanoes_list(volcano_json_dir)
+
+        prompt_plots.append('list')
+
+    if inps.heatmap:
+        la, lo = adapt_coordinates(inps.latitude, inps.longitude)
+        date_list = generate_date_list(inps.heatmap[0], inps.heatmap[1], inps.average)
+       
+        dataset = create_map(la, lo, date_list, gpm_dir)
+
+        # Readapt date_list if dataset is does not cover the whole period
+        date_list = generate_date_list(dataset['Date'].iloc[0], dataset['Date'].iloc[-1], inps.average)
+        dataset = weekly_monthly_yearly_precipitation(dataset, inps.average)
+
+        if inps.interpolate:
+            dataset = interpolate_map(dataset, int(inps.interpolate[0]))
+
+        map_precipitation(dataset, lo, la, date_list, './ne_10m_land', inps.colorbar, inps.isolines ,inps.vlim)
+
+    if inps.check:
+        check_nc4_files(gpm_dir)
+
+    # TODO to remove or change
+    plt.show()
+    # return plt
+
+
 def volcanoes_list(jsonfile):
     """
     Retrieves a list of volcano names from a JSON file.
@@ -158,6 +223,21 @@ def interpolate_map(dataframe, resolution=5):
 
 
 def process_file(file, date_list, lon, lat, longitude, latitude):
+    """
+    Process a file and extract a subset of precipitation data based on given coordinates.
+
+    Args:
+        file (str): The file path of the NetCDF file to be processed.
+        date_list (list): A list of dates to filter the data.
+        lon (numpy.ndarray): 1D array of longitudes.
+        lat (numpy.ndarray): 1D array of latitudes.
+        longitude (tuple): A tuple containing the minimum and maximum longitude values for the subset.
+        latitude (tuple): A tuple containing the minimum and maximum latitude values for the subset.
+
+    Returns:
+        tuple: A tuple containing the date as a string and the subset of precipitation data as a numpy array.
+               Returns None if the date is not in the date_list or if the file cannot be opened.
+    """
     # Extract date from file name
     d = re.search('\d{8}', file)
     date = datetime.strptime(d.group(0), "%Y%m%d").date()
@@ -211,6 +291,7 @@ def create_map(latitude, longitude, date_list, folder): #parallel
 
     for file in files:
         result = process_file(file, date_list, lon, lat, longitude, latitude)
+
         if result is not None:
             dictionary[result[0]] = result[1]
 
@@ -388,69 +469,3 @@ def plot_steps(inps, directory, event=None, average=None):
 
     if event:
         plot_eruptions(event)
-
-
-# TODO Should be here??
-def prompt_subplots(inps, jsonVolcano):
-    prompt_plots = []
-    gpm_dir = inps.dir
-    volcano_json_dir = inps.dir + '/' + jsonVolcano
-
-    if inps.latitude and inps.longitude:
-        inps.latitude, inps.longitude = adapt_coordinates(inps.latitude, inps.longitude)
-
-    if inps.download:
-        dload_site_list_parallel(gpm_dir, generate_date_list(inps.download[0], inps.download[1]))
-    
-    if inps.plot_daily:
-        plot_steps(inps.plot_daily, gpm_dir, inps.add_event)
-        prompt_plots.append('plot_daily')
-
-    if inps.plot_weekly:
-        plot_steps(inps.plot_weekly, gpm_dir, inps.add_event,"W")
-        prompt_plots.append('plot_weekly')
-
-    if inps.plot_monthly:
-        plot_steps(inps.plot_monthly, gpm_dir, inps.add_event, "M")
-        prompt_plots.append('plot_monthly')
-
-    if inps.plot_yearly:    
-        plot_steps(inps.plot_yearly, gpm_dir, inps.add_event, "Y")
-        prompt_plots.append('plot_yearly')
-
-    if inps.volcano:
-        eruption_dates, date_list, lola = extract_volcanoes_info(volcano_json_dir, inps.volcano[0])
-        lo, la = adapt_coordinates(lola[0], lola[1])
-        dload_site_list_parallel(gpm_dir, date_list)
-        prec = create_map(lo, la, date_list, gpm_dir)
-        bar_plot(prec, la, lo, volcano=inps.volcano[0])
-        plot_eruptions(eruption_dates) 
-        plt.show()
-        prompt_plots.append('volcano')
-
-    if inps.list:
-        volcanoes_list(volcano_json_dir)
-
-        prompt_plots.append('list')
-
-    if inps.colormap:
-        la, lo = adapt_coordinates(inps.latitude, inps.longitude)
-        date_list = generate_date_list(inps.colormap[0], inps.colormap[1], inps.average)
-       
-        dataset = create_map(la, lo, date_list, gpm_dir)
-
-        # Readapt date_list if dataset is does not cover the whole period
-        date_list = generate_date_list(dataset['Date'].iloc[0], dataset['Date'].iloc[-1], inps.average)
-        dataset = weekly_monthly_yearly_precipitation(dataset, inps.average)
-
-        if inps.interpolate:
-            dataset = interpolate_map(dataset, int(inps.interpolate[0]))
-
-        map_precipitation(dataset, lo, la, date_list, './ne_10m_land', inps.colorbar, inps.isolines ,inps.vlim)
-
-    if inps.check:
-        check_nc4_files(gpm_dir)
-
-    # TODO to remove or change
-    plt.show()
-    # return plt
