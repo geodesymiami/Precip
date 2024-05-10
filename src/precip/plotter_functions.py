@@ -664,6 +664,12 @@ def by_strength(rainfall, color_count=1, roll_count=1, eruptions=pd.DataFrame(),
     date_dec = np.array(dates['Decimal'])
     date_rain = np.array(dates['roll'])
     # Used in plotting to make y range similar to max bar height 
+    y_min = np.min(date_rain)
+
+    if log == True:
+        date_rain = np.log(date_rain - y_min + 1)
+
+    # Used in plotting to make y range similar to max bar height 
     y_max = np.max(date_rain)
 
     # Counts eruptions in each quantile
