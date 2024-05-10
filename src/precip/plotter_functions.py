@@ -5,6 +5,8 @@ import sys
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib.lines import Line2D
 import numpy as np
 from scipy.interpolate import interp2d
 import re
@@ -12,6 +14,9 @@ import netCDF4 as nc
 import pygmt
 from precip.helper_functions import *
 from precip.download_functions import *
+
+from precip.config import startDate
+
 
 
 def prompt_subplots(inps, jsonVolcano):
@@ -121,7 +126,7 @@ def volcanoes_list(jsonfile):
         print(volcano)
 
 
-def extract_volcanoes_info(jsonfile, volcanoName):
+def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
     """
     Extracts information about a specific volcano from a JSON file.
 
@@ -132,46 +137,75 @@ def extract_volcanoes_info(jsonfile, volcanoName):
     Returns:
         tuple: A tuple containing the start dates of eruptions, a date list, and the coordinates of the volcano.
     """
+    column_names = ['Volcano', 'Start', 'End', 'Max Explosivity']
+
+    # Check if the JSON file exists
     if not os.path.exists(jsonfile):
+        # If not, create it
         crontab_volcano_json(jsonfile)
 
+    # Open the JSON file and load the data
     f = open(jsonfile)
     data = json.load(f) 
+
+    # Initialize an empty list to store the eruption start dates
     start_dates = []
-    first_day = datetime.strptime('2000-06-01', '%Y-%m-%d').date()
+    frame_data = []
+
+    # Define the start and end of the date range
+    # TODO to change to be more dynamic, reflects the first date available in the gpm dataset
+    first_day = datetime.strptime(startDate, '%Y%m%d').date()
     last_day = datetime.today().date() - relativedelta(days=1)
 
+    # Iterate over the features in the data
     for j in data['features']:
         if j['properties']['VolcanoName'] == volcanoName:
-
             name = (j['properties']['VolcanoName'])
             start = datetime.strptime((j['properties']['StartDate']), '%Y%m%d').date()
+
             try:
                 end = datetime.strptime((j['properties']['EndDate']), '%Y%m%d').date()
+
             except:
                 end = 'None'
             
             print(f'{name} eruption started {start} and ended {end}')
 
+            # If the start date is within the date range
             if start >= first_day and start <= last_day:
                 start_dates.append(start)
+                
                 coordinates = j['geometry']['coordinates']
                 coordinates = coordinates[::-1]
+            
+            if strength:
+                stren = j['properties']['ExplosivityIndexMax']
+                frame_data.append([name, start, end, stren])
 
-    if not start_dates:
-        print(f'Error: {volcanoName} eruption date is out of range')
-        sys.exit(1)
+    if strength:
+    # If no start dates were found within the date range
+        df = pd.DataFrame(frame_data, columns=column_names)
+        return df
+
+    else:
+        if not start_dates:
+            # Print an error message and exit the program
+            print(f'Error: {volcanoName} eruption date is out of range')
+            sys.exit(1)
 
     start_dates = sorted(start_dates)
     first_date = start_dates[0]
 
     if first_date - relativedelta(days=90) >= first_day:
+        # Set the first date to 90 days before the first start date
         first_date = first_date - relativedelta(days=90)
     else:
         first_date = first_day
 
+    # Create a list of dates from the first date to the last start date
     date_list = pd.date_range(start = first_date, end = start_dates[-1]).date
 
+    # Return the list of start dates, the list of dates, and the coordinates of the volcano
     return start_dates, date_list, coordinates
 
 
@@ -469,3 +503,196 @@ def plot_steps(inps, directory, event=None, average=None):
 
     if event:
         plot_eruptions(event)
+
+
+def annual_plotter(rainfall, color_count=1, roll_count=1, eruptions=pd.DataFrame(), ninos=None, by_season=False):
+    """ Plots rain in horizontal bars: y-axis is year, and x-axis is month.
+
+    Args:
+        rainfall: Pandas dataframe with columns Date and Precipitation.
+        color_count: Number of quantiles to break rain data into.
+        roll_count: Number of days to average rain over.
+        eruptions: Pandas dataframe with columns Volcano, Start, End, Max Explosivity.
+        ninos: T if you want to include El Nino data
+        by_season: T if quantiles should be made for every year separately.
+
+    Return:
+    """
+    global elninos
+
+    fig, axes = plt.subplots(1, 2, gridspec_kw={'width_ratios': [4, 1]}, figsize=(10, ((len(rainfall['Date'].unique())//1200)))) # to get plot of combined data 1960-2020, take length of figsize and apply-> // 1.5)
+
+    colors = color_scheme(color_count)
+    quantile = quantile_name(color_count)
+
+    ax0 = axes[0]
+    ax1 = axes[1]
+    if color_count == 3:
+        legend_handles = [mpatches.Patch(color=colors[0], label='Lower tertile'), mpatches.Patch(color=colors[1], label='Middle tertile'), mpatches.Patch(color=colors[2], label='Upper tertile')]
+    else:
+        legend_handles = [mpatches.Patch(color=colors[i], label=quantile + str(i+1)) for i in range(color_count)]
+
+    # Creates a dataframe for rainfall at a single volcano, with new columns 'Decimal', 'roll', and 'cumsum' for 
+    # decimal date, rolling average, and cumulative sum respectively.
+    volc_rain = volcano_rain_frame(rainfall, roll_count)
+
+    volc_rain['Precipitation'], volc_rain['cumsum'] = from_nested_to_float(volc_rain['Precipitation']), from_nested_to_float(volc_rain['cumsum'])
+
+    start = int(volc_rain['Decimal'].min() // 1)
+    end = int((volc_rain['Decimal'].max() // 1) + 1)
+
+    # Creates a numpy array of decimal dates for eruptions between a fixed start and end date.
+    if eruptions != []:
+        erupt_dates = list(map(date_to_decimal_year, eruptions))
+
+    dates = volc_rain.sort_values(by=['roll'])
+    date_dec = np.array(dates['Decimal'])
+
+    # Plots eruptions
+    if len(erupt_dates) > 0:
+        volc_x = [((i) % 1) for i in erupt_dates]
+        volc_y = [(i // 1) + .5 for i in erupt_dates]
+        ax0.scatter(volc_x, volc_y, color='black', marker='v', s=(219000 // (len(rainfall['Date'].unique()))), label='Volcanic Events')
+        eruption = ax0.scatter(volc_x, volc_y, color='black', marker='v', s=(219000 // (len(rainfall['Date'].unique()))), label='Volcanic Events')
+        legend_handles += [eruption]
+
+    # Plots rain by quantile, and if by_season is True, then also by year.
+    for i in range(color_count):
+        if by_season == True:
+            for j in range(start, end + 1):
+                dates_j = np.array([day for day in date_dec if (day // 1) == j])
+                bin_size = len(dates_j) // color_count
+                x = dates_j % 1
+                y = dates_j // 1
+                ax0.scatter(x[i*bin_size:(i+1)*bin_size], y[i*bin_size:(i+1)*bin_size], color=colors[i], marker='s', s=(219000 // len(rainfall['Date'].unique())))
+        else:
+            bin_size = len(dates) // color_count
+            x = date_dec % 1
+            y = date_dec // 1
+            ax0.scatter(x[i*bin_size:(i+1)*bin_size], y[i*bin_size:(i+1)*bin_size], color=colors[i], marker='s', s=(219000 // len(rainfall['Date'].unique())))
+
+    # Plots nino/nina events
+    if ninos is not None:
+        for j in elninos:
+        
+            if j == 'strong nino':
+                line_color = 'gray'
+                legend_handles += [mpatches.Patch(color=line_color, label='Strong Niño')]
+            elif j == 'very strong nino':
+                line_color = 'black'
+                legend_handles += [mpatches.Patch(color=line_color, label='Very strong Niño')]
+            
+            if j == 'strong nino' or j == 'very strong nino':
+                for i in range(len(elninos[j])):
+                    x1 = elninos[j][i][0] % 1
+                    y1 = elninos[j][i][0] // 1
+                    x2 = elninos[j][i][1] % 1
+                    y2 = (elninos[j][i][1] // 1)
+                    if y1 == y2:
+                        ax0.plot([x1, x2], [y1 - .17, y1 - .17], color=line_color, alpha=1.0, linewidth=(21900 // len(rainfall['Date'].unique())))
+                    else:
+                        ax0.plot([x1, 1.0022], [y1 - .17, y1 - .17], color=line_color, alpha=1.0, linewidth=(21900 // len(rainfall['Date'].unique())))
+                        ax0.plot([-.0022, x2], [y2 - .17, y2 - .17], color=line_color, alpha=1.0, linewidth=(21900 // len(rainfall['Date'].unique())))
+
+    ax0.set_yticks([start + (2*k) for k in range(((end + 2 - start) // 2))], [str(start + (2*k)) for k in range(((end + 2 - start) // 2))])
+    ax0.set_xticks([(1/24 + (1/12)*k) for k in range(12)], ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'])
+    ax0.set_xlabel("Month") 
+    ax0.set_ylabel("Year") 
+    ax0.set_title('Tbd') 
+    ax0.legend(handles=legend_handles, fontsize='small')
+
+    # Creates a sideplot that shows total rainfall by year
+    totals = []
+    years = [i for i in range(start, end+1)]
+    
+    for i in years:
+        totals.append(volc_rain['Precipitation'][volc_rain['Decimal'] // 1 == i].sum())
+    ax1.set_title('Total (mm)') 
+    ax1.barh(years, totals, height=.5, color='purple')
+    ax1.set_yticks([start + (2*k) for k in range(((end + 1 - start) // 2))], [str(start + (2*k)) for k in range(((end + 1 - start) // 2))])
+    # Data plot
+    # plt.tight_layout()
+    plt.show()
+
+    return
+
+
+def by_strength(rainfall, color_count=1, roll_count=1, eruptions=pd.DataFrame(), volcano=None, log=True):
+    """ Plots the sorted rolling rain values and adds color based on quantile breakdown. Further, it plots the eruption data on top of this plot.
+
+    Args:
+        rainfall (DataFrame): Pandas dataframe with columns Date and Precipitation.
+        color_count (int): Number of quantiles to break rain data into.
+        roll_count (int): Number of days to average rain over.
+        eruptions (DataFrame): Pandas dataframe with columns Volcano, Start, End, Max Explosivity.
+        volcano (None): Not used in the function.
+        log (bool): True if you want a log scale for the rain values.
+
+    Return:
+        None
+    """
+
+    plt.figure(figsize=(10, 5))
+
+    colors = color_scheme(color_count)
+
+    if color_count > 1:
+        if color_count == 3:
+            legend_handles = [mpatches.Patch(color=colors[0], label='Lower tertile'), mpatches.Patch(color=colors[1], label='Middle tertile'), mpatches.Patch(color=colors[2], label='Upper tertile')]
+        else:
+            legend_handles = [mpatches.Patch(color=colors[i], label='Quantile ' + str(i+1)) for i in range(color_count)]
+    else:
+        legend_handles = [mpatches.Patch(color=colors[i], label=str(roll_count) + ' day precipitation') for i in range(color_count)]
+
+    if len(eruptions) > 0:
+        legend_handles += [Line2D([0], [0], color='black', linestyle='dashed', dashes= (3,2), label='Volcanic event', linewidth= 1)]
+
+    volc_rain = volcano_rain_frame(rainfall, roll_count)
+
+    volc_rain['Precipitation'], volc_rain['cumsum'] = from_nested_to_float(volc_rain['Precipitation']), from_nested_to_float(volc_rain['cumsum'])
+
+    start = int(volc_rain['Decimal'].min() // 1)
+    end = int((volc_rain['Decimal'].max() // 1)+1)
+
+    # Creates a numpy array of decimal dates for eruptions between a fixed start and end date.
+    if eruptions != []:
+        erupt_dates = list(map(date_to_decimal_year, eruptions))
+
+    # Get volcano specific data and order dates by 'roll' amount
+    dates = volc_rain.sort_values(by=['roll']).copy()
+    dates.dropna()
+    date_dec = np.array(dates['Decimal'])
+    date_rain = np.array(dates['roll'])
+    # Used in plotting to make y range similar to max bar height 
+    y_max = np.max(date_rain)
+
+    # Counts eruptions in each quantile
+    if color_count > 1:
+        bin_size = len(dates) // color_count
+        for l in range(color_count):
+            y = date_rain[l*(bin_size): (l+1)*bin_size]
+            plt.bar(range(l*(bin_size), (l+1)*bin_size), y, color=colors[l], width=1.1)
+            plt.title('tbd' + ' (' + str(start) + '-' + str(end-1) + ')')
+            plt.xlabel('Day index when sorted by ' + str(roll_count) + ' day precipitation')
+            plt.ylabel(str(roll_count) + ' day precipitation (mm)')
+            if log == True:
+                plt.yscale('log')
+    else:
+        plt.bar(range(len(date_rain)), date_rain, color=colors[0], width=1)  
+        plt.title('tbd')
+        plt.xlabel('Days sorted by ' + str(roll_count) + ' day precipitation')
+        plt.ylabel('Rainfall (mm)')
+        if log == True:
+            plt.yscale('log')
+            plt.yticks([1, 10, 100, 1000])
+                        
+    for i in range(len(date_dec)):
+        if date_dec[i] in erupt_dates:
+            line_color = 'black'
+            plt.axvline(x=i, color=line_color, linestyle= 'dashed', dashes= (9,6), linewidth = 1)
+
+    plt.legend(handles=legend_handles, fontsize='small')
+
+    plt.show()
+
+    return 

@@ -4,7 +4,8 @@ import calendar
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 import threading
-
+import math
+from matplotlib import cm
 
 
 def date_to_decimal_year(date_str):
@@ -272,3 +273,114 @@ def ask_user(operation):
 def vprint(msg, verbose):
     if verbose:
         print(msg)
+
+
+def quantile_name(color_count):
+    """
+    Simple function used for labelling when plotting.
+
+    Args: 
+        color_count: Number of quantiles
+
+    Return:
+        quantile: string used in plot labelling
+
+    """
+
+    if color_count == 2:
+        quantile = 'half '
+    elif color_count == 3:
+        quantile = 'tertile '
+    elif color_count == 4:
+        quantile = 'quartile '
+    else:
+        quantile = 'quantile '
+
+    return quantile
+
+
+def color_scheme(color_count):
+    """
+    Creates a list of colors to use when plotting.
+
+    Args: 
+        color_count: Number of quantiles
+
+    Return:
+        colors: List of colors
+
+    """
+
+    plasma_colormap = cm.get_cmap('viridis', 256)
+    if color_count > 1:
+        color_spacing = 90 // (color_count-1)
+        half_count = math.ceil(color_count / 2)
+        upp_half = math.floor(color_count / 2)
+        yellows = [plasma_colormap(255 - i*color_spacing)[:3] for i in range(half_count)]
+        greens = [plasma_colormap(135 + i*color_spacing)[:3] for i in range(upp_half)]
+        greens.reverse()
+        colors = yellows + greens 
+    else:
+        colors = [plasma_colormap(210)]
+
+    return colors
+
+
+def volcano_rain_frame(rainfall, roll_count, lon=None, lat=None, centered=False, cumsum=True):
+    """ Uses lat/lon, date, and rainfall amount to create a new dataframe that includes site specific decimal dates, rolling average rain, and cumulative rain.
+
+    Args:
+        rainfall: Satellite rain dataframe for volcanos in chosen region. 
+        volcanos: A dictionary of sites (eg. sites_dict = {'Wolf': (-91.35, .05, 'Wolf'), 'Fernandina': (-91.45, -.45, 'Fernandina')}).
+        pick: volcano or site at which to collect data.  
+        roll_count: Number of days to average rain over.
+
+    Return:
+        volc_rain: A new dataframe with additional columns for decimal date, rolling average, and cumulative rain.
+
+    """    
+
+    # Would be useful if we decide to average over nearby coordinates.
+    # lat = volcanos[pick][1]
+    # lon = volcanos[pick][0]
+    # nearby_rain = rainfall[(abs(lon - rainfall['Longitude']) <= lon_range) & (abs(lat - rainfall['Latitude']) <= lat_range)].copy()
+    # dates = np.sort(nearby_rain['Date'].unique())
+    # averages = [[date, nearby_rain['Precipitation'][nearby_rain['Date'] == date].mean()] for date in dates]
+    # volc_rain = pd.DataFrame(averages, columns = ['Date', 'Precipitation'])
+
+    if lon == None:
+        volc_rain = rainfall.copy()
+    elif lon == 'NaN':
+        volc_rain = rainfall[(rainfall['Longitude'].isna()) & (rainfall['Latitude'].isna())].copy()
+    else:    
+        volc_rain = rainfall[(rainfall['Longitude'] == lon) & (rainfall['Latitude'] == lat)].copy()
+    if 'Decimal' not in rainfall.columns:
+        volc_rain['Decimal'] = volc_rain.Date.apply(date_to_decimal_year)
+        volc_rain = volc_rain.sort_values(by=['Decimal'])
+    if 'roll' not in volc_rain.columns:
+        if centered == True:
+            volc_rain['roll'] = volc_rain.Precipitation.rolling(roll_count, center=True).sum()
+        else:
+            volc_rain['roll'] = volc_rain.Precipitation.rolling(roll_count).sum()
+    volc_rain = volc_rain.dropna(subset=['roll'])
+    if 'Precipitation' in volc_rain.columns:
+        if cumsum == True:
+            volc_rain['cumsum'] = volc_rain.Precipitation.cumsum()
+
+    return volc_rain
+
+
+def from_nested_to_float(dataframe_field):
+    """ Converts a nested list of floats to a flat list of floats.
+
+    Args:
+        nested: A nested list of floats.
+
+    Return:
+        flat: A flat list of floats.
+
+    """
+
+    dataframe_field = dataframe_field.apply(lambda x: float(x[0][0][0]))
+
+    return dataframe_field
