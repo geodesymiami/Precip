@@ -4,7 +4,34 @@ import calendar
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 import threading
+import math
+from matplotlib import cm
+from matplotlib import patches as mpatches
 
+
+def data_preload(rainfall, roll_count, eruptions, color_count):
+
+    # Creates a dataframe for rainfall, with new columns 'Decimal', 'roll', and 'cumsum' for 
+    # decimal date, rolling sum, and cumulative sum respectively.
+    volc_rain = volcano_rain_frame(rainfall, roll_count)
+
+    start = int(volc_rain['Decimal'].min() // 1)
+    end = int((volc_rain['Decimal'].max() // 1)+1)
+
+    # Creates a numpy array of decimal dates for eruptions between a fixed start and end date.
+    if eruptions != []:
+        erupt_dates = list(map(date_to_decimal_year, eruptions))  
+
+    colors = color_scheme(color_count)
+    quantile = quantile_name(color_count)
+
+    if color_count > 1:
+        legend_handles = [mpatches.Patch(color=colors[i], label=quantile + str(i+1)) for i in range(color_count)]
+
+    else:
+        legend_handles = []
+
+    return volc_rain, erupt_dates, colors, quantile, legend_handles, start, end
 
 
 def date_to_decimal_year(date_str):
@@ -267,3 +294,131 @@ def ask_user(operation):
     t.start()
     t.join(timeout=10)  # Wait for 10 seconds
     return answer.lower() == 'yes'
+
+
+def vprint(msg, verbose):
+    if verbose:
+        print(msg)
+
+
+def quantile_name(color_count):
+    """
+    Simple function used for labelling when plotting.
+
+    Args: 
+        color_count: Number of quantiles
+
+    Return:
+        quantile: string used in plot labelling
+
+    """
+
+    if color_count == 2:
+        quantile = 'half '
+    elif color_count == 3:
+        quantile = 'tertile '
+    elif color_count == 4:
+        quantile = 'quartile '
+    else:
+        quantile = 'quantile '
+
+    return quantile
+
+
+def color_scheme(color_count):
+    """
+    Creates a list of colors to use when plotting.
+
+    Args: 
+        color_count: Number of quantiles
+
+    Return:
+        colors: List of colors
+
+    """
+
+    plasma_colormap = cm.get_cmap('viridis', 256)
+    if color_count > 1:
+        color_spacing = 90 // (color_count-1)
+        half_count = math.ceil(color_count / 2)
+        upp_half = math.floor(color_count / 2)
+        yellows = [plasma_colormap(255 - i*color_spacing)[:3] for i in range(half_count)]
+        greens = [plasma_colormap(135 + i*color_spacing)[:3] for i in range(upp_half)]
+        greens.reverse()
+        colors = yellows + greens 
+    else:
+        colors = [plasma_colormap(210)]
+
+    return colors
+
+
+def volcano_rain_frame(rainfall, roll_count, lon=None, lat=None, centered=False, cumsum=True):
+    """ Uses lat/lon, date, and rainfall amount to create a new dataframe that includes site specific decimal dates, rolling average rain, and cumulative rain.
+
+    Args:
+        rainfall: Satellite rain dataframe for volcanos in chosen region. 
+        volcanos: A dictionary of sites (eg. sites_dict = {'Wolf': (-91.35, .05, 'Wolf'), 'Fernandina': (-91.45, -.45, 'Fernandina')}).
+        pick: volcano or site at which to collect data.  
+        roll_count: Number of days to average rain over.
+
+    Return:
+        volc_rain: A new dataframe with additional columns for decimal date, rolling average, and cumulative rain.
+
+    """    
+
+    # Would be useful if we decide to average over nearby coordinates.
+    # lat = volcanos[pick][1]
+    # lon = volcanos[pick][0]
+    # nearby_rain = rainfall[(abs(lon - rainfall['Longitude']) <= lon_range) & (abs(lat - rainfall['Latitude']) <= lat_range)].copy()
+    # dates = np.sort(nearby_rain['Date'].unique())
+    # averages = [[date, nearby_rain['Precipitation'][nearby_rain['Date'] == date].mean()] for date in dates]
+    # volc_rain = pd.DataFrame(averages, columns = ['Date', 'Precipitation'])
+
+    if lon == None:
+        volc_rain = rainfall.copy()
+
+    elif lon == 'NaN':
+        volc_rain = rainfall[(rainfall['Longitude'].isna()) & (rainfall['Latitude'].isna())].copy()
+
+    else:    
+        volc_rain = rainfall[(rainfall['Longitude'] == lon) & (rainfall['Latitude'] == lat)].copy()
+
+    if 'Decimal' not in rainfall.columns:
+        volc_rain['Decimal'] = volc_rain.Date.apply(date_to_decimal_year)
+        volc_rain = volc_rain.sort_values(by=['Decimal'])
+
+    if 'roll' not in volc_rain.columns:
+        if centered == True:
+            volc_rain['roll'] = volc_rain.Precipitation.rolling(roll_count, center=True).sum()
+
+        else:
+            volc_rain['roll'] = volc_rain.Precipitation.rolling(roll_count).sum()
+        
+    volc_rain = volc_rain.dropna(subset=['roll'])
+
+    if 'Precipitation' in volc_rain.columns:
+        if cumsum == True:
+            volc_rain['cumsum'] = volc_rain.Precipitation.cumsum()
+
+    return volc_rain
+
+
+def from_nested_to_float(dataframe):
+    """ Converts a nested list of floats to a flat list of floats.
+
+    Args:
+        nested: A nested list of floats.
+
+    Return:
+        flat: A flat list of floats.
+
+    """
+
+    for column_name in dataframe.columns:
+        try:
+            dataframe[column_name] = dataframe[column_name].apply(lambda x: float(x[0][0][0]))
+
+        except(IndexError, TypeError):
+            continue
+
+    return dataframe
