@@ -3,8 +3,6 @@ netCDF4        # for nc4 files
 asf_search
 pygmt
 scipy
-subprocess
-threading
 concurrent
 geopandas
 argparse
