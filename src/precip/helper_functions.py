@@ -6,6 +6,32 @@ from dateutil.relativedelta import relativedelta
 import threading
 import math
 from matplotlib import cm
+from matplotlib import patches as mpatches
+
+
+def data_preload(rainfall, roll_count, eruptions, color_count):
+
+    # Creates a dataframe for rainfall, with new columns 'Decimal', 'roll', and 'cumsum' for 
+    # decimal date, rolling sum, and cumulative sum respectively.
+    volc_rain = volcano_rain_frame(rainfall, roll_count)
+
+    start = int(volc_rain['Decimal'].min() // 1)
+    end = int((volc_rain['Decimal'].max() // 1)+1)
+
+    # Creates a numpy array of decimal dates for eruptions between a fixed start and end date.
+    if eruptions != []:
+        erupt_dates = list(map(date_to_decimal_year, eruptions))  
+
+    colors = color_scheme(color_count)
+    quantile = quantile_name(color_count)
+
+    if color_count > 1:
+        legend_handles = [mpatches.Patch(color=colors[i], label=quantile + str(i+1)) for i in range(color_count)]
+
+    else:
+        legend_handles = []
+
+    return volc_rain, erupt_dates, colors, quantile, legend_handles, start, end
 
 
 def date_to_decimal_year(date_str):
@@ -350,19 +376,26 @@ def volcano_rain_frame(rainfall, roll_count, lon=None, lat=None, centered=False,
 
     if lon == None:
         volc_rain = rainfall.copy()
+
     elif lon == 'NaN':
         volc_rain = rainfall[(rainfall['Longitude'].isna()) & (rainfall['Latitude'].isna())].copy()
+
     else:    
         volc_rain = rainfall[(rainfall['Longitude'] == lon) & (rainfall['Latitude'] == lat)].copy()
+
     if 'Decimal' not in rainfall.columns:
         volc_rain['Decimal'] = volc_rain.Date.apply(date_to_decimal_year)
         volc_rain = volc_rain.sort_values(by=['Decimal'])
+
     if 'roll' not in volc_rain.columns:
         if centered == True:
             volc_rain['roll'] = volc_rain.Precipitation.rolling(roll_count, center=True).sum()
+
         else:
             volc_rain['roll'] = volc_rain.Precipitation.rolling(roll_count).sum()
+        
     volc_rain = volc_rain.dropna(subset=['roll'])
+
     if 'Precipitation' in volc_rain.columns:
         if cumsum == True:
             volc_rain['cumsum'] = volc_rain.Precipitation.cumsum()
@@ -370,7 +403,7 @@ def volcano_rain_frame(rainfall, roll_count, lon=None, lat=None, centered=False,
     return volc_rain
 
 
-def from_nested_to_float(dataframe_field):
+def from_nested_to_float(dataframe):
     """ Converts a nested list of floats to a flat list of floats.
 
     Args:
@@ -381,6 +414,11 @@ def from_nested_to_float(dataframe_field):
 
     """
 
-    dataframe_field = dataframe_field.apply(lambda x: float(x[0][0][0]))
+    for column_name in dataframe.columns:
+        try:
+            dataframe[column_name] = dataframe[column_name].apply(lambda x: float(x[0][0][0]))
 
-    return dataframe_field
+        except(IndexError, TypeError):
+            continue
+
+    return dataframe

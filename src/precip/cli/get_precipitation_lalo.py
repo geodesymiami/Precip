@@ -46,11 +46,20 @@ Example:
   get_precipitation_lalo.py --heatmap 20000601 --polygon 'POLYGON((113.4496 -8.0893,113.7452 -8.0893,113.7452 -7.817,113.4496 -7.817,113.4496 -8.0893))'
   get_precipitation_lalo.py --heatmap 20000601 --latitude=-2.11:2.35 --longitude=-92.68:-88.49 --colorbar jet
 
+  TEMPORARY:
+  annual plotter:
+  get_precipitation_lalo.py --annual-plotter 'Mauna Loa' --period 20200101:20221231
+
+  bar plotter:
+  get_precipitation_lalo.py --bar-plotter 'Mauna Loa' --period 20200101:20221231
+
+  by strength:
+  get_precipitation_lalo.py --strength 'Mauna Loa' --period 20200101:20221231
+
 """
 
 path_data = '/Users/giacomo/Library/CloudStorage/OneDrive-UniversityofMiami/GetPrecipitation/'
 
-###################### NEW PARSER ######################
 
 def create_parser():
     """ Creates command line argument parser object. """
@@ -149,6 +158,20 @@ def create_parser():
                         nargs=1,
                         metavar=('COLORBAR'), 
                         help='Colorbar')
+    
+    # TODO Schifo da sistemare
+    parser.add_argument('--annual-plotter',
+                        nargs='*',
+                        metavar=('LATITUDE, LONGITUDE, STARTDATE, ENDDATE'),
+                        help='Annual plotter')  
+    parser.add_argument('--bar-plotter',
+                        nargs='*',
+                        metavar=('LATITUDE, LONGITUDE, STARTDATE, ENDDATE'),
+                        help='Bar plotter')
+    parser.add_argument('--strength',
+                        nargs=1,
+                        metavar=('STRENGTH'),
+                        help='Strength of the eruption')
 
     inps = parser.parse_args()
 
@@ -267,12 +290,49 @@ def create_parser():
     if not inps.colorbar:
         inps.colorbar = 'viridis'
 
-    return inps
+    ####################### TODO to format #######################
+    if inps.annual_plotter is not None:
+        if len(inps.annual_plotter) == 0:
+            parser.error("--annual-plotter requires at least VOLCANO")
 
-###################### END NEW PARSER ######################
-'''
-Prompt images
-'''
+        elif len(inps.annual_plotter) == 1:
+            inps.annual_plotter = inps.annual_plotter[0], 3, 3, inps.start_date, inps.end_date
+
+        elif len(inps.annual_plotter) == 2:
+            inps.annual_plotter = inps.annual_plotter[0], int(inps.annual_plotter[1]), 3, inps.start_date, inps.end_date
+
+        elif len(inps.annual_plotter) == 3:
+            inps.annual_plotter = inps.annual_plotter[0], int(inps.annual_plotter[1]), int(inps.annual_plotter[2]), inps.start_date, inps.end_date
+
+    if inps.bar_plotter is not None:
+        if len(inps.bar_plotter) == 0:
+            parser.error("--bar-plotter requires at least VOLCANO")
+
+        elif len(inps.bar_plotter) == 1:
+            inps.bar_plotter = inps.bar_plotter[0], 3, 3, inps.start_date, inps.end_date
+
+        elif len(inps.bar_plotter) == 2:
+            inps.bar_plotter = inps.bar_plotter[0], int(inps.bar_plotter[1]), 3, inps.start_date, inps.end_date
+
+        elif len(inps.bar_plotter) == 3:
+            inps.bar_plotter = inps.bar_plotter[0], int(inps.bar_plotter[1]), int(inps.bar_plotter[2]), inps.start_date, inps.end_date
+
+    if inps.strength is not None:
+        if len(inps.strength) == 0:
+            parser.error("--strength requires at least VOLCANO")
+
+        elif len(inps.strength) == 1:
+            inps.strength = inps.strength[0], 3, 3, inps.start_date, inps.end_date
+
+        elif len(inps.strength) == 2:
+            inps.strength = inps.strength[0], int(inps.strength[1]), 3, inps.start_date, inps.end_date
+
+        elif len(inps.strength) == 3:
+            inps.strength = inps.strength[0], int(inps.strength[1]), int(inps.strength[2]), inps.start_date, inps.end_date
+
+    ####################### END to format #######################
+
+    return inps
 
 
 def parse_polygon(polygon):
@@ -403,23 +463,23 @@ def parse_coordinates(coordinates):
 
 ###################### TEST AREA ##########################
 
-from precip.plotter_functions import *
+# from precip.plotter_functions import *
 
-# la, lo = '19.5:20.05', '156.5:158.05'
-# la , lo = parse_polygon('POLYGON((-93.7194 -2.2784,-87.4571 -2.2784,-87.4571 2.6319,-93.7194 2.6319,-93.7194 -2.2784))')
-la, lo = '19.5', '-156.5'
-la, lo = adapt_coordinates(la, lo)
-date_list = generate_date_list('20000601', '20000630')
+# # la, lo = '19.5:20.05', '156.5:158.05'
+# # la , lo = parse_polygon('POLYGON((-93.7194 -2.2784,-87.4571 -2.2784,-87.4571 2.6319,-93.7194 2.6319,-93.7194 -2.2784))')
+# la, lo = '19.5', '-156.5'
+# la, lo = adapt_coordinates(la, lo)
+# date_list = generate_date_list('20150101', '20220101')
 
-workDir = os.getenv(workDir)
-prec = create_map(la, lo, date_list, workDir + '/gpm_data')
-eruptions, _, _ = extract_volcanoes_info(workDir + '/' + jsonVolcano, 'Wolf')
-# bar_plot(prec, la, lo)
-# annual_plotter(prec, 3, 3, eruptions)
-# map_precipitation(prec, lo, la, ['2000-06-01'], workDir + '/gpm_data', 'jet',levels=1)
-by_strength(prec, 3, 3, eruptions)
+# workDir = '/Users/giacomo/onedrive/scratch'
+# prec = create_map(la, lo, date_list, workDir + '/gpm_data')
+# eruptions, _, _ = extract_volcanoes_info(workDir + '/' + jsonVolcano, 'Wolf')
+# # bar_plot(prec, la, lo)
+# # annual_plotter(prec, 3, 3, eruptions)
+# # map_precipitation(prec, lo, la, ['2000-06-01'], workDir + '/gpm_data', 'jet',levels=1)
+# bar_plotter(prec, 3, 3, eruptions)
 
-sys.exit(0)
+# sys.exit(0)
 
 #################### END TEST AREA ########################
 
