@@ -148,7 +148,7 @@ def dload_site_list_parallel(folder, date_list):
                     print(f"Failed to download {url} after {attempts} attempts. Exiting...")
                     sys.exit(1)
             else:
-                print(f"\rFile {filename} already exists, skipping download", end="")
+                print(f"\rFile {filename} already exists, skipping download. ", end="")
                 time.sleep(0.001)
 
     # if ask_user('check'):
@@ -165,6 +165,7 @@ def check_nc4_files(folder):
     for file in files:
         try:
             # Try to open the file with netCDF4
+            print(f"\rChecking file: {file}", end="")
             ds = nc.Dataset(file)
             ds.close()
 

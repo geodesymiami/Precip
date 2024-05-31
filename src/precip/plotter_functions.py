@@ -235,6 +235,9 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
     # Create a list of dates from the first date to the last start date
     date_list = pd.date_range(start = first_date, end = start_dates[-1]).date
 
+    for d in start_dates:
+        print('Extracted eruption in date: ', d)
+
     # Return the list of start dates, the list of dates, and the coordinates of the volcano
     return start_dates, date_list, coordinates
 

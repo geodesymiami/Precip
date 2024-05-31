@@ -169,7 +169,7 @@ def create_parser():
                         metavar=('LATITUDE, LONGITUDE, STARTDATE, ENDDATE'),
                         help='Bar plotter')
     parser.add_argument('--strength',
-                        nargs=1,
+                        nargs='*',
                         metavar=('STRENGTH'),
                         help='Strength of the eruption')
 
@@ -492,4 +492,4 @@ def main():
 if __name__ == "__main__":
     main()
 
-sys.exit(0)
+# sys.exit(0)
