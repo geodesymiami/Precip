@@ -9,7 +9,7 @@ from matplotlib import cm
 from matplotlib import patches as mpatches
 
 
-def data_preload(rainfall, roll_count, eruptions, color_count):
+def data_preload(rainfall, roll_count, color_count):
 
     # Creates a dataframe for rainfall, with new columns 'Decimal', 'roll', and 'cumsum' for 
     # decimal date, rolling sum, and cumulative sum respectively.
@@ -17,10 +17,6 @@ def data_preload(rainfall, roll_count, eruptions, color_count):
 
     start = int(volc_rain['Decimal'].min() // 1)
     end = int((volc_rain['Decimal'].max() // 1)+1)
-
-    # Creates a numpy array of decimal dates for eruptions between a fixed start and end date.
-    if eruptions != []:
-        erupt_dates = list(map(date_to_decimal_year, eruptions))  
 
     colors = color_scheme(color_count)
     quantile = quantile_name(color_count)
@@ -31,7 +27,7 @@ def data_preload(rainfall, roll_count, eruptions, color_count):
     else:
         legend_handles = []
 
-    return volc_rain, erupt_dates, colors, quantile, legend_handles, start, end
+    return volc_rain, colors, quantile, legend_handles, start, end
 
 
 def date_to_decimal_year(date_str):
@@ -176,13 +172,13 @@ def weekly_monthly_yearly_precipitation(dictionary, time_period=None):
     m_y = [28,29,30,31,365]
     df = pd.DataFrame.from_dict(dictionary)
     df['Date'] = pd.to_datetime(df['Date'])
-    # df['Date_copy'] = df['Date']  # Create a copy of the 'Date' column
-    # df.set_index('Date_copy', inplace=True)
-    df.set_index('Date', inplace=True)
-    print(df)
+    df['Date_copy'] = df['Date']  # Create a copy of the 'Date' column
+    df.set_index('Date_copy', inplace=True)
+    # df.set_index('Date', inplace=True)
+    # print(df)
 
     if 'Precipitation' in df:
-        if time_period is None or len(df) not in m_y:
+        if time_period is None or time_period=='D':
             # Calculate the mean of the 'Precipitation' column
             print('Calculating the cumulative precipitation...')
             cumulative_precipitation = df['Precipitation'].cumsum().sum()

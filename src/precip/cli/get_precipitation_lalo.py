@@ -94,10 +94,12 @@ def create_parser():
                         nargs='*', 
                         metavar=( 'LATITUDE, LONGITUDE, STARTDATE, ENDDATE'), 
                         help='Bar plot with yearly precipitation data')
-    parser.add_argument('--start-date', 
+    parser.add_argument('--start-date',
+                        nargs=1,
                         metavar='YYYYMMDD', 
                         help='Start date of the search')
-    parser.add_argument('--end-date', 
+    parser.add_argument('--end-date',
+                        nargs=1, 
                         metavar='YYYYMMDD', 
                         help='End date of the search')
     parser.add_argument('--period',
@@ -158,8 +160,28 @@ def create_parser():
                         nargs=1,
                         metavar=('COLORBAR'), 
                         help='Colorbar')
-    
     # TODO Schifo da sistemare
+    parser.add_argument('--log', 
+                        action='store_true',
+                        help='Enable logaritmic scale')
+    parser.add_argument('--bins',
+                        nargs=1,
+                        type=int,
+                        metavar=('BINS'),
+                        help='Number of bins for the histogram')
+    parser.add_argument('--roll',
+                        nargs=1,
+                        type=int,
+                        metavar=('ROLL'),
+                        help='Rolling average')
+    parser.add_argument('--name',
+                        nargs=1,
+                        type=str,
+                        metavar=('NAME'),
+                        help='Name of the volcano')
+    parser.add_argument('--style',
+                        choices=['daily','weekly','monthly','yearly','heatmap','bar','line','sorted'],
+                        help='Choose plot type')
     parser.add_argument('--annual-plotter',
                         nargs='*',
                         metavar=('LATITUDE, LONGITUDE, STARTDATE, ENDDATE'),
@@ -172,6 +194,9 @@ def create_parser():
                         nargs='*',
                         metavar=('STRENGTH'),
                         help='Strength of the eruption')
+    # TODO later
+    parser.add_argument('--setup',
+                    help='Setup environment')
 
     inps = parser.parse_args()
 
@@ -190,7 +215,7 @@ def create_parser():
     else:
         if ':' in inps.period:
             dates = inps.period.split(':')
-
+        # TODO not sure if this is to be removed
         elif ',' in inps.period:
             dates = inps.period.split(',')
 
@@ -244,6 +269,28 @@ def create_parser():
 
     else:
             inps.latitude, inps.longitude = parse_polygon(inps.polygon)
+
+    if inps.add_event:
+        try:
+            inps.add_event = tuple(datetime.strptime(date_string, '%Y-%m-%d').date() for date_string in inps.add_event)
+
+        except ValueError:
+            try:
+                inps.add_event = tuple(datetime.strptime(date_string, '%Y%m%d').date() for date_string in inps.add_event)
+
+            except ValueError:
+                print('Error: Date format not valid, it must be in the format YYYYMMDD or YYYY-MM-DD')
+                sys.exit(1)
+
+    if not inps.bins:
+        inps.bins = 1
+
+    if not inps.roll:
+        inps.roll = 1
+
+    # TODO check if is better to use true as default value
+    if not inps.log:
+        inps.log = False
 
     if inps.plot_daily is not None:
         inps.plot_daily = parse_plot(inps.plot_daily, inps.latitude, inps.longitude, inps.start_date, inps.end_date)
@@ -329,7 +376,6 @@ def create_parser():
 
         elif len(inps.strength) == 3:
             inps.strength = inps.strength[0], int(inps.strength[1]), int(inps.strength[2]), inps.start_date, inps.end_date
-
     ####################### END to format #######################
 
     return inps
