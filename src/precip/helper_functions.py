@@ -200,21 +200,29 @@ def weekly_monthly_yearly_precipitation(dictionary, time_period=None):
 
 def generate_date_list(start, end=None, average='M'):
     """
-    Generate a list of dates between the start and end dates.
+    Generate a list of dates based on the given start and end dates.
 
     Args:
-        start (str or date): The start date in the format 'YYYYMMDD' or a date object.
-        end (str or date, optional): The end date in the format 'YYYYMMDD' or a date object. 
-            If not provided, the end date will be set to the last day of the month of the start date.
+        start (str or date): The start date of the date range. Can be a string in the format 'YYYYMMDD' or 'YYYY-MM-DD',
+                             or a date object.
+        end (str or date, optional): The end date of the date range. Can be a string in the format 'YYYYMMDD' or 'YYYY-MM-DD',
+                                     or a date object. If not provided, the current date will be used.
+        average (str or tuple or list, optional): The average period for the date range. Can be 'M' for monthly or 'Y' for yearly.
+                                                  If a tuple or list is provided, the first element will be used as the average period.
+                                                  Defaults to 'M'.
 
     Returns:
-        list: A list of dates between the start and end dates.
+        list: A list of dates ranging from the start date to the end date.
+
+    Raises:
+        ValueError: If the start or end date is not in a valid format.
 
     """
+    
     if average:
         if isinstance(average, tuple) or isinstance(average, list):
             average = average[0]
-            print('HERE')
+
     else:
         average = 'M'
 
