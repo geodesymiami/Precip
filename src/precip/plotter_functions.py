@@ -9,17 +9,15 @@ import matplotlib.patches as mpatches
 from matplotlib.lines import Line2D
 import numpy as np
 from scipy.interpolate import interp2d
-import re
-import netCDF4 as nc
 import pygmt
 from precip.helper_functions import *
 from precip.download_functions import *
-from precip.config import startDate
+from precip.config import startDate, elninos, pathJetstream
 
-elninos = {'weak nina': [[2000.4164, 2001.1233], [2005.8712, 2006.2], [2007.5342, 2008.4548], [2008.874, 2009.2], [2010.4521, 2011.3671], [2011.6192, 2012.2027], [2016.6219, 2016.9562], [2017.7863, 2018.2849], [2020.6219, 2021.2849], [2021.7041, 2023.0384]], 'moderate nina': [[2007.7041, 2008.2877], [2010.5342, 2011.1233], [2011.7863, 2011.9534], [2020.789, 2021.0384]], 'strong nina': [[2007.8712, 2008.1233], [2010.7041, 2010.9534]], 'weak nino': [[2002.4521, 2003.1233], [2004.6219, 2005.1233], [2006.7041, 2007.0384], [2009.6192, 2010.2], [2015.2, 2016.2877], [2018.7863, 2019.3671], [2023.4521, 2024.0384]], 'moderate nino': [[2002.7041, 2002.9534], [2009.7863, 2010.1233], [2015.4521, 2016.2027], [2023.5342, 2024.0384]], 'strong nino': [[2015.5342, 2016.2027]], 'very strong nino': [[2015.7041, 2016.1233]]} 
+# elninos = {'weak nina': [[2000.4164, 2001.1233], [2005.8712, 2006.2], [2007.5342, 2008.4548], [2008.874, 2009.2], [2010.4521, 2011.3671], [2011.6192, 2012.2027], [2016.6219, 2016.9562], [2017.7863, 2018.2849], [2020.6219, 2021.2849], [2021.7041, 2023.0384]], 'moderate nina': [[2007.7041, 2008.2877], [2010.5342, 2011.1233], [2011.7863, 2011.9534], [2020.789, 2021.0384]], 'strong nina': [[2007.8712, 2008.1233], [2010.7041, 2010.9534]], 'weak nino': [[2002.4521, 2003.1233], [2004.6219, 2005.1233], [2006.7041, 2007.0384], [2009.6192, 2010.2], [2015.2, 2016.2877], [2018.7863, 2019.3671], [2023.4521, 2024.0384]], 'moderate nino': [[2002.7041, 2002.9534], [2009.7863, 2010.1233], [2015.4521, 2016.2027], [2023.5342, 2024.0384]], 'strong nino': [[2015.5342, 2016.2027]], 'very strong nino': [[2015.7041, 2016.1233]]} 
 
 # TODO to replace elninos with the following API #
-
+# TODO eventually move to helper_functions.py
 if False:
     # CHECK THIS FIRST https://psl.noaa.gov/enso/mei/
     req = requests.get('https://psl.noaa.gov/enso/mei/data/meiv2.data')
@@ -37,6 +35,9 @@ def prompt_subplots(inps, jsonVolcano):
     if inps.list:
         volcanoes_list(volcano_json_dir)
 
+    # Generate the list of dates
+    date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
+
     if inps.style:
         eruption_dates = []
 
@@ -45,7 +46,7 @@ def prompt_subplots(inps, jsonVolcano):
             title = f'Latitude: {inps.latitude}, Longitude: {inps.longitude}'
 
         elif inps.name:
-            eruption_dates, _, lalo = extract_volcanoes_info(volcano_json_dir, inps.name[0])
+            eruption_dates, lalo = extract_volcanoes_info(volcano_json_dir, inps.name[0])
             inps.latitude, inps.longitude = adapt_coordinates(lalo[0], lalo[1])
             title = f'{inps.name[0]} - Latitude: {inps.latitude}, Longitude: {inps.longitude}'
         
@@ -54,30 +55,12 @@ def prompt_subplots(inps, jsonVolcano):
             print('Try using --list to get a list of volcanoes.')
             sys.exit(1)
 
-        if inps.style == 'weekly':
-            avg = 'W'
+        if inps.add_event:            
+            eruption_dates = adapt_events(inps.add_event, date_list)
 
-        elif inps.style == 'monthly':
-            avg = 'M'
+        elif eruption_dates != []:
+            eruption_dates = adapt_events(eruption_dates, date_list)
 
-        elif inps.style == 'yearly':
-            avg = 'Y'
-
-        elif inps.style == 'annual':
-            avg = 'D'
-
-        else:
-            avg = 'D'
-
-
-        date_list = generate_date_list(inps.start_date, inps.end_date)
-
-        dload_site_list_parallel(gpm_dir, date_list)
-        
-        precipitation = create_map(inps.latitude, inps.longitude, date_list, gpm_dir)
-        
-        if avg in ['W', 'M', 'Y']:
-            precipitation = weekly_monthly_yearly_precipitation(precipitation, avg)
 
         if inps.style == 'strength':
             strength = True
@@ -85,95 +68,69 @@ def prompt_subplots(inps, jsonVolcano):
         else:
             strength = False
 
-        legend_handles = bar_plotter(precipitation, color_count=inps.bins, roll_count=inps.roll, log_flag=inps.log, time_period=inps.style, title=title, strength=strength)
+        # Download missing data if any
+        dload_site_list_parallel(gpm_dir, date_list)
+        
+        # Extract precipitation data
+        precipitation = create_map(inps.latitude, inps.longitude, date_list, gpm_dir)
 
-        ######## TODO move it to helper function #######################################################
-        if inps.add_event or eruption_dates != []:
-            # Find the closest dates in the second list for each date in the first list
-            if eruption_dates == []:
-                eruption_dates = list(inps.add_event)
+        # Average the precipitation data
+        if inps.average in ['W', 'M', 'Y']:
+            precipitation = weekly_monthly_yearly_precipitation(precipitation, inps.average)
 
-            valid_eruption_dates = []
+        # Plot the map of precipitation data
+        if inps.style == 'map':
+            if inps.interpolate:
+                precipitation = interpolate_map(precipitation, int(inps.interpolate[0]))
 
-            for i in range(len(eruption_dates)):
-                for j in range(len(date_list)):
-                    try:
-                        if date_list[j] <= eruption_dates[i] < date_list[j+1]:
-                            valid_eruption_dates.append(date_list[j])
-                            break
+            map_precipitation(precipitation, inps.longitude, inps.latitude, date_list, inps.colorbar, inps.isolines, inps.vlim)
+            plt.show()
+            sys.exit(0)
 
-                    except IndexError:
-                        # Only add the date to valid_eruption_dates if it's not greater than the last date in date_list
-                        if eruption_dates[i] <= date_list[j]:
-                            valid_eruption_dates.append(date_list[j])
-                        
-                        else:
-                            print(f'Removing {eruption_dates[i]} from the list of eruptions. Out of range')
+        else:
+            precipitation, colors, legend_handles = data_preload(precipitation, inps.roll, inps.bins)
 
-            eruption_dates = valid_eruption_dates
-            legend_handles = plot_eruptions(legend_handles, eruption_dates, date_list, strength)
-        ##################################################################################################
+        if inps.style == 'annual':
+            annual_plotter(precipitation, color_count=inps.bins, roll_count=inps.roll, eruptions=eruption_dates)
+        
+            if inps.save:
+                if inps.name:
+                    saveName = inps.name[0]
+
+                elif inps.latitude and inps.longitude:
+                    saveName = f'{inps.latitude}_{inps.longitude}'
+                    
+                save_path = f'{inps.save}/{saveName}-{inps.start_date}_{inps.end_date}-{inps.style}.png'
+                plt.savefig(save_path)
+            
+            plt.show()
+            sys.exit(0)
+
+        else:
+            legend_handles = bar_plotter(precipitation, colors, legend_handles, color_count=inps.bins, roll_count=inps.roll, log_flag=inps.log, ninos=inps.ninos, time_period=inps.style, title=title, strength=strength)
+
+        if inps.add_event or eruption_dates != []:            
+            legend_handles = plot_eruptions(legend_handles, eruption_dates, precipitation.sort_values(by=['roll'])['Decimal'], strength)
         
         plt.legend(handles=legend_handles, loc='upper left', fontsize='small')
         plt.tight_layout()
+
+        if inps.save:
+            if inps.name:
+                saveName = inps.name[0]
+
+            elif inps.latitude and inps.longitude:
+                saveName = f'{inps.latitude}_{inps.longitude}'
+                
+            save_path = f'{inps.save}/{saveName}-{inps.start_date}_{inps.end_date}-{inps.style}.png'
+            plt.savefig(save_path)
+
         plt.show()
-
-    sys.exit(0)
-
-    if inps.heatmap:
-        la, lo = adapt_coordinates(inps.latitude, inps.longitude)
-        date_list = generate_date_list(inps.heatmap[0], inps.heatmap[1], inps.average)
-       
-        dataset = create_map(la, lo, date_list, gpm_dir)
-
-        # Readapt date_list if dataset is does not cover the whole period
-        date_list = generate_date_list(dataset['Date'].iloc[0], dataset['Date'].iloc[-1], inps.average)
-        dataset = weekly_monthly_yearly_precipitation(dataset, inps.average)
-
-        if inps.interpolate:
-            dataset = interpolate_map(dataset, int(inps.interpolate[0]))
-
-        map_precipitation(dataset, lo, la, date_list, './ne_10m_land', inps.colorbar, inps.isolines ,inps.vlim)
 
     if inps.check:
         check_nc4_files(gpm_dir)
 
-    ##################### TODO to change #####################
-    if inps.annual_plotter:
-        eruption_dates, _, lola = extract_volcanoes_info(volcano_json_dir, inps.annual_plotter[0])
-        lo, la = adapt_coordinates(lola[0], lola[1])
-        date_list = generate_date_list(inps.annual_plotter[3], inps.annual_plotter[4])
-        dload_site_list_parallel(gpm_dir, date_list)
-        precipitation = create_map(lo, la, date_list, gpm_dir)
-        annual_plotter(precipitation, color_count=inps.annual_plotter[1], roll_count=inps.annual_plotter[2], eruptions=eruption_dates)
-
-    if inps.bar_plotter:
-        eruption_dates, _, lola = extract_volcanoes_info(volcano_json_dir, inps.bar_plotter[0])
-        lo, la = adapt_coordinates(lola[0], lola[1])
-        date_list = generate_date_list(inps.bar_plotter[3], inps.bar_plotter[4])
-        dload_site_list_parallel(gpm_dir, date_list)
-        precipitation = create_map(lo, la, date_list, gpm_dir)
-        legend_handles = bar_plotter(precipitation, color_count=inps.bar_plotter[1], roll_count=inps.bar_plotter[2], eruptions=eruption_dates)
-        legend_handles = plot_eruptions(legend_handles, eruption_dates)
-
-        # TODO convert to a function
-        plt.legend(handles=legend_handles, loc='upper left', fontsize='small')
-        plt.tight_layout()
-        plt.show()
-
-    if inps.strength:
-        eruption_dates, _, lola = extract_volcanoes_info(volcano_json_dir, inps.strength[0])
-        lo, la = adapt_coordinates(lola[0], lola[1])
-        date_list = generate_date_list(inps.strength[3], inps.strength[4])
-        dload_site_list_parallel(gpm_dir, date_list)
-        precipitation = create_map(lo, la, date_list, gpm_dir)
-        strength(precipitation, color_count=inps.strength[1], roll_count=inps.strength[2], eruptions=eruption_dates)
-
-    ##################### END to change ##################### 
-
-    # TODO to remove or change
-    plt.show()
-    # return plt
+    sys.exit(0)
 
 
 def volcanoes_list(jsonfile):
@@ -240,7 +197,6 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
     f = open(jsonfile)
     data = json.load(f) 
 
-    # Initialize an empty list to store the eruption start dates
     start_dates = []
     frame_data = []
 
@@ -288,44 +244,29 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
     start_dates = sorted(start_dates)
     first_date = start_dates[0]
 
-    ####### TODO to remove #######
-    if first_date - relativedelta(days=90) >= first_day:
-        # Set the first date to 90 days before the first start date
-        first_date = first_date - relativedelta(days=90)
-    else:
-        first_date = first_day
-
-    # Create a list of dates from the first date to the last start date
-    date_list = pd.date_range(start = first_date, end = start_dates[-1]).date
-
-    ####### END to remove #######
-
     for d in start_dates:
         print('Extracted eruption in date: ', d)
 
     # Return the list of start dates, the list of dates, and the coordinates of the volcano
-    return start_dates, date_list, coordinates
+    return start_dates, coordinates
 
 
-def plot_eruptions(legend_handles, start_date, date_list, strength):
-
-    # for date in start_date:
-    #     plt.axvline(x = date_to_decimal_year(str(date)), color='red', linestyle='--', label='Eruption Date')
-
+def plot_eruptions(legend_handles, start_date, dataset, strength):
     if not strength:
         for date in start_date:
             plt.axvline(x=date_to_decimal_year(str(date)), color='black', linestyle= 'dashed', dashes= (9,6), linewidth = 1)
 
     else:
-        print(start_date)
-        for i in range(len(date_list)):
-            if date_list[i] in start_date:
-                print(i, date_list[i])
+        start_date = [date_to_decimal_year(date) for date in start_date]
+
+        for i in range(len(dataset)):
+            if dataset.iloc[i] in start_date:
                 plt.axvline(x=i, color='black', linestyle= 'dashed', dashes= (9,6), linewidth = 1)
 
     legend_handles += [Line2D([0], [0], color='black', linestyle='dashed', dashes= (3,2), label='Volcanic event', linewidth= 1)]
 
     return legend_handles
+
 
 def interpolate_map(dataframe, resolution=5):
     """
@@ -360,42 +301,7 @@ def interpolate_map(dataframe, resolution=5):
     return new_values
 
 
-def process_file(file, date_list, lon, lat, longitude, latitude):
-    """
-    Process a file and extract a subset of precipitation data based on given coordinates.
-
-    Args:
-        file (str): The file path of the NetCDF file to be processed.
-        date_list (list): A list of dates to filter the data.
-        lon (numpy.ndarray): 1D array of longitudes.
-        lat (numpy.ndarray): 1D array of latitudes.
-        longitude (tuple): A tuple containing the minimum and maximum longitude values for the subset.
-        latitude (tuple): A tuple containing the minimum and maximum latitude values for the subset.
-
-    Returns:
-        tuple: A tuple containing the date as a string and the subset of precipitation data as a numpy array.
-               Returns None if the date is not in the date_list or if the file cannot be opened.
-    """
-    # Extract date from file name
-    d = re.search('\d{8}', file)
-    date = datetime.strptime(d.group(0), "%Y%m%d").date()
-
-    if date not in date_list:
-        return None
-
-    # Open the file
-    ds = nc.Dataset(file)
-
-    data = ds['precipitationCal'] if 'precipitationCal' in ds.variables else ds['precipitation']
-    subset = data[:, np.where(lon == longitude[0])[0][0]:np.where(lon == longitude[1])[0][0]+1, np.where(lat == latitude[0])[0][0]:np.where(lat == latitude[1])[0][0]+1]
-    subset = subset.astype(float)
-
-    ds.close()
-
-    return (str(date), subset)
-
-
-def create_map(latitude, longitude, date_list, folder): #parallel
+def create_map(latitude, longitude, date_list, folder):
     """
     Creates a map of precipitation data for a given latitude, longitude, and date range.
 
@@ -413,8 +319,31 @@ def create_map(latitude, longitude, date_list, folder): #parallel
 
     lon, lat = generate_coordinate_array()
 
-    # Get a list of all .nc4 files in the data folder
-    files = [folder + '/' + f for f in os.listdir(folder) if f.endswith('.nc4')]
+##################### Try to use Jetstream ###############################
+    
+    ssh = connect_jetstream()
+    # TODO to remove, for testing purposes
+    ssh = None
+
+    if ssh:
+        stdin, stdout, stderr = ssh.exec_command(f"ls {pathJetstream}")
+
+        # Wait for the command to finish executing
+        stdout.channel.recv_exit_status()
+
+        all_files = stdout.read().decode()
+
+        # Get a list of all .nc4 files in the directory
+        files = [f for f in all_files.split('\n') if f.endswith('.nc4')]
+
+        client = ssh.open_sftp()
+
+################ If Jetstream is not available ###########################
+    else: 
+        # Get a list of all .nc4 files in the data folder
+        files = [folder + '/' + f for f in os.listdir(folder) if f.endswith('.nc4')]
+
+        client = None
 
     # Check for duplicate files
     print("Checking for duplicate files...")
@@ -428,11 +357,14 @@ def create_map(latitude, longitude, date_list, folder): #parallel
     dictionary = {}
 
     for file in files:
-        result = process_file(file, date_list, lon, lat, longitude, latitude)
+        result = process_file(file, date_list, lon, lat, longitude, latitude, client)
 
         if result is not None:
             dictionary[result[0]] = result[1]
 
+    if client:
+        client.close()
+        ssh.close()
 
     df1 = pd.DataFrame(dictionary.items(), columns=['Date', 'Precipitation'])
     finaldf = pd.concat([finaldf, df1], ignore_index=True, sort=False)
@@ -446,81 +378,16 @@ def create_map(latitude, longitude, date_list, folder): #parallel
     return finaldf
 
 
-def bar_plot(precipitation, lat, lon, volcano=''):
-    """
-    Generate a bar plot of precipitation data.
-
-    Parameters:
-    - precipitation (dict or DataFrame): Dictionary or DataFrame containing precipitation data.
-    - lat (float): Latitude value.
-    - lon (float): Longitude value.
-    - volcano (str, optional): Name of the volcano. Defaults to an empty string.
-
-    Returns:
-    None
-    """
-
-    if type(precipitation) == dict:
-        precipitation = pd.DataFrame(precipitation.items(), columns=['Date', 'Precipitation'])
-
-    # Convert array into single values
-    precipitation['Precipitation'] = precipitation['Precipitation'].apply(lambda x: x[0][0][0])
-    precipitation.sort_values(by='Date', ascending=True, inplace=True)
-    
-    # Convert date strings to decimal years
-    #TODO to complete
-    if 'Non mensile o annuale':
-        precipitation['Decimal_Year'] = precipitation['Date'].apply(date_to_decimal_year)
-        precipitation_field = 'Decimal_Year'
-    
-    else:
-        precipitation_field = 'Date'
-
-    # Calculate the cumulative precipitation
-    precipitation["cum"] = precipitation.Precipitation.cumsum()
-
-    fig, ax = plt.subplots(layout='constrained')
-
-    plt.bar(precipitation[precipitation_field], precipitation['Precipitation'], color='maroon', width=0.00001 * len(precipitation), label='Precipitation')
-    plt.ylabel("Precipitation [mm]")
-
-    precipitation.plot(precipitation_field, 'cum', secondary_y=True, ax=ax)
-
-    if volcano == '':
-        plt.title(f'Latitude: {lat}, Longitude: {lon}')
-
-    else:
-        plt.title(f'{volcano} - Latitude: {lat}, Longitude: {lon}')
-
-    # ax.set_xlabel("Yr")
-    ax.right_ax.set_ylabel("Cumulative Precipitation [mm]")
-    # ax.get_legend().remove()
-
-    plt.xticks(rotation=90)
-
-
-def bar_plotter(rainfall, color_count=1, roll_count=1, eruptions=pd.DataFrame(), ninos=None, by_season=False, log_flag=True, time_period=None, title=None, strength=False):
-    """ Plots rolling rain temporally-- y-axis is rolling rain values, and x-axis is time.
-
-    Args:
-        rainfall: Pandas dataframe with columns Date and Precipitation.
-        color_count: Number of quantiles to break rain data into.
-        roll_count: Number of days to average rain over.
-        eruptions: Pandas dataframe with columns Volcano, Start, End, Max Explosivity.
-        ninos: True if you want to include El Nino data
-        by_season: True if quantiles should be made for every year separately.
-        log_flag: True to use a log scale for the rain data.
-        centered: True to use a centered rolling sum
-        cumsum: True to plot the cumulative rainfall in gray behind the front plot.
-
-    Return:
-
-    """
-
+def bar_plotter(rainfall, colors,legend_handles , color_count=1, roll_count=1, eruptions=pd.DataFrame(), ninos=False, by_season=False, log_flag=True, time_period=None, title=None, strength=False):
     global elninos
 
-    volc_rain, colors, _, legend_handles, start, end = data_preload(rainfall, roll_count, color_count)
-    volc_rain = from_nested_to_float(volc_rain)
+    volc_rain = from_nested_to_float(rainfall)
+
+    first_date = volc_rain['Decimal'].min()
+    last_date = volc_rain['Decimal'].max() 
+
+    start = int(first_date // 1)
+    end = int(last_date // 1 + 1)
         
     # Applies a log scale to precipitation data if log_flag == True
     # if log_flag == True:
@@ -546,11 +413,11 @@ def bar_plotter(rainfall, color_count=1, roll_count=1, eruptions=pd.DataFrame(),
             daterain_j.dropna(inplace=True)
             x = range(l*(bin_size), (l+1)*bin_size)
             y = np.array(daterain_j[l*(bin_size): (l+1)*bin_size])
-            width = (max(x) - min(x)) / len(x)
+            width = 1.1 #(max(x) - min(x)) / len(x)
         else:
             x = dates_j[l*(bin_size): (l+1)*bin_size]
             y = daterain_j[l*(bin_size): (l+1)*bin_size]
-            width = 0.01  # or any other calculation based on your requirements
+            width = 0.01
 
         plot.bar(x, y, color =colors[l], width = width, alpha = 1)
         # plt.close()
@@ -575,7 +442,7 @@ def bar_plotter(rainfall, color_count=1, roll_count=1, eruptions=pd.DataFrame(),
         plt.yscale('log')
         plt.yticks([1, 10, 100, 1000])
 
-    if time_period == 'daily' or strength == True:
+    if time_period == 'daily' or time_period == 'bar' or strength == True:
         plt.ylabel(str(roll_count) + " day precipitation (mm)")
 
     else:
@@ -598,9 +465,16 @@ def bar_plotter(rainfall, color_count=1, roll_count=1, eruptions=pd.DataFrame(),
             if j == 'strong nino' or j == 'strong nina':
                 legend_handles += [mpatches.Patch(color=colors[j][0], label=colors[j][1])]
                 for i in range(len(elninos[j])):
-                    x1 = elninos[j][i][0]
-                    x2 = elninos[j][i][1]
-                    plt.plot([x1, x2], [ticks - .125, ticks - .125], color=colors[j][0], alpha=1.0, linewidth=6) 
+                    if elninos[j][i][0] <= last_date:
+                        x1 = elninos[j][i][0]
+
+                        if elninos[j][i][1] > last_date:
+                            x2 = last_date
+
+                        else:
+                            x2 = elninos[j][i][1]
+
+                        plt.plot([x1, x2], [ticks - .125, ticks - .125], color=colors[j][0], alpha=1.0, linewidth=6) 
 
     # Set plot properties
     # plot.set_yticks(ticks=[i for i in range(ticks)])
@@ -638,33 +512,32 @@ def add_isolines(region, levels=0, inline=False):
     return plt
 
 
-def map_precipitation(precipitation_series, lo, la, date, work_dir, colorbar, levels,vlim=None):
-    '''
-    Maps the precipitation data on a given region.
+def map_precipitation(precipitation_series, lo, la, date, colorbar, levels, vlim=None):
+    """
+    Plot a map of precipitation.
 
     Args:
-        precipitation_series (pd.DataFrame or dict or ndarray): The precipitation data series.
-            If a pd.DataFrame, it should have a column named 'Precipitation' containing the data.
-            If a dict, it should have date strings as keys and precipitation data as values.
-            If an ndarray, it should contain the precipitation data directly.
-        lo (list): The longitude range of the region.
-        la (list): The latitude range of the region.
-        date (list): The date of the precipitation data.
-        work_dir (str): The path to the shapefile for plotting the island boundary.
-        vlim (tuple, optional): The minimum and maximum values for the color scale. Defaults to None.
+        precipitation_series (pd.DataFrame or dict or ndarray): The precipitation data.
+            If a DataFrame, it should have a column named 'Precipitation' containing the precipitation values.
+            If a dict, it should have keys representing dates in the format 'YYYY-MM-DD' and values as precipitation arrays.
+            If an ndarray, it should be a 2D array of precipitation values.
+        lo (list): The longitude range [lo_min, lo_max].
+        la (list): The latitude range [la_min, la_max].
+        date (list): The list of dates for which precipitation is plotted.
+        colorbar (str): The colormap for the plot.
+        levels (list): The contour levels for the isolines.
+        vlim (tuple, optional): The minimum and maximum values for the colorbar. Defaults to None.
 
     Returns:
         None
-    '''
-    m_y = [28,29,30,31,365]
+    """
+    m_y = [28, 29, 30, 31, 365]
     print(precipitation_series)
 
     if type(precipitation_series) == pd.DataFrame:
         precip = precipitation_series.get('Precipitation')[0][0]
-
     elif type(precipitation_series) == dict:
         precip = precipitation_series[date[0].strftime('%Y-%m-%d')]
-
     else:
         precip = precipitation_series
 
@@ -673,12 +546,11 @@ def map_precipitation(precipitation_series, lo, la, date, work_dir, colorbar, le
     if not vlim:
         vmin = 0
         vmax = precip.max()
-
     else:
         vmin = vlim[0]
         vmax = vlim[1]
 
-    region = [lo[0],lo[1],la[0],la[1]]
+    region = [lo[0], lo[1], la[0], la[1]]
 
     # Add contour lines
     if not levels:
@@ -686,7 +558,7 @@ def map_precipitation(precipitation_series, lo, la, date, work_dir, colorbar, le
     else:
         plt = add_isolines(region, levels, inline=True)
 
-    plt.imshow(precip, vmin=vmin, vmax=vmax, extent=region,cmap=colorbar)
+    plt.imshow(precip, vmin=vmin, vmax=vmax, extent=region, cmap=colorbar)
     plt.ylim(la[0], la[1])
     plt.xlim(lo[0], lo[1])
 
@@ -695,11 +567,8 @@ def map_precipitation(precipitation_series, lo, la, date, work_dir, colorbar, le
 
     if len(date) in m_y:
         cbar.set_label('mm/day')
-    else :
+    else:
         cbar.set_label(f'cumulative precipitation of {len(date)} days')
-    
-    plt.show()
-    print('DONE')
 
 
 def plot_steps(inps, directory, event=None, average=None):
@@ -740,10 +609,16 @@ def annual_plotter(rainfall, color_count=1, roll_count=1, eruptions=pd.DataFrame
     """
     global elninos
 
-    volc_rain, colors, _, legend_handles, start, end = data_preload(rainfall, roll_count, color_count)
+    volc_rain, colors, legend_handles = data_preload(rainfall, roll_count, color_count)
     volc_rain = from_nested_to_float(volc_rain)
 
-    fig, axes = plt.subplots(1, 2, gridspec_kw={'width_ratios': [4, 1]}, figsize=(10, ((len(rainfall['Date'].unique())//1200)))) # to get plot of combined data 1960-2020, take length of figsize and apply-> // 1.5)
+    first_date = volc_rain['Decimal'].min()
+    last_date = volc_rain['Decimal'].max() 
+
+    start = int(first_date // 1)
+    end = int(last_date // 1 + 1)
+
+    fig, axes = plt.subplots(1, 2, gridspec_kw={'width_ratios': [4, 1]}, figsize=(20, 15)) # to get plot of combined data 1960-2020, take length of figsize and apply-> // 1.5)
 
     ax0 = axes[0]
     ax1 = axes[1]
@@ -754,15 +629,15 @@ def annual_plotter(rainfall, color_count=1, roll_count=1, eruptions=pd.DataFrame
 
     # Creates a numpy array of decimal dates for eruptions between a fixed start and end date.
     if eruptions != []:
-        erupt_dates = list(map(date_to_decimal_year, eruptions))
+        eruptions = list(map(date_to_decimal_year, eruptions))
 
     dates = volc_rain.sort_values(by=['roll'])
     date_dec = np.array(dates['Decimal'])
 
     # Plots eruptions
-    if len(erupt_dates) > 0:
-        volc_x = [((i) % 1) for i in erupt_dates]
-        volc_y = [(i // 1) + .5 for i in erupt_dates]
+    if len(eruptions) > 0:
+        volc_x = [((i) % 1) for i in eruptions]
+        volc_y = [(i // 1) + .5 for i in eruptions]
         ax0.scatter(volc_x, volc_y, color='black', marker='v', s=(219000 // (len(rainfall['Date'].unique()))), label='Volcanic Events')
         eruption = ax0.scatter(volc_x, volc_y, color='black', marker='v', s=(219000 // (len(rainfall['Date'].unique()))), label='Volcanic Events')
         legend_handles += [eruption]
@@ -787,7 +662,7 @@ def annual_plotter(rainfall, color_count=1, roll_count=1, eruptions=pd.DataFrame
             ax0.scatter(x[i*bin_size:(i+1)*bin_size], y[i*bin_size:(i+1)*bin_size], color=colors[i], marker='s', s=(219000 // len(rainfall['Date'].unique())))
 
      # Plots nino/nina events
-    if ninos == True:
+    if ninos == True and strength == False:
         colors = {'strong nino':['gray', 'Strong El Niño'], 'very strong nino':['black', 'Very strong Niño']}
         for j in elninos:
             if j == 'strong nino' or j == 'very strong nino':
@@ -820,66 +695,85 @@ def annual_plotter(rainfall, color_count=1, roll_count=1, eruptions=pd.DataFrame
     ax1.set_title('Total (mm)') 
     ax1.set_yticks([start + (2*k) for k in range(((end + 1 - start) // 2))], [str(start + (2*k)) for k in range(((end + 1 - start) // 2))])
 
-    plt.show()
+    # plt.show()
 
     return 
 
 
-def strength(rainfall, color_count=1, roll_count=1, eruptions=pd.DataFrame(), log=True):
-    """ Plots the sorted rolling rain values and adds color based on quantile breakdown. Further, it plots the eruption data on top of this plot.
+def bar_plotter_2 (precipitation, strength, log, labels, legend_handles):
+    plt.subplots(figsize=(10, 5))
 
-    Args:
-        rainfall (DataFrame): Pandas dataframe with columns Date and Precipitation.
-        color_count (int): Number of quantiles to break rain data into.
-        roll_count (int): Number of days to average rain over.
-        eruptions (DataFrame): Pandas dataframe with columns Volcano, Start, End, Max Explosivity.
-        volcano (None): Not used in the function.
-        log (bool): True if you want a log scale for the rain values.
+    if strength:
+        precipitation = precipitation.sort_values(by='roll')
+        precipitation = precipitation.reset_index(drop=True)
 
-    Return:
-        None
-    """
+        width = 1.1
+        x = range(len(precipitation))
 
-    volc_rain, colors, quantile, legend_handles, start, end = data_preload(rainfall, roll_count, color_count)
-    volc_rain = from_nested_to_float(volc_rain)
+    else: 
+        width = 0.01
+        x = precipitation['Decimal']
 
-    # Order rain data by 'roll' amount
-    dates = volc_rain.sort_values(by=['roll']).copy()
-    dates.dropna()
-    date_dec = np.array(dates['Decimal'])
-    date_rain = np.array(dates['roll'])
+    y = precipitation['roll']
 
-    plt.figure(figsize=(10, 5))
+    ################ Define Axis properties ################
+        
+    legend_handles += [mpatches.Patch(color='gray', label=labels['y2label'])]
 
-    # Plots the ordered rain data
-    if color_count > 1:
-        bin_size = len(dates) // color_count
+    plt.ylabel(labels['ylabel'])
 
-        for l in range(color_count):
-            y = date_rain[l*(bin_size): (l+1)*bin_size]
-            plt.bar(range(l*(bin_size), (l+1)*bin_size), y, color=colors[l], width=1.1)
-
-    else:
-        plt.bar(range(len(date_rain)), date_rain, color=colors[0], width=1)  
-
-    # Plots the eruptions as dotted vertical lines
-    if not eruptions == []:
-        legend_handles += [Line2D([0], [0], color='black', linestyle='dashed', dashes= (3,2), label='Volcanic event', linewidth= 1)] 
-
-        for i in range(len(date_dec)):
-            if date_dec[i] in erupt_dates:
-                line_color = 'black'
-                plt.axvline(x=i, color=line_color, linestyle= 'dashed', dashes= (9,6), linewidth = 1)
-
-    # Set plot properties
-    plt.title('tbd')
-    plt.xlabel('Days sorted by ' + str(roll_count) + ' day precipitation')
-    plt.ylabel('Rainfall (mm)')
     if log == True:
         plt.yscale('log')
-        plt.yticks([1, 10, 100, 1000])
-    plt.legend(handles=legend_handles, fontsize='small')
+        plt.yticks([0.1, 1, 10, 100, 1000])
 
-    plt.show()
+    plt.xlabel('Year')
 
-    return 
+    plt.title(labels['title'])
+
+    ticks = int((precipitation['roll'].max() * 1.5) // 1)
+
+    plt.bar(x, y, color=precipitation['color'], width=width, alpha=1)
+    
+    if strength == False:
+        start = int(precipitation['Decimal'].min() // 1)
+        end = int(precipitation['Decimal'].max() // 1 + 1)
+
+        plt.xticks(ticks=[start + (2*i) for i in range(((end - start) // 2) + 1)], labels=["'" + str(start + (2*i))[-2:] for i in range(((end - start) // 2) + 1)])
+        plot2 = plt.twinx()
+        plot2.bar(precipitation['Decimal'], precipitation['cumsum'], color ='gray', width = width, alpha = .05)
+
+        plot2.set_ylabel("Cumulative precipitation (mm)", rotation=270, labelpad= 10)
+        legend_handles += [mpatches.Patch(color='gray', label='Cumulative precipitation')]
+
+
+    ######################################################
+        
+    return legend_handles
+
+
+def plot_elninos(precipitation, legend_handles):
+    global elninos
+
+    cmap = plt.cm.bwr
+    colors = {'strong nino':[cmap(253), 'Strong El Niño'], 'strong nina':[cmap(3), 'Strong La Niña']}
+
+    end = precipitation['Decimal'].max()
+    ticks = int((precipitation['cumsum'].max() * 1.5) // 1)
+
+    for j in elninos:
+        if j == 'strong nino' or j == 'strong nina':
+            legend_handles += [mpatches.Patch(color=colors[j][0], label=colors[j][1])]
+
+            for i in range(len(elninos[j])):
+                if elninos[j][i][0] <= end:
+                    x1 = elninos[j][i][0]
+
+                    if elninos[j][i][1] > end:
+                        x2 = end
+
+                    else:
+                        x2 = elninos[j][i][1]
+
+                    plt.plot([x1, x2], [ticks - .125, ticks - .125], color=colors[j][0], alpha=1.0, linewidth=6)
+
+    return legend_handles

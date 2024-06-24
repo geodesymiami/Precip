@@ -10,7 +10,9 @@ import subprocess
 import time
 import netCDF4 as nc
 from precip.helper_functions import ask_user
-from precip.config import json_download_url, final06, final07
+from precip.config import json_download_url, final06, final07, pathJetstream
+import paramiko
+import tempfile
 
 
 def crontab_volcano_json(json_path, json_download_url=json_download_url):
@@ -155,9 +157,21 @@ def dload_site_list_parallel(folder, date_list):
     #     check_nc4_files(folder)    
 
 
-def check_nc4_files(folder):
-    # Get a list of all .nc4 files in the directory
-    files = [folder + '/' + f for f in os.listdir(folder) if f.endswith('.nc4')]
+def check_nc4_files(folder, ssh):
+    files = []
+
+    if ssh:
+        stdin, stdout, stderr = ssh.exec_command(f'ls {pathJetstream}')
+        files = stdout.read().decode().splitlines()
+
+        client = ssh.open_sftp()
+
+    else:
+        # Get a list of all .nc4 files in the directory
+        files = [folder + '/' + f for f in os.listdir(folder) if f.endswith('.nc4')]
+
+        client = None
+        
     corrupted_files = []
     print('Checking for corrupted files...')
 
@@ -166,13 +180,33 @@ def check_nc4_files(folder):
         try:
             # Try to open the file with netCDF4
             print(f"\rChecking file: {file}", end="")
-            ds = nc.Dataset(file)
+
+            if client is not None:
+                remote_file_path = pathJetstream + file
+
+                with tempfile.NamedTemporaryFile(suffix='.nc4', delete=True) as tmp:
+
+                    # Download the file to your local system
+                    client.get(remote_file_path, tmp.name)
+
+                    # Open the NetCDF file
+                    ds = nc.Dataset(tmp.name)
+
+            else:
+                ds = nc.Dataset(file)
+
             ds.close()
 
         except:
             print(f"File is corrupted: {file}")
-            # Delete the corrupted file
-            os.remove(file)
+
+            if client is not None:
+                client.remove(remote_file_path)
+            
+            else:
+                # Delete the corrupted file
+                os.remove(file)
+
             print(f"Corrupted file has been deleted: {file}")
             corrupted_files.append(file)
 
@@ -186,9 +220,84 @@ def check_nc4_files(folder):
             d = re.search('\d{8}', f)
             date_list.append(datetime.strptime(d.group(0), "%Y%m%d").date())
 
-        dload_site_list_parallel(folder, date_list)
+        if client is not None:
+            download_jetstream(date_list, ssh)
+        
+        else:
+            dload_site_list_parallel(folder, date_list)
 
     else:
         print('No corrupted files found')
 
     print('All files have been checked')
+
+
+def download_jetstream(date_list, ssh):
+    # Define the URL of the file you want to download
+    urls = generealte_urls_list(date_list)
+
+    # Download the file using the wget command
+    for url in urls:
+        filename = url.split('/')[-1]
+        complete_file_path = os.path.join(pathJetstream, filename)
+
+        # Check if the file already exists on the server
+        stdin, stdout, stderr = ssh.exec_command(f'ls {complete_file_path}')
+
+        # Wait for the command to finish
+        stdout.channel.recv_exit_status()
+
+        if stdout.read().decode():
+            print(f"\rFile {filename} already exists, skipping download. ", end="")
+            # time.sleep(0.001)
+            continue
+
+        print(f"Starting download of {url} ")
+        attempts = 0
+
+        while attempts < 3:
+            try:
+                stdin, stdout, stderr = ssh.exec_command(f'wget -O {complete_file_path} {url}')
+                exit_status = stdout.channel.recv_exit_status()  # Wait for the command to finish
+
+                if exit_status == 0:
+                    print(f"Finished download of {url} ")
+                else:
+                    raise Exception(stderr.read().decode())
+
+                break
+
+            except Exception as e:
+                attempts += 1
+                print(f"Download attempt {attempts} failed for {url}. Retrying... Error: {str(e)}")
+                time.sleep(1)
+                
+        else:
+            print(f"Failed to download {url} after {attempts} attempts. Exiting...")
+            sys.exit(1)
+
+    # Close the SSH client
+    ssh.close()
+
+
+def connect_jetstream():
+    # Create a new SSH client“
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    hostname = '149.165.154.65'
+    username = 'exouser'
+    path_id_rsa = os.getenv('HOME') + '/.ssh/id_rsa'
+
+    ssh_key = path_id_rsa + '_jetstream' if os.path.exists(path_id_rsa + '_jetstream') else path_id_rsa
+
+    try:
+        # Connect to the server
+        ssh.connect(hostname=hostname, username=username, key_filename=ssh_key)
+
+    except Exception as e:
+        
+        print(f"Failed to connect to the server: {e}")
+        return None
+
+    return ssh

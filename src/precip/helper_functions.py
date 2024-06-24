@@ -7,16 +7,19 @@ import threading
 import math
 from matplotlib import cm
 from matplotlib import patches as mpatches
+import netCDF4 as nc
+from netCDF4 import Dataset
+import re
+import tempfile
+from precip.config import pathJetstream
+import os
 
-
+# TODO maybe delete this function 
 def data_preload(rainfall, roll_count, color_count):
 
     # Creates a dataframe for rainfall, with new columns 'Decimal', 'roll', and 'cumsum' for 
     # decimal date, rolling sum, and cumulative sum respectively.
     volc_rain = volcano_rain_frame(rainfall, roll_count)
-
-    start = int(volc_rain['Decimal'].min() // 1)
-    end = int((volc_rain['Decimal'].max() // 1)+1)
 
     colors = color_scheme(color_count)
     quantile = quantile_name(color_count)
@@ -27,7 +30,7 @@ def data_preload(rainfall, roll_count, color_count):
     else:
         legend_handles = []
 
-    return volc_rain, colors, quantile, legend_handles, start, end
+    return volc_rain, colors, legend_handles
 
 
 def date_to_decimal_year(date_str):
@@ -56,7 +59,14 @@ def date_to_decimal_year(date_str):
 
     year = date_obj.year
     day_of_year = date_obj.timetuple().tm_yday
-    decimal_year = year + (day_of_year - 1) / 365.0
+
+    # Check if it's a leap year
+    if (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0):
+        days_in_year = 366.0
+    else:
+        days_in_year = 365.0
+
+    decimal_year = year + (day_of_year - 1) / days_in_year
     decimal_year = round(decimal_year, 4)
     return decimal_year
 
@@ -170,15 +180,29 @@ def weekly_monthly_yearly_precipitation(dictionary, time_period=None):
         KeyError: If the 'Precipitation' field is not found in the dictionary.
     """
     m_y = [28,29,30,31,365]
-    df = pd.DataFrame.from_dict(dictionary)
-    df['Date'] = pd.to_datetime(df['Date'])
-    df['Date_copy'] = df['Date']  # Create a copy of the 'Date' column
-    df.set_index('Date_copy', inplace=True)
-    # df.set_index('Date', inplace=True)
-    # print(df)
+
+    if isinstance(dictionary, dict):
+        df = pd.DataFrame.from_dict(dictionary)
+
+    else:
+        df = dictionary
+
+    if df['Date'].dtype == str:
+        df['Date'] = pd.to_datetime(df['Date'])
+
+    df.set_index('Date', inplace=True)
 
     if 'Precipitation' in df:
-        if time_period is None or time_period=='D':
+        if time_period:
+            # Resample the data by the time period and calculate the mean
+            print('Averaging the precipitation data...')
+            precipitation = df.resample(time_period[0]).mean()
+            precipitation.reset_index(inplace=True)
+            print('-------------------------------------------------------')
+
+            return precipitation
+    
+        elif len(df) not in m_y:
             # Calculate the mean of the 'Precipitation' column
             print('Calculating the cumulative precipitation...')
             cumulative_precipitation = df['Precipitation'].cumsum().sum()
@@ -186,13 +210,6 @@ def weekly_monthly_yearly_precipitation(dictionary, time_period=None):
             
             return cumulative_precipitation
         
-        else:
-            # Resample the data by the time period and calculate the mean
-            print('Averaging the precipitation data...')
-            precipitation = df.resample(time_period[0]).mean()
-            print('-------------------------------------------------------')
-
-            return precipitation
         
     else:
         raise KeyError('Error: Precipitation field not found in the dictionary')
@@ -218,7 +235,7 @@ def generate_date_list(start, end=None, average='M'):
         ValueError: If the start or end date is not in a valid format.
 
     """
-    
+
     if average:
         if isinstance(average, tuple) or isinstance(average, list):
             average = average[0]
@@ -255,22 +272,73 @@ def generate_date_list(start, end=None, average='M'):
             edate = end
 
     elif end is None:
-        if average == 'M':
-            sdate = datetime(sdate.year, sdate.month, 1).date()
-            edate = datetime(sdate.year, sdate.month, days_in_month(sdate)).date()
-        
+        if average == 'M':            
+            if sdate.day == 1:
+                edate = datetime(sdate.year, sdate.month, days_in_month(sdate)).date()
+
+            else:
+                edate = sdate + relativedelta(days=30)
+
         elif average == 'Y':
-            sdate = datetime(sdate.year, 1, 1).date()
-            edate = datetime(sdate.year, 12, 31).date()
+            sdate = datetime.strptime(start,'%Y%m%d').date()
+            edate = sdate + relativedelta(days=365)
 
     if edate >= datetime.today().date():
         edate = datetime.today().date() - relativedelta(days=1)
 
     # Create a date range with the input dates, from start_date to end_date
     date_list = pd.date_range(start=sdate, end=edate).date
+
     print('Generated date list ranging from', sdate, 'to', edate, 'containing', len(date_list), 'days')
 
     return date_list
+
+
+def process_file(file, date_list, lon, lat, longitude, latitude, client):
+    """
+    Process a file and extract a subset of precipitation data based on given coordinates.
+
+    Args:
+        file (str): The file path of the NetCDF file to be processed.
+        date_list (list): A list of dates to filter the data.
+        lon (numpy.ndarray): 1D array of longitudes.
+        lat (numpy.ndarray): 1D array of latitudes.
+        longitude (tuple): A tuple containing the minimum and maximum longitude values for the subset.
+        latitude (tuple): A tuple containing the minimum and maximum latitude values for the subset.
+
+    Returns:
+        tuple: A tuple containing the date as a string and the subset of precipitation data as a numpy array.
+               Returns None if the date is not in the date_list or if the file cannot be opened.
+    """
+
+    # Extract date from file name
+    d = re.search('\d{8}', file)
+    date = datetime.strptime(d.group(0), "%Y%m%d").date()
+
+    if date not in date_list:
+        return None
+
+    if client is not None:
+        with tempfile.NamedTemporaryFile(suffix='.nc4', delete=True) as tmp:
+            remote_file_path = pathJetstream + file
+            
+            # Download the file to your local system
+            client.get(remote_file_path, tmp.name)
+
+            # Open the NetCDF file
+            ds = nc.Dataset(tmp.name)
+
+    else:
+        ds = nc.Dataset(file)
+
+    data = ds['precipitationCal'] if 'precipitationCal' in ds.variables else ds['precipitation']
+
+    subset = data[:, np.where(lon == longitude[0])[0][0]:np.where(lon == longitude[1])[0][0]+1, np.where(lat == latitude[0])[0][0]:np.where(lat == latitude[1])[0][0]+1]
+    subset = subset.astype(float)
+
+    ds.close()
+
+    return (str(date), subset)
 
 
 def ask_user(operation):
@@ -404,6 +472,9 @@ def volcano_rain_frame(rainfall, roll_count, lon=None, lat=None, centered=False,
         if cumsum == True:
             volc_rain['cumsum'] = volc_rain.Precipitation.cumsum()
 
+    if 'Date' in volc_rain.columns:
+        volc_rain['Date'] = pd.to_datetime(volc_rain['Date'])
+        
     return volc_rain
 
 
@@ -426,3 +497,35 @@ def from_nested_to_float(dataframe):
             continue
 
     return dataframe
+
+
+def adapt_events(eruption_dates, date_list):
+    # Find the closest dates in the second list for each date in the first list
+    
+    if not isinstance(eruption_dates, list):
+        eruption_dates = list(eruption_dates)
+
+    valid_eruption_dates = []
+
+    for i in range(len(eruption_dates)):
+        # TODO remember this was a test
+        eruption_date = pd.Timestamp(eruption_dates[i]).normalize()
+
+        if eruption_date < date_list[0]:
+            continue
+
+        for j in range(len(date_list)):
+            try:
+                if date_list[j] <= eruption_date < date_list[j+1]:
+                    valid_eruption_dates.append(date_list[j])
+                    break
+
+            except:
+                # Only add the date to valid_eruption_dates if it's not greater than the last date in date_list
+                if eruption_date <= date_list[j]:
+                    valid_eruption_dates.append(date_list[j])
+                
+                else:
+                    print(f'Removing {eruption_dates} from the list of eruptions. Out of range')
+
+    return valid_eruption_dates
