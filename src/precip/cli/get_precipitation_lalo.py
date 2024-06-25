@@ -167,7 +167,10 @@ def create_parser():
     parser.add_argument('--save',
                         nargs='*',
                         metavar=('FOLDERNAME'),
-                        help='Save the plot')  
+                        help='Save the plot')
+    parser.add_argument('--no-show',
+                        action='store_true',
+                        help='Do not show the plot')
     # TODO later
     parser.add_argument('--setup',
                     help='Setup environment')
@@ -497,10 +500,12 @@ from precip.plotter_functions import bar_plotter_2, plot_elninos
 from matplotlib import pyplot as plt
 
 date_list = generate_date_list('20000601', '20010101')
+date_list = generate_date_list('20070101', '20160101')
+
 latitude, longitude = [7.55, 7.55], [110.45, 110.45]
 color_count = 3
-roll_count = 1
-eruption_dates = ['2000-06-04', '2001-06-01']
+roll_count = 90
+eruption_dates = ['2000-06-04', '2001-06-01', '2015-01-01', '2014-01-01']
 
 eruption_dates = [datetime.strptime(date_string, '%Y-%m-%d').date() for date_string in eruption_dates]
 
@@ -527,11 +532,16 @@ if False:
 
 eruption_dates = adapt_events(eruption_dates, precipitation['Date'])
 
-# Create a dictionary where the keys are the eruption dates and the values are the same
-eruption_dict = {date: date for date in eruption_dates}
+if eruption_dates != []:
 
-# Map the 'Date' column to the eruption dates
-precipitation['Eruptions'] = precipitation['Date'].map(eruption_dict)
+    # Create a dictionary where the keys are the eruption dates and the values are the same
+    eruption_dict = {date: date for date in eruption_dates}
+
+    # Map the 'Date' column to the eruption dates
+    precipitation['Eruptions'] = precipitation['Date'].map(eruption_dict)
+
+    # Convert to decimal year for plotting purposes
+    precipitation['Eruptions'] = precipitation.Eruptions.apply(date_to_decimal_year)
 
 ################################### DEFINE COLORS ###############################################################################################
 
@@ -581,8 +591,10 @@ if strength:
 
 legend_handles = bar_plotter_2(precipitation, strength, log, labels, legend_handles)
 
-if elnino:
+if elnino and not strength:
     legend_handles = plot_elninos(precipitation, legend_handles)
+
+legend_handles = plot_eruptions(precipitation, legend_handles, strength)
 
 plt.legend(handles=legend_handles, loc='upper left', fontsize='small')
 plt.tight_layout()

@@ -13,6 +13,7 @@ import re
 import tempfile
 from precip.config import pathJetstream
 import os
+from pandas import NaT
 
 # TODO maybe delete this function 
 def data_preload(rainfall, roll_count, color_count):
@@ -47,6 +48,9 @@ def date_to_decimal_year(date_str):
     >>> date_to_decimal_year('2022-01-01')
     2022.0
     """
+    if date_str is None or date_str is NaT:
+        return None
+    
     if type(date_str) == str:
         try:
             date_obj = datetime.strptime(date_str, '%Y-%m-%d')
@@ -63,11 +67,13 @@ def date_to_decimal_year(date_str):
     # Check if it's a leap year
     if (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0):
         days_in_year = 366.0
+        
     else:
         days_in_year = 365.0
 
     decimal_year = year + (day_of_year - 1) / days_in_year
     decimal_year = round(decimal_year, 4)
+
     return decimal_year
 
 
@@ -501,7 +507,6 @@ def from_nested_to_float(dataframe):
 
 def adapt_events(eruption_dates, date_list):
     # Find the closest dates in the second list for each date in the first list
-    
     if not isinstance(eruption_dates, list):
         eruption_dates = list(eruption_dates)
 
@@ -511,19 +516,19 @@ def adapt_events(eruption_dates, date_list):
         # TODO remember this was a test
         eruption_date = pd.Timestamp(eruption_dates[i]).normalize()
 
-        if eruption_date < date_list[0]:
+        if eruption_date < date_list.iloc[0]:
             continue
 
         for j in range(len(date_list)):
             try:
-                if date_list[j] <= eruption_date < date_list[j+1]:
-                    valid_eruption_dates.append(date_list[j])
+                if date_list.iloc[j] <= eruption_date < date_list.iloc[j+1]:
+                    valid_eruption_dates.append(date_list.iloc[j])
                     break
 
             except:
                 # Only add the date to valid_eruption_dates if it's not greater than the last date in date_list
-                if eruption_date <= date_list[j]:
-                    valid_eruption_dates.append(date_list[j])
+                if eruption_date <= date_list.iloc[j]:
+                    valid_eruption_dates.append(date_list.iloc[j])
                 
                 else:
                     print(f'Removing {eruption_dates} from the list of eruptions. Out of range')
