@@ -70,7 +70,7 @@ def prompt_subplots(inps, jsonVolcano):
         dload_site_list_parallel(gpm_dir, date_list)
         
         # Extract precipitation data
-        precipitation = create_map(inps.latitude, inps.longitude, date_list, gpm_dir)
+        precipitation = extract_precipitation(inps.latitude, inps.longitude, date_list, gpm_dir)
 
         # Average the precipitation data
         if inps.average in ['W', 'M', 'Y']:
@@ -328,7 +328,16 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
     return start_dates, coordinates
 
 
-def plot_eruptions(precipitation, legend_handles, strength):
+def plot_eruptions(precipitation, legend_handles, strength = False, axs = None):
+    if axs:
+        x = [i % 1 for i in precipitation['Eruptions']]  # Take the decimal part of the date i.e. 0.25
+        y = [(i // 1) + .5 for i in precipitation['Eruptions']]  # Take the integer part of the date i.e. 2020
+        scatter_size = 219000 // len(precipitation['Date'].unique())
+        eruption = axs.scatter(x, y, color='black', marker='v', s=scatter_size, label='Volcanic Events')
+        legend_handles.append(eruption)
+
+        return legend_handles
+    
     if strength:
         eruptions = precipitation[precipitation['Eruptions'].notna()].index
 
@@ -376,7 +385,7 @@ def interpolate_map(dataframe, resolution=5):
     return new_values
 
 
-def create_map(latitude, longitude, date_list, folder):
+def extract_precipitation(latitude, longitude, date_list, folder):
     """
     Creates a map of precipitation data for a given latitude, longitude, and date range.
 
@@ -444,15 +453,12 @@ def create_map(latitude, longitude, date_list, folder):
     df1 = pd.DataFrame(dictionary.items(), columns=['Date', 'Precipitation'])
     finaldf = pd.concat([finaldf, df1], ignore_index=True, sort=False)
 
-    # finaldf.sort_index()
-    # finaldf.sort_index(ascending=False)
-
     finaldf = finaldf.sort_values(by='Date', ascending=True)
     finaldf = finaldf.reset_index(drop=True)
 
     return finaldf
 
-
+# TODO to remove
 def bar_plotter(rainfall, colors,legend_handles , color_count=1, roll_count=1, eruptions=pd.DataFrame(), ninos=False, by_season=False, log_flag=True, time_period=None, title=None, strength=False):
     global elninos
 
@@ -587,7 +593,7 @@ def add_isolines(region, levels=0, inline=False):
     return plt
 
 
-def map_precipitation(precipitation_series, lo, la, date, colorbar, levels, vlim=None):
+def map_precipitation(precipitation_series, lo, la, date, colorbar, levels, labels, vlim=None):
     """
     Plot a map of precipitation.
 
@@ -646,13 +652,10 @@ def map_precipitation(precipitation_series, lo, la, date, colorbar, levels, vlim
 
     # TODO go back here to check the logic around averaging and cumulate precipitation
 
-    if len(date) in m_y:
-        cbar.set_label('mm/day')
+    cbar.set_label(labels['ylabel'])
+    plt.title(labels['title'])
 
-    else:
-        cbar.set_label(f'cumulative precipitation of {len(date)} days')
-
-
+# TODO to remove
 def plot_steps(inps, directory, event=None, average=None):
     """
     Plot the precipitation steps.
@@ -779,7 +782,7 @@ def annual_plotter(rainfall, color_count=1, roll_count=1, eruptions=pd.DataFrame
 
     # plt.show()
 
-    return 
+    return
 
 
 def bar_plotter_2 (precipitation, strength, log, labels, legend_handles):
@@ -830,31 +833,92 @@ def bar_plotter_2 (precipitation, strength, log, labels, legend_handles):
     return legend_handles
 
 
-def plot_elninos(precipitation, legend_handles):
+def plot_elninos(precipitation, legend_handles, axs=None):
     global elninos
 
     cmap = plt.cm.bwr
-    colors = {'strong nino':[cmap(253), 'Strong El Niño'], 'strong nina':[cmap(3), 'Strong La Niña']}
+    colors = {'strong nino': [cmap(253), 'Strong El Niño'], 'strong nina': [cmap(3), 'Strong La Niña']}
 
     end = precipitation['Decimal'].max()
     ticks = int((precipitation['cumsum'].max() * 1.5) // 1)
+    linewidth = 21900 // len(precipitation['Date'].unique())  # Extract the linewidth calculation to avoid repetition
 
-    for j in elninos:
-        if j == 'strong nino' or j == 'strong nina':
+    for j in ['strong nino', 'strong nina']:  # Directly iterate over the keys we're interested in
+        for x1, x2 in elninos[j]:  # Unpack the tuple in the loop
+            if x1 > end:
+                continue  # Skip this iteration if x1 is greater than end
 
-            for i in range(len(elninos[j])):
-                if elninos[j][i][0] <= end:
-                    x1 = elninos[j][i][0]
+            x2 = min(x2, end)  # Ensure x2 is not greater than end
 
-                    if elninos[j][i][1] > end:
-                        x2 = end
+            if axs:
+                y1, x1 = divmod(x1, 1)  # Split 2000.25 into 2000 and 0.25
+                y2, x2 = divmod(x2, 1)
 
-                    else:
-                        x2 = elninos[j][i][1]
+                if y1 == y2:
+                    axs.plot([x1, x2], [y1 - .17, y1 - .17], color=colors[j][0], alpha=1.0, linewidth=linewidth)
+                else:
+                    axs.plot([x1, 1.0022], [y1 - .17, y1 - .17], color=colors[j][0], alpha=1.0, linewidth=linewidth)
+                    axs.plot([-.0022, x2], [y2 - .17, y2 - .17], color=colors[j][0], alpha=1.0, linewidth=linewidth)
+            else:
+                plt.plot([x1, x2], [ticks - .125, ticks - .125], color=colors[j][0], alpha=1.0, linewidth=6)
 
-                    plt.plot([x1, x2], [ticks - .125, ticks - .125], color=colors[j][0], alpha=1.0, linewidth=6)
-
-                    if colors[j][1] not in [i.get_label() for i in legend_handles]:
-                        legend_handles += [mpatches.Patch(color=colors[j][0], label=colors[j][1])]
+            if colors[j][1] not in [i.get_label() for i in legend_handles]:
+                legend_handles.append(mpatches.Patch(color=colors[j][0], label=colors[j][1]))  # Use append instead of += for adding single elements
 
     return legend_handles
+
+
+def annual_plotter_2(precipitation, legend_handles, labels):
+    global elninos
+
+    first_date = precipitation['Decimal'].min()
+    last_date = precipitation['Decimal'].max() 
+
+    start = int(first_date // 1)
+    end = int(last_date // 1 + 1)
+
+    fig, axes = plt.subplots(1, 2, gridspec_kw={'width_ratios': [4, 1]}, figsize=(18, 13)) # to get plot of combined data 1960-2020, take length of figsize and apply-> // 1.5)
+    # plt.close()
+    ax0 = axes[0]
+    ax1 = axes[1]
+
+    # Plots rain by quantile, and if by_season is True, then also by year.
+    if False:
+        for i in range(color_count):
+            if by_season == True:
+                for j in range(start, end + 1):
+                    rain_by_year = volc_rain[volc_rain['Decimal'] // 1 == j].copy()
+                    rain_j = rain_by_year.sort_values(by=['roll'])
+                    dates_j = np.array([rain_j['Decimal']])
+                    bin_size = len(dates_j) // color_count
+                    x = dates_j % 1
+                    y = dates_j // 1
+                    ax0.scatter(x[i*bin_size:(i+1)*bin_size], y[i*bin_size:(i+1)*bin_size], color=colors[i], marker='s', s=(219000 // len(rainfall['Date'].unique())))
+    
+    x = precipitation['Decimal'] % 1
+    y = precipitation['Decimal'] // 1
+    ax0.scatter(x, y, color=precipitation['color'], marker='s', s=(219000 // len(precipitation['Date'].unique())))
+
+    ################### SIDEPLOT OF CUMULATIVE PER YEAR ###################
+        
+    totals = []
+    for year in range(start, end+1):
+        totals.append(precipitation['Precipitation'][precipitation['Decimal'] // 1 == year].sum())
+
+    ax1.barh(range(start, end+1), totals, height=.5, color='purple')
+
+    ########################################################################
+
+    # Set plot properties
+    ax0.set_yticks([start + (2*k) for k in range(((end + 2 - start) // 2))], [str(start + (2*k)) for k in range(((end + 2 - start) // 2))])
+    ax0.set_xticks([(1/24 + (1/12)*k) for k in range(12)], ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'])
+    ax0.set_xlabel("Month") 
+    ax0.set_ylabel("Year") 
+    ax0.set_title(labels['title']) 
+    ax0.legend(handles=legend_handles, fontsize='small')
+    ax1.set_title('Total (mm)') 
+    ax1.set_yticks([start + (2*k) for k in range(((end + 1 - start) // 2))], [str(start + (2*k)) for k in range(((end + 1 - start) // 2))])
+
+    # plt.show()
+
+    return legend_handles, axes[0]

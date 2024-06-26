@@ -230,6 +230,7 @@ def check_nc4_files(folder, ssh):
         print('No corrupted files found')
 
     print('All files have been checked')
+    print('-----------------------------------------------')
 
 
 def download_jetstream(date_list, ssh):

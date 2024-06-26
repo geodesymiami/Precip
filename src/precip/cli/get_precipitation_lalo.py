@@ -380,64 +380,6 @@ def parse_polygon(polygon):
     return latitude, longitude
 
 
-def parse_plot(plot, latitudes, longitudes, start_date=None, end_date=None):
-    """
-    Parses the plot parameters for precipitation data.
-
-    Args:
-        plot (list): The plot input parameters.
-        latitudes (list): The latitude values.
-        longitudes (list): The longitude values.
-        start_date (datetime, optional): The start date. Defaults to None.
-        end_date (datetime, optional): The end date. Defaults to None.
-
-    Returns:
-        list: The parsed plot parameters.
-    """
-    if len(plot) == 0: 
-            plot = [latitudes[0], longitudes[0], start_date, end_date]
-    
-    elif len(plot) == 1:
-        print("--plot-[daily, weekly, monthly, yearly] requires at least LATITUDE LONGITUDE arguments \n"
-                     " --plot-daily LATITUDE LONGITUDE arguments \n"
-                     " --plot-weekly --latitude LATITUDE -- longitude LONGITUDE \n"
-                     " START_DATE END_DATE are optional")
-        sys.exit(1)
-
-    elif len(plot) == 2:
-        if latitudes and longitudes:
-            plot = [latitudes[0], longitudes[0], datetime.strptime(plot[0], "%Y%m%d"), datetime.strptime(plot[1], "%Y%m%d")]
-
-        elif start_date and end_date:
-            plot = [parse_coordinates(plot[0]), parse_coordinates(plot[1]), start_date[0], end_date[0]]
-
-        else:
-            print("--plot-[daily, weekly, monthly, yearly] requires at least LATITUDE LONGITUDE arguments \n"
-                     " --plot-daily LATITUDE LONGITUDE arguments \n"
-                     " --plot-weekly --latitude LATITUDE -- longitude LONGITUDE \n"
-                     " START_DATE END_DATE are optional")
-            sys.exit(1)
-
-    elif len(plot) == 3:
-            print("--plot-[daily, weekly, monthly, yearly] requires at least LATITUDE LONGITUDE arguments \n"
-                     "Three arguments are ambiguous")
-            sys.exit(1)
-
-    elif len(plot) == 4:
-        try:
-            plot = [parse_coordinates(plot[0]), parse_coordinates(plot[1]), datetime.strptime(plot[2], "%Y%m%d"), datetime.strptime(plot[3], "%Y%m%d")]
-
-        except ValueError:
-            plot = [datetime.strptime(plot[0], "%Y%m%d"), datetime.strptime(plot[1], "%Y%m%d"), parse_coordinates(plot[2]), parse_coordinates(plot[3])]
-
-        except Exception as e:
-            print(e)
-            sys.exit(1)
-
-    return plot
-
-
-
 def parse_coordinates(coordinates):
     """
     Parse the given coordinates string and convert it into a list of floats.
@@ -499,34 +441,74 @@ from precip.plotter_functions import *
 from precip.plotter_functions import bar_plotter_2, plot_elninos
 from matplotlib import pyplot as plt
 
-date_list = generate_date_list('20000601', '20010101')
-date_list = generate_date_list('20070101', '20160101')
+date_list = generate_date_list('20000101', '20160101')
+# date_list = generate_date_list('20070101', '20160101')
 
+latitude, longitude = [7.55, 8.55], [110.45, 111.45]
 latitude, longitude = [7.55, 7.55], [110.45, 110.45]
 color_count = 3
-roll_count = 90
-eruption_dates = ['2000-06-04', '2001-06-01', '2015-01-01', '2014-01-01']
+roll_count = 1
+eruption_dates = ['2000-06-04', '2001-06-01', '2008-01-01', '2014-01-01']
 
-eruption_dates = [datetime.strptime(date_string, '%Y-%m-%d').date() for date_string in eruption_dates]
+title = 'Test'
+time_period = 'D'
+cumulate = False
+log = False
+strength = False
+elnino = True
+annual = False
 
-precipitation = create_map(latitude, longitude, date_list, '/Users/giacomo/onedrive/scratch/gpm_data')
+if time_period == 'daily' or time_period == 'bar' or strength == True:
+    ylabel = str(roll_count) + " day precipitation (mm)"
 
-precipitation = volcano_rain_frame(precipitation, roll_count)
-
-colors = color_scheme(color_count)
-
-quantile = quantile_name(color_count)
-
-if color_count > 1:
-    legend_handles = [mpatches.Patch(color=colors[i], label=quantile + str(i+1)) for i in range(color_count)]
+elif cumulate == True:
+    ylabel = f"Cumulative precipitation in mm over {len(date_list)} days"
 
 else:
-    legend_handles = []
+    ylabel = f" {time_period} precipitation (mm)"
+
+##################### NAMING #####################
+   
+labels = {'title': title,
+          'ylabel': ylabel,
+          'y2label': 'Cumulative precipitation'}
+
+##################################################
+
+precipitation = extract_precipitation(latitude, longitude, date_list, '/Users/giacomo/onedrive/scratch/gpm_data')
+
+if True: # Map case
+    eruption_dates = [datetime.strptime(date_string, '%Y-%m-%d').date() for date_string in eruption_dates]
+
+    precipitation = volcano_rain_frame(precipitation, roll_count)
+
+    colors = color_scheme(color_count)
+
+    quantile = quantile_name(color_count)
+
+    if color_count > 1:
+        legend_handles = [mpatches.Patch(color=colors[i], label=quantile + str(i+1)) for i in range(color_count)]
+
+    else:
+        legend_handles = []
 
 ################################# SPECIFIC ##################################
 
 if False:
-    precipitation = weekly_monthly_yearly_precipitation(precipitation, 'D') #
+    precipitation = weekly_monthly_yearly_precipitation(precipitation) 
+
+#############################################################################
+    
+############################ MAP ############################################
+
+if False:    
+    precipitation = interpolate_map(precipitation, 1)
+
+    map_precipitation(precipitation, longitude, latitude, date_list, 'viridis', 1, labels, vlim=None)
+
+    plt.show()
+
+    sys.exit(0)
 
 #############################################################################
 
@@ -553,26 +535,6 @@ precipitation['color'] = precipitation['color'].map(lambda x: colors[x])
 
 #################################################################################################################################################
 
-log = False
-strength = False
-elnino = True
-title = 'Test'
-time_period = 'daily'
-
-if time_period == 'daily' or time_period == 'bar' or strength == True:
-    ylabel = str(roll_count) + " day precipitation (mm)"
-
-else:
-   ylabel = f" {time_period} precipitation (mm)"
-
-##################### NAMING #####################
-   
-labels = {'title': title,
-          'ylabel': ylabel,
-          'y2label': 'Cumulative precipitation'}
-
-##################################################
-
 ##################### SPECIFIC ######################
 
 precipitation = from_nested_to_float(precipitation) #
@@ -589,12 +551,20 @@ if strength:
 
 ##########################################################
 
-legend_handles = bar_plotter_2(precipitation, strength, log, labels, legend_handles)
+if False:
+    legend_handles = bar_plotter_2(precipitation, strength, log, labels, legend_handles)
+
+if True:
+    legend_handles, axs = annual_plotter_2(precipitation, legend_handles, labels)
+
+else:
+    axs = None
 
 if elnino and not strength:
-    legend_handles = plot_elninos(precipitation, legend_handles)
+    legend_handles = plot_elninos(precipitation, legend_handles, axs)
 
-legend_handles = plot_eruptions(precipitation, legend_handles, strength)
+if True:
+    legend_handles = plot_eruptions(precipitation, legend_handles, strength, axs)
 
 plt.legend(handles=legend_handles, loc='upper left', fontsize='small')
 plt.tight_layout()

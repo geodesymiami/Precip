@@ -171,7 +171,7 @@ def adapt_coordinates(latitude, longitude):
     return latitude, longitude
 
 
-def weekly_monthly_yearly_precipitation(dictionary, time_period=None):
+def weekly_monthly_yearly_precipitation(dictionary, time_period=None, cumulate=False):
     """
     Resamples the precipitation data in the given dictionary by the specified time period.
 
@@ -208,13 +208,21 @@ def weekly_monthly_yearly_precipitation(dictionary, time_period=None):
 
             return precipitation
     
-        elif len(df) not in m_y:
-            # Calculate the mean of the 'Precipitation' column
+        elif cumulate:
+            # Calculate the total of the 'Precipitation' column
             print('Calculating the cumulative precipitation...')
             cumulative_precipitation = df['Precipitation'].cumsum().sum()
             print('-------------------------------------------------------')
-            
+
             return cumulative_precipitation
+
+        elif not cumulate:
+            # Calculate the mean of the 'Precipitation' column
+            print('Calculating the average precipitation...')
+            average = df['Precipitation'].cumsum().sum()/len(df)
+            print('-------------------------------------------------------')
+            
+            return average
         
         
     else:
