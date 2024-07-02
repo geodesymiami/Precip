@@ -82,12 +82,11 @@ def prompt_subplots(inps):
         if inps.use_ssh:
             ssh = connect_jetstream()
 
-        # Moved in sql_extract_precipitation
-        # if ssh:
-        #     download_jetstream(date_list, ssh)
+        if ssh:
+            download_jetstream(date_list, ssh)
 
-        # else:
-        #     dload_site_list_parallel(gpm_dir, date_list)
+        else:
+            dload_site_list_parallel(gpm_dir, date_list)
         
         # Extract precipitation data
         precipitation = sql_extract_precipitation(inps.latitude, inps.longitude, date_list, gpm_dir, ssh)
