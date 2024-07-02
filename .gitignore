@@ -161,3 +161,4 @@ cython_debug/
 .dodsrc
 .vscode
 .vscode/launch.json
+volcanoes.db

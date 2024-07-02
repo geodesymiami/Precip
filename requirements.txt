@@ -7,3 +7,5 @@ geopandas
 argparse
 numpy
 matplotlib
+paramiko
+fuzzywuzzy

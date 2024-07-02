@@ -1,60 +1,47 @@
 #!/usr/bin/env python3
 
 import sys
-import numpy as np
-import pandas as pd
-from matplotlib import pyplot as plt
 import os
-from datetime import datetime, date
+from datetime import datetime
 import argparse
 from dateutil.relativedelta import relativedelta
 import sys
 from precip.plotter_functions import prompt_subplots
-from precip.config import jsonVolcano, workDir
+from precip.config import *
 
-EXAMPLE = """
-!WARNING for negative values you may need to use the following format: 
-
---latitude=-10
---latitude=-10.5:-9.5
-
+EXAMPLE = f"""
 Date format: YYYYMMDD
 
 Example:
+
+  Create a bar plot with a rolling average of 30 days, 3 bins (colors divided by ascending values), on a log scale for the precipitation data of Merapi volcano (if eruptions are included in the date range, they will be plotted), default start date is {startDate} and default end date is {endDate}:
+    get_precipitation_lalo.py Merapi --style bar --roll 30 --bins 3 --log
+
+  Create a bar plot ordered by strength for the precipitation data of a specific location at a given date range and save (If path not specified, the data will be downloaded either in $WORKDIR or $HOME directory + /precip_products):
+    get_precipitation_lalo.py --style strength --lalo 19.5:-156.5 ---period 20190101:20210929 --save
+
+  Create a 'Line' plot for the precipitation data of a specific location at a given date range ordered by year, with a rolling average of 10 days and 2 binsand add 2 events to the time series:
+    get_precipitation_lalo.py --style annual --start-date 20190101 --end-date 20210929 --latitude 19.5 --longitude -156.5 --roll 10 --bins 2 --add-event 20200929 20210929
+
+  Add single events and el niño/niña events to the time series:
+    get_precipitation_lalo.py --style strength --lalo 19.5:-156.5 ---period 20190101:20210929 --add-event 20200929 20210929 --ninos
+
+  Create a map plot for the precipitation data of a specific location at a given date range:
+    get_precipitation_lalo.py --style map --end-date 20210929 --polygon 'POLYGON((113.4496 -8.0893,113.7452 -8.0893,113.7452 -7.817,113.4496 -7.817,113.4496 -8.0893))'
+
+  Add limit to the scale of the colorbar and colorbar style:
+    get_precipitation_lalo.py --style map --end-date 20210929 --lalo 19.5:20.5,-155.5:-156.5 --vlim -3 3 --colorbar 'RdBu'
+
+  Download the precipitation data:
+    get_precipitation_lalo.py --download
+
+    get_precipitation_lalo.py --download 20190101 20210929 --dir '/home/user/Downloads'
   
-  get_precipitation_lalo.py --plot-daily 19.5 -156.5 20190101 20210929
-  get_precipitation_lalo.py --plot-daily 19.5 -156.5 --start-date 20190101 --end-date 20210929
-  get_precipitation_lalo.py --plot-daily --lalo 19.5:-156.5 20190101 20210929
-  get_precipitation_lalo.py --plot-daily --lalo 19.5:-156.5 ---period 20190101:20210929
-  get_precipitation_lalo.py --plot-daily --lalo 19.5,-156.5 ---period 20190101,20210929
-  get_precipitation_lalo.py --plot-daily 20190101 20210929 --latitude 19.5 --longitude -156.5
-  get_precipitation_lalo.py --plot-daily 20190101 20210929 --latitude=19.5 --longitude=-156.5
-  get_precipitation_lalo.py --plot-daily 20190101 20210929 --polygon 'POLYGON((113.4496 -8.0893,113.7452 -8.0893,113.7452 -7.817,113.4496 -7.817,113.4496 -8.0893))'
+  List all the volcanoes:
+    get_precipitation_lalo.py --list
 
-  get_precipitation_lalo.py --download
-  get_precipitation_lalo.py --download 20190101 20210929
-  get_precipitation_lalo.py --period 20190101:20210929
-  get_precipitation_lalo.py --download 20190101 20210929 --dir '/home/user/Downloads'
-
-  get_precipitation_lalo.py --volcano 'Cerro Azul'
-  
-  get_precipitation_lalo.py --list
-
-  get_precipitation_lalo.py --heatmap 20000601 --latitude=-2.11:2.35 --longitude=-92.68:-88.49
-  get_precipitation_lalo.py --heatmap 20000601 --latitude 19.5:20.05 --longitude 156.5:158.05 --vlim 0 10
-  get_precipitation_lalo.py --heatmap 20000601 --latitude 19.5:20.05 --longitude 156.5:158.05 --vlim 0 10 --interpolate 5
-  get_precipitation_lalo.py --heatmap 20000601 --polygon 'POLYGON((113.4496 -8.0893,113.7452 -8.0893,113.7452 -7.817,113.4496 -7.817,113.4496 -8.0893))'
-  get_precipitation_lalo.py --heatmap 20000601 --latitude=-2.11:2.35 --longitude=-92.68:-88.49 --colorbar jet
-
-  TEMPORARY:
-  annual plotter:
-  get_precipitation_lalo.py --annual-plotter 'Mauna Loa' --period 20200101:20221231
-
-  bar plotter:
-  get_precipitation_lalo.py --bar-plotter 'Mauna Loa' --period 20200101:20221231
-
-  by strength:
-  get_precipitation_lalo.py --strength 'Mauna Loa' --period 20200101:20221231
+  Check if the files are corrupted:
+    get_precipitation_lalo.py --check
 
 """
 
@@ -69,35 +56,18 @@ def create_parser():
         formatter_class=argparse.RawTextHelpFormatter,
         epilog=EXAMPLE)
     
+    parser.add_argument('positional', 
+                        nargs='*',
+                        help='Volcano name or coordinates')
     parser.add_argument('--download', 
-                        nargs='*', 
-                        metavar=('STARTDATE', 'ENDDATE'),
-                        default=None,
-                        help='Download data')
-    parser.add_argument('--volcano', 
-                        nargs=1, 
-                        metavar='NAME', 
-                        help='Plot eruption dates and precipitation levels')
-    parser.add_argument('--plot-daily', 
-                        nargs='*', 
-                        metavar=( 'LATITUDE, LONGITUDE, STARTDATE, ENDDATE'), 
-                        help='Bar plot with daily precipitation data')
-    parser.add_argument('--plot-weekly', 
-                        nargs='*', 
-                        metavar=( 'LATITUDE, LONGITUDE, STARTDATE, ENDDATE'), 
-                        help='Bar plot with weekly precipitation data')
-    parser.add_argument('--plot-monthly', 
-                        nargs='*', 
-                        metavar=( 'LATITUDE, LONGITUDE, STARTDATE, ENDDATE'), 
-                        help='Bar plot with monthly precipitation data')
-    parser.add_argument('--plot-yearly', 
-                        nargs='*', 
-                        metavar=( 'LATITUDE, LONGITUDE, STARTDATE, ENDDATE'), 
-                        help='Bar plot with yearly precipitation data')
-    parser.add_argument('--start-date', 
+                        action='store_true',
+                        help='Use ssh')
+    parser.add_argument('--start-date',
+                        nargs=1,
                         metavar='YYYYMMDD', 
                         help='Start date of the search')
-    parser.add_argument('--end-date', 
+    parser.add_argument('--end-date',
+                        nargs=1, 
                         metavar='YYYYMMDD', 
                         help='End date of the search')
     parser.add_argument('--period',
@@ -122,10 +92,6 @@ def create_parser():
                         nargs='*',
                         metavar=('YYYYMMDD, YYYY-MM-DD'),
                         help='Add event to the time series')
-    parser.add_argument('--heatmap', 
-                        nargs='+', 
-                        metavar=('DATE, use polygon or latitude/longitude args'), 
-                        help='Heat map of precipitation')
     parser.add_argument('--dir', 
                         nargs=1, 
                         metavar=('PATH'), 
@@ -141,16 +107,17 @@ def create_parser():
                         help='Poligon of the wanted area (Format from ASF Vertex Tool https://search.asf.alaska.edu/#/)')
     parser.add_argument('--interpolate',
                         nargs=1,
-                        metavar=('GRANULARITY'), 
+                        metavar=('GRANULARITY'),
+                        type=int, 
                         help='Interpolate data')
     parser.add_argument('--isolines',
                         nargs=1,
                         metavar=('LEVELS'),
                         help='Number of isolines to be plotted on the map')
     parser.add_argument('--average', 
-                        nargs=1, 
+                        choices=['D','W','M','Y'], 
                         metavar=('TIME_PERIOD'), 
-                        help='Average data')
+                        help='Average data, default is daily')
     parser.add_argument('--check', 
                         action='store_true', 
                         help='Check if the file is corrupted')
@@ -158,20 +125,44 @@ def create_parser():
                         nargs=1,
                         metavar=('COLORBAR'), 
                         help='Colorbar')
-    
-    # TODO Schifo da sistemare
-    parser.add_argument('--annual-plotter',
-                        nargs='*',
-                        metavar=('LATITUDE, LONGITUDE, STARTDATE, ENDDATE'),
-                        help='Annual plotter')  
-    parser.add_argument('--bar-plotter',
-                        nargs='*',
-                        metavar=('LATITUDE, LONGITUDE, STARTDATE, ENDDATE'),
-                        help='Bar plotter')
-    parser.add_argument('--strength',
+    parser.add_argument('--log', 
+                        action='store_true',
+                        help='Enable logaritmic scale')
+    parser.add_argument('--bins',
                         nargs=1,
-                        metavar=('STRENGTH'),
-                        help='Strength of the eruption')
+                        type=int,
+                        metavar=('BINS'),
+                        help='Number of bins for the histogram')
+    parser.add_argument('--roll',
+                        nargs=1,
+                        type=int,
+                        metavar=('ROLL'),
+                        help='Rolling average')
+    parser.add_argument('--ninos',
+                        action='store_true',
+                        help='Plot Nino/Nina events')
+    parser.add_argument('--name',
+                        nargs=1,
+                        type=str,
+                        metavar=('NAME'),
+                        help='Name of the volcano')
+    parser.add_argument('--style',
+                        choices=['daily','weekly','monthly','yearly','map','bar','annual','strength'],
+                        help='Choose plot type')
+    parser.add_argument('--save',
+                        nargs='*',
+                        metavar=('FOLDERNAME'),
+                        help='Save the plot')
+    parser.add_argument('--no-show',
+                        action='store_true',
+                        help='Do not show the plot')
+    parser.add_argument('--use-ssh',
+                        action='store_true',
+                        dest='use_ssh',
+                        help='Use ssh')
+    # TODO later
+    parser.add_argument('--setup',
+                    help='Setup environment')
 
     inps = parser.parse_args()
 
@@ -183,14 +174,66 @@ def create_parser():
     else:
         inps.dir = inps.dir[0]
 
+    if inps.save is not None:
+        if len(inps.save) == 0:
+            if prodDir in os.environ:
+                inps.save = (os.getenv(prodDir))
+
+            elif scratchDir in os.environ:
+                if os.path.exists(os.getenv(scratchDir) + '/precip_products'):
+                    inps.save = (os.getenv(scratchDir) + '/precip_products')
+
+                else:
+                    dir_path = os.path.join(os.getenv(scratchDir), 'precip_products')
+                    os.mkdir(dir_path)
+                    inps.save = dir_path
+
+            else:
+                if os.path.exists(os.getenv('HOME') + '/precip_products'):
+                    inps.save = (os.getenv('HOME') + '/precip_products')
+
+                else:
+                    dir_path = os.path.join(os.getenv('HOME'), 'precip_products')
+                    os.mkdir(dir_path)
+                    inps.save = dir_path
+
+
+        elif len(inps.save) == 1:
+            inps.save = inps.save[0] 
+
+    ############################ POSITIONAL ARGUMENTS ############################
+            
+    if len(inps.positional) == 1:
+
+        # Unfortunately this can never work if we pass the coordinates since negative numbers are viewed as options
+        if any(char.isdigit() for char in inps.positional):
+            if 'POLYGON' in inps.positional:
+                inps.latitude, inps.longitude = parse_polygon(inps.positional[0])
+
+            else:
+                coordinates = parse_coordinates(inps.positional[0])
+                inps.latitude = parse_coordinates(coordinates[0])
+                inps.longitude = parse_coordinates(coordinates[1])
+
+        else:
+            inps.name = inps.positional
+    # Same issue here
+    if len(inps.positional) == 2:
+        inps.latitude = parse_coordinates(inps.positional[0])
+
+        inps.longitude = parse_coordinates(inps.positional[1])
+
+    ###############################################################################
+                
     if not inps.period:
-        inps.start_date = datetime.strptime(inps.start_date[0], '%Y%m%d').date() if inps.start_date else datetime.strptime('20000601', '%Y%m%d').date()
-        inps.end_date = datetime.strptime(inps.end_date[0], '%Y%m%d').date() if inps.end_date else datetime.today().date() - relativedelta(days=1)
+        inps.start_date = datetime.strptime(inps.start_date[0], '%Y%m%d').date() if inps.start_date else datetime.strptime(startDate, '%Y%m%d').date()
+        #End date subject to variations, check for alternatives on config.py
+        inps.end_date = datetime.strptime(inps.end_date[0], '%Y%m%d').date() if inps.end_date else datetime.strptime(endDate, '%Y%m%d').date()
 
     else:
         if ':' in inps.period:
             dates = inps.period.split(':')
-
+        # TODO not sure if this is to be removed
         elif ',' in inps.period:
             dates = inps.period.split(',')
 
@@ -199,21 +242,6 @@ def create_parser():
 
         inps.start_date = datetime.strptime(dates[0], '%Y%m%d').date()
         inps.end_date = datetime.strptime(dates[1], '%Y%m%d').date()
-
-    if inps.download is None:
-        pass
-
-    elif len(inps.download) == 0:
-        inps.download = datetime.strptime('20000601', '%Y%m%d').date(), (datetime.today().date() - relativedelta(days=1))
-
-    elif len(inps.download) == 1:
-        inps.download = inps.download[0], (datetime.today().date() - relativedelta(days=1))
-
-    elif len(inps.download) == 2:
-        inps.download = [datetime.strptime(inps.download[0], '%Y%m%d').date(), datetime.strptime(inps.download[1], '%Y%m%d').date()]
-
-    else:
-        parser.error("--download requires 0, 1 or 2 arguments")
 
     if not inps.polygon:
         
@@ -239,98 +267,73 @@ def create_parser():
 
         if inps.lalo:
             coordinates = parse_coordinates(inps.lalo[0])
-            inps.latitude = [coordinates[0], coordinates[0]]
-            inps.longitude = [coordinates[1], coordinates[1]]
+            inps.latitude = parse_coordinates(coordinates[0])
+            inps.longitude = parse_coordinates(coordinates[1])
 
     else:
             inps.latitude, inps.longitude = parse_polygon(inps.polygon)
 
-    if inps.plot_daily is not None:
-        inps.plot_daily = parse_plot(inps.plot_daily, inps.latitude, inps.longitude, inps.start_date, inps.end_date)
+    if inps.style == 'weekly':
+        inps.average = 'W'
 
-    if inps.plot_weekly is not None:
-        inps.plot_weekly = parse_plot(inps.plot_weekly, inps.latitude, inps.longitude, inps.start_date, inps.end_date)
+    elif inps.style == 'monthly':
+        inps.average = 'M'
 
-    if inps.plot_monthly is not None:
-        inps.plot_monthly = parse_plot(inps.plot_monthly, inps.latitude, inps.longitude, inps.start_date, inps.end_date)
+    elif inps.style == 'yearly':
+        inps.average = 'Y'
 
-    if inps.plot_yearly is not None:
-        inps.plot_yearly = parse_plot(inps.plot_yearly, inps.latitude, inps.longitude, inps.start_date, inps.end_date)    
+    elif inps.style == 'annual':
+        inps.average = 'D'
 
-    if inps.heatmap is not None:
-        if len(inps.heatmap) == 0:
-            if inps.end_date:
-                inps.heatmap = inps.start_date, inps.end_date
+    elif inps.style == 'map':
+        if inps.average:
+            inps.end_date = None
+
+        inps.add_event = None
             
-            else:
-                inps.heatmap = inps.start_date, None
+    else:
+        inps.average = 'D'
+    
+    if inps.add_event:
+        try:
+            inps.add_event = tuple(datetime.strptime(date_string, '%Y-%m-%d').date() for date_string in inps.add_event)
 
-        elif len(inps.heatmap) == 1:
+        except ValueError:
             try:
-                inps.heatmap = datetime.strptime(inps.heatmap[0], '%Y%m%d').date(), None
+                inps.add_event = tuple(datetime.strptime(date_string, '%Y%m%d').date() for date_string in inps.add_event)
 
             except ValueError:
-                print('Error: Date format not valid, if only 1 argument is given, it must be in the format YYYYMMDD')
+                print('Error: Date format not valid, it must be in the format YYYYMMDD or YYYY-MM-DD')
                 sys.exit(1)
 
-        elif len(inps.heatmap) == 2:
-            try:
-                inps.heatmap = datetime.strptime(inps.heatmap[0], '%Y%m%d').date(), datetime.strptime(inps.heatmap[1], '%Y%m%d').date()
-                
-                if inps.heatmap[1]:
-                    inps.average = None
-            
-            except ValueError:
-                print('Error: Date format not valid, if only 1 argument is given, it must be in the format YYYYMMDD')
-                sys.exit(1)
-     
-        else:
-            parser.error("--heatmap requires 0, 1 or 2 arguments")
+
+    if not inps.bins:
+        inps.bins = 1
+
+    else:
+        if inps.bins[0] > 4:
+            inps.bins[0] = 4
+
+        inps.bins = inps.bins[0]
+
+    if not inps.roll:
+        inps.roll = 1
+
+    else:
+        inps.roll = inps.roll[0]
+
+    if not inps.ninos:
+        inps.ninos = False
+
+    # TODO check if is better to use true as default value
+    if not inps.log:
+        inps.log = False
 
     if not inps.colorbar:
         inps.colorbar = 'viridis'
 
-    ####################### TODO to format #######################
-    if inps.annual_plotter is not None:
-        if len(inps.annual_plotter) == 0:
-            parser.error("--annual-plotter requires at least VOLCANO")
-
-        elif len(inps.annual_plotter) == 1:
-            inps.annual_plotter = inps.annual_plotter[0], 3, 3, inps.start_date, inps.end_date
-
-        elif len(inps.annual_plotter) == 2:
-            inps.annual_plotter = inps.annual_plotter[0], int(inps.annual_plotter[1]), 3, inps.start_date, inps.end_date
-
-        elif len(inps.annual_plotter) == 3:
-            inps.annual_plotter = inps.annual_plotter[0], int(inps.annual_plotter[1]), int(inps.annual_plotter[2]), inps.start_date, inps.end_date
-
-    if inps.bar_plotter is not None:
-        if len(inps.bar_plotter) == 0:
-            parser.error("--bar-plotter requires at least VOLCANO")
-
-        elif len(inps.bar_plotter) == 1:
-            inps.bar_plotter = inps.bar_plotter[0], 3, 3, inps.start_date, inps.end_date
-
-        elif len(inps.bar_plotter) == 2:
-            inps.bar_plotter = inps.bar_plotter[0], int(inps.bar_plotter[1]), 3, inps.start_date, inps.end_date
-
-        elif len(inps.bar_plotter) == 3:
-            inps.bar_plotter = inps.bar_plotter[0], int(inps.bar_plotter[1]), int(inps.bar_plotter[2]), inps.start_date, inps.end_date
-
-    if inps.strength is not None:
-        if len(inps.strength) == 0:
-            parser.error("--strength requires at least VOLCANO")
-
-        elif len(inps.strength) == 1:
-            inps.strength = inps.strength[0], 3, 3, inps.start_date, inps.end_date
-
-        elif len(inps.strength) == 2:
-            inps.strength = inps.strength[0], int(inps.strength[1]), 3, inps.start_date, inps.end_date
-
-        elif len(inps.strength) == 3:
-            inps.strength = inps.strength[0], int(inps.strength[1]), int(inps.strength[2]), inps.start_date, inps.end_date
-
-    ####################### END to format #######################
+    if inps.interpolate:
+        inps.interpolate = inps.interpolate[0]
 
     return inps
 
@@ -364,64 +367,6 @@ def parse_polygon(polygon):
     return latitude, longitude
 
 
-def parse_plot(plot, latitudes, longitudes, start_date=None, end_date=None):
-    """
-    Parses the plot parameters for precipitation data.
-
-    Args:
-        plot (list): The plot input parameters.
-        latitudes (list): The latitude values.
-        longitudes (list): The longitude values.
-        start_date (datetime, optional): The start date. Defaults to None.
-        end_date (datetime, optional): The end date. Defaults to None.
-
-    Returns:
-        list: The parsed plot parameters.
-    """
-    if len(plot) == 0: 
-            plot = [latitudes[0], longitudes[0], start_date, end_date]
-    
-    elif len(plot) == 1:
-        print("--plot-[daily, weekly, monthly, yearly] requires at least LATITUDE LONGITUDE arguments \n"
-                     " --plot-daily LATITUDE LONGITUDE arguments \n"
-                     " --plot-weekly --latitude LATITUDE -- longitude LONGITUDE \n"
-                     " START_DATE END_DATE are optional")
-        sys.exit(1)
-
-    elif len(plot) == 2:
-        if latitudes and longitudes:
-            plot = [latitudes[0], longitudes[0], datetime.strptime(plot[0], "%Y%m%d"), datetime.strptime(plot[1], "%Y%m%d")]
-
-        elif start_date and end_date:
-            plot = [parse_coordinates(plot[0]), parse_coordinates(plot[1]), start_date[0], end_date[0]]
-
-        else:
-            print("--plot-[daily, weekly, monthly, yearly] requires at least LATITUDE LONGITUDE arguments \n"
-                     " --plot-daily LATITUDE LONGITUDE arguments \n"
-                     " --plot-weekly --latitude LATITUDE -- longitude LONGITUDE \n"
-                     " START_DATE END_DATE are optional")
-            sys.exit(1)
-
-    elif len(plot) == 3:
-            print("--plot-[daily, weekly, monthly, yearly] requires at least LATITUDE LONGITUDE arguments \n"
-                     "Three arguments are ambiguous")
-            sys.exit(1)
-
-    elif len(plot) == 4:
-        try:
-            plot = [parse_coordinates(plot[0]), parse_coordinates(plot[1]), datetime.strptime(plot[2], "%Y%m%d"), datetime.strptime(plot[3], "%Y%m%d")]
-
-        except ValueError:
-            plot = [datetime.strptime(plot[0], "%Y%m%d"), datetime.strptime(plot[1], "%Y%m%d"), parse_coordinates(plot[2]), parse_coordinates(plot[3])]
-
-        except Exception as e:
-            print(e)
-            sys.exit(1)
-
-    return plot
-
-
-
 def parse_coordinates(coordinates):
     """
     Parse the given coordinates string and convert it into a list of floats.
@@ -436,48 +381,54 @@ def parse_coordinates(coordinates):
         ValueError: If the coordinates string is invalid.
 
     """
-    coordinates = coordinates.replace("'", '').replace('"', '')
+    if isinstance(coordinates, str):
+        coordinates = coordinates.replace("'", '').replace('"', '')
+        
+        try:
+            if ',' in coordinates:
+                coordinates = coordinates.split(',')
 
-    try:
-        if ',' in coordinates:
-            coordinates = coordinates.split(',')
-            coordinates = [float(i) for i in coordinates]
+            elif ':' in coordinates:
+                coordinates = coordinates.split(':')
+                coordinates = [float(i) for i in coordinates]
 
-        elif ':' in coordinates:
-            coordinates = coordinates.split(':')
-            coordinates = [float(i) for i in coordinates]
+            elif ' ' in coordinates:
+                coordinates = coordinates.split(' ')
+                coordinates = [float(i) for i in coordinates]
 
-        elif ' ' in coordinates:
-            coordinates = coordinates.split(' ')
-            coordinates = [float(i) for i in coordinates]
+            else:
+                coordinates = [float(coordinates), float(coordinates)]
 
-        else:
-            coordinates = [float(coordinates), float(coordinates)]
+        except ValueError:
+            print(f'Error: {coordinates} invalid coordinate/s')
+            sys.exit(1)
 
-    except ValueError:
-        print(f'Error: {coordinates} invalid coordinate/s')
-        sys.exit(1)
+        return coordinates
+    
+    else:
+        coordinates = [coordinates, coordinates]
 
-    return coordinates
+        return coordinates
 
 
 ###################### TEST AREA ##########################
 
 # from precip.plotter_functions import *
+# from precip.helper_functions import sql_extract_precipitation
+# import os
+# # from precip.plotter_functions import bar_plotter_2, plot_elninos
+# # from matplotlib import pyplot as plt
 
-# # la, lo = '19.5:20.05', '156.5:158.05'
-# # la , lo = parse_polygon('POLYGON((-93.7194 -2.2784,-87.4571 -2.2784,-87.4571 2.6319,-93.7194 2.6319,-93.7194 -2.2784))')
-# la, lo = '19.5', '-156.5'
-# la, lo = adapt_coordinates(la, lo)
-# date_list = generate_date_list('20150101', '20220101')
+# date_list = generate_date_list('20000601', '20010603')
 
-# workDir = '/Users/giacomo/onedrive/scratch'
-# prec = create_map(la, lo, date_list, workDir + '/gpm_data')
-# eruptions, _, _ = extract_volcanoes_info(workDir + '/' + jsonVolcano, 'Wolf')
-# # bar_plot(prec, la, lo)
-# # annual_plotter(prec, 3, 3, eruptions)
-# # map_precipitation(prec, lo, la, ['2000-06-01'], workDir + '/gpm_data', 'jet',levels=1)
-# bar_plotter(prec, 3, 3, eruptions)
+# eruption_dates, lalo = extract_volcanoes_info(None, 'Merapi')
+# latitude, longitude = adapt_coordinates(lalo[0], lalo[1])
+
+# gpm_dir = os.getenv(scratchDir) + '/gpm_data'
+
+# precipitation = sql_extract_precipitation(latitude, longitude, date_list, gpm_dir)
+
+# precipitation = from_nested_to_float(precipitation)
 
 # sys.exit(0)
 
@@ -487,9 +438,11 @@ def parse_coordinates(coordinates):
 def main():
     inps = create_parser()
 
-    prompt_subplots(inps, jsonVolcano)
+    fig, axes = prompt_subplots(inps)
+
+    return fig, axes
 
 if __name__ == "__main__":
     main()
 
-sys.exit(0)
+# sys.exit(0)
