@@ -4,7 +4,7 @@ Python code to display precipitation data
 
 # Installation
 
-- Set environment varables (temp):
+- Set environment variables (temp):
 ```
 export PRECIP_HOME=~/code/precip
 ```
@@ -16,12 +16,13 @@ export PYTHONPATH=${PRECIP_HOME}/src:$PYTHONPATH
 
 # Enable download of GPM data
 In order to be able to download GPM data locally, you need to have an active **EarthData account**.
+
 To create one, follow the steps below:
 - [Create an EarthData account](https://wiki.earthdata.nasa.gov/display/EL/How+To+Register+For+an+EarthData+Login+Profile)
 - [Link GES DISC with your account](https://disc.gsfc.nasa.gov/earthdata-login)
 - [Generate Earthdata Prequisites Files](https://disc.gsfc.nasa.gov/information/howto?title=How%20to%20Generate%20Earthdata%20Prerequisite%20Files)
 
-Otherwise you can use a mockup account, just copy paste the following code in your terminal:
+Otherwise you can use a mockup account, just copy paste the following code in your terminal ([Mac/Linux](#Mac/Linux), [Windows](#Windows)):
 
 ## Mac/Linux
 
