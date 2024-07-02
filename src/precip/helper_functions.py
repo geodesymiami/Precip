@@ -1,37 +1,21 @@
-import numpy as np
-from datetime import datetime, date
-import calendar
-import pandas as pd
-from dateutil.relativedelta import relativedelta
-import threading
+import os
+import re
 import math
+import json
+from datetime import datetime, date
+from dateutil.relativedelta import relativedelta
+import calendar
+import sqlite3
+import threading
+import tempfile
+import numpy as np
+import pandas as pd
+from pandas import NaT
 from matplotlib import cm
 from matplotlib import patches as mpatches
 import netCDF4 as nc
 from netCDF4 import Dataset
-import re
-import tempfile
-from precip.config import pathJetstream
-import os
-from pandas import NaT
-
-# TODO maybe delete this function 
-def data_preload(rainfall, roll_count, color_count):
-
-    # Creates a dataframe for rainfall, with new columns 'Decimal', 'roll', and 'cumsum' for 
-    # decimal date, rolling sum, and cumulative sum respectively.
-    volc_rain = volcano_rain_frame(rainfall, roll_count)
-
-    colors = color_scheme(color_count)
-    quantile = quantile_name(color_count)
-
-    if color_count > 1:
-        legend_handles = [mpatches.Patch(color=colors[i], label=quantile + str(i+1)) for i in range(color_count)]
-
-    else:
-        legend_handles = []
-
-    return volc_rain, colors, legend_handles
+from precip.config import pathJetstream, scratchDir
 
 
 def date_to_decimal_year(date_str):
@@ -48,7 +32,7 @@ def date_to_decimal_year(date_str):
     >>> date_to_decimal_year('2022-01-01')
     2022.0
     """
-    if date_str is None or date_str is NaT:
+    if date_str is None or pd.isna(date_str):
         return None
     
     if type(date_str) == str:
@@ -542,3 +526,148 @@ def adapt_events(eruption_dates, date_list):
                     print(f'Removing {eruption_dates} from the list of eruptions. Out of range')
 
     return valid_eruption_dates
+
+
+def extract_precipitation(latitude, longitude, date_list, folder, ssh=None):
+    """
+    Creates a map of precipitation data for a given latitude, longitude, and date range.
+
+    Parameters:
+    latitude (list): A list containing the minimum and maximum latitude values.
+    longitude (list): A list containing the minimum and maximum longitude values.
+    date_list (list): A list of dates to include in the map.
+    folder (str): The path to the folder containing the data files.
+
+    Returns:
+    pandas.DataFrame: A DataFrame containing the precipitation data for the specified location and dates to be plotted.
+    """
+    finaldf = pd.DataFrame()
+    dictionary = {}
+
+    lon, lat = generate_coordinate_array()
+
+##################### Try to use Jetstream ###############################
+    
+    if ssh:
+        stdin, stdout, stderr = ssh.exec_command(f"ls {pathJetstream}")
+
+        # Wait for the command to finish executing
+        stdout.channel.recv_exit_status()
+
+        all_files = stdout.read().decode()
+
+        # Get a list of all .nc4 files in the directory
+        files = [f for f in all_files.split('\n') if f.endswith('.nc4')]
+
+        client = ssh.open_sftp()
+
+################ If Jetstream is not available ###########################
+        
+    else: 
+        # Get a list of all .nc4 files in the data folder
+        files = [folder + '/' + f for f in os.listdir(folder) if f.endswith('.nc4')]
+
+        client = None
+
+    # Check for duplicate files
+    print("Checking for duplicate files...")
+    
+    if len(files) != len(set(files)):
+        print("There are duplicate files in the list.")
+
+    else:
+        print("There are no duplicate files in the list.")
+
+    dictionary = {}
+
+    for file in files:
+        result = process_file(file, date_list, lon, lat, longitude, latitude, client)
+
+        if result is not None:
+            dictionary[result[0]] = result[1]
+
+    if client:
+        client.close()
+        ssh.close()
+
+    df1 = pd.DataFrame(dictionary.items(), columns=['Date', 'Precipitation'])
+    finaldf = pd.concat([finaldf, df1], ignore_index=True, sort=False)
+
+    finaldf = finaldf.sort_values(by='Date', ascending=True)
+    finaldf = finaldf.reset_index(drop=True)
+
+    return finaldf
+
+
+def sql_extract_precipitation(latitude, longitude, date_list, folder, ssh = None):
+    # Case for Jetstream
+    if ssh:
+
+        # Open an SFTP session
+        sftp = ssh.open_sftp()
+
+        # Open the database file
+        with sftp.file(pathJetstream + 'volcanoes.db', 'rb') as f:
+            db = io.BytesIO(f.read())
+
+        # Connect to the database
+        conn = sqlite3.connect(':memory:')
+        conn.cursor().executescript(db.getvalue().decode())
+    
+    else:
+        conn = sqlite3.connect('volcanoes.db')
+        
+    # Check if the 'volcanoes' table exists
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='volcanoes'")
+
+    # Create Table
+    if not cursor.fetchone():
+
+        cursor.execute("""
+            CREATE TABLE volcanoes (
+                Date TEXT,
+                Precipitation TEXT,
+                Latitude REAL,
+                Longitude REAL
+            )
+        """)
+        conn.commit()
+
+    lat = f"{latitude[0]}:{latitude[1]}"
+    lon = f"{longitude[0]}:{longitude[1]}"
+
+    query = f"SELECT Date, Precipitation FROM volcanoes WHERE Latitude = '{lat}' AND Longitude = '{lon}'"
+
+    # query = f"SELECT * FROM volcanoes"
+    df = pd.read_sql_query(query, conn)
+
+    df['Date'] = pd.to_datetime(df['Date']).dt.date
+
+    # Check if all dates in the date_list are in the DataFrame
+    missing_dates = [date for date in date_list if date not in df['Date'].tolist()]
+
+    if missing_dates:
+        missing_dates.sort()
+
+        date_list = generate_date_list(start=missing_dates[0], end=missing_dates[-1])
+        precipitation = extract_precipitation(latitude, longitude, date_list, folder, ssh)
+
+        precipitation['Precipitation'] = precipitation['Precipitation'].apply(lambda x: json.dumps(x.tolist()))
+
+        # Insert the new rows into the 'volcanoes' table
+        for index, row in precipitation.iterrows():
+            cursor.execute("INSERT INTO volcanoes (Date, Precipitation, Latitude, Longitude) VALUES (?, ?, ?, ?)",
+                        (row['Date'], row['Precipitation'], lat, lon))
+
+        conn.commit()
+
+        df = pd.read_sql_query(query, conn)
+
+    conn.close()
+
+    # Convert the 'Precipitation' column from a string to a list and then to a masked array
+    df['Precipitation'] = df['Precipitation'].apply(lambda x: np.ma.array(json.loads(x)))
+    print('')
+
+    return df
