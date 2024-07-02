@@ -9,47 +9,39 @@ import sys
 from precip.plotter_functions import prompt_subplots
 from precip.config import *
 
-EXAMPLE = """
-!WARNING for negative values you may need to use the following format: 
-
---latitude=-10
---latitude=-10.5:-9.5
-
+EXAMPLE = f"""
 Date format: YYYYMMDD
 
 Example:
 
-  get_precipitation_lalo.py Merapi --style daily
-  get_precipitation_lalo.py --style daily --lalo 19.5:-156.5
-  get_precipitation_lalo.py --style strength --lalo 19.5:-156.5 ---period 20190101:20210929
-  get_precipitation_lalo.py --style bar --lalo 19.5,-156.5 ---period 20190101,20210929
-  get_precipitation_lalo.py --style annual --start-date 20190101 --end-date 20210929 --latitude 19.5 --longitude -156.5
-  get_precipitation_lalo.py --style map --end-date 20210929 --polygon 'POLYGON((113.4496 -8.0893,113.7452 -8.0893,113.7452 -7.817,113.4496 -7.817,113.4496 -8.0893))'
+  Create a bar plot with a rolling average of 30 days, 3 bins (colors divided by ascending values), on a log scale for the precipitation data of Merapi volcano (if eruptions are included in the date range, they will be plotted), default start date is {startDate} and default end date is {endDate}:
+    get_precipitation_lalo.py Merapi --style bar --roll 30 --bins 3 --log
 
-  get_precipitation_lalo.py --download
-  get_precipitation_lalo.py --download 20190101 20210929
-  get_precipitation_lalo.py --period 20190101:20210929
-  get_precipitation_lalo.py --download 20190101 20210929 --dir '/home/user/Downloads'
+  Create a bar plot ordered by strength for the precipitation data of a specific location at a given date range and save (If path not specified, the data will be downloaded either in $WORKDIR or $HOME directory + /precip_products):
+    get_precipitation_lalo.py --style strength --lalo 19.5:-156.5 ---period 20190101:20210929 --save
 
-  get_precipitation_lalo.py --volcano 'Cerro Azul'
+  Create a 'Line' plot for the precipitation data of a specific location at a given date range ordered by year, with a rolling average of 10 days and 2 binsand add 2 events to the time series:
+    get_precipitation_lalo.py --style annual --start-date 20190101 --end-date 20210929 --latitude 19.5 --longitude -156.5 --roll 10 --bins 2 --add-event 20200929 20210929
+
+  Add single events and el niño/niña events to the time series:
+    get_precipitation_lalo.py --style strength --lalo 19.5:-156.5 ---period 20190101:20210929 --add-event 20200929 20210929 --ninos
+
+  Create a map plot for the precipitation data of a specific location at a given date range:
+    get_precipitation_lalo.py --style map --end-date 20210929 --polygon 'POLYGON((113.4496 -8.0893,113.7452 -8.0893,113.7452 -7.817,113.4496 -7.817,113.4496 -8.0893))'
+
+  Add limit to the scale of the colorbar and colorbar style:
+    get_precipitation_lalo.py --style map --end-date 20210929 --lalo 19.5:20.5,-155.5:-156.5 --vlim -3 3 --colorbar 'RdBu'
+
+  Download the precipitation data:
+    get_precipitation_lalo.py --download
+
+    get_precipitation_lalo.py --download 20190101 20210929 --dir '/home/user/Downloads'
   
-  get_precipitation_lalo.py --list
+  List all the volcanoes:
+    get_precipitation_lalo.py --list
 
-  get_precipitation_lalo.py --heatmap 20000601 --latitude=-2.11:2.35 --longitude=-92.68:-88.49
-  get_precipitation_lalo.py --heatmap 20000601 --latitude 19.5:20.05 --longitude 156.5:158.05 --vlim 0 10
-  get_precipitation_lalo.py --heatmap 20000601 --latitude 19.5:20.05 --longitude 156.5:158.05 --vlim 0 10 --interpolate 5
-  get_precipitation_lalo.py --heatmap 20000601 --polygon 'POLYGON((113.4496 -8.0893,113.7452 -8.0893,113.7452 -7.817,113.4496 -7.817,113.4496 -8.0893))'
-  get_precipitation_lalo.py --heatmap 20000601 --latitude=-2.11:2.35 --longitude=-92.68:-88.49 --colorbar jet
-
-  TEMPORARY:
-  annual plotter:
-  get_precipitation_lalo.py --annual-plotter 'Mauna Loa' --period 20200101:20221231
-
-  bar plotter:
-  get_precipitation_lalo.py --bar-plotter 'Mauna Loa' --period 20200101:20221231
-
-  by strength:
-  get_precipitation_lalo.py --strength 'Mauna Loa' --period 20200101:20221231
+  Check if the files are corrupted:
+    get_precipitation_lalo.py --check
 
 """
 
