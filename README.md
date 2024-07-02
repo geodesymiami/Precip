@@ -1,14 +1,21 @@
 # precip
 
-Python code to display precipitation data
+Python code to display precipitation globally using [GPM dataset](https://gpm.nasa.gov/data/visualizations/precip-apps).
 
 # Installation
+- Create destination folder from terminal and clone the repo:
+```
+cd $HOME
+mkdir ./code
+mkdir ./code/precip
+git clone git@github.com:geodesymiami/precip.git ./code/precip
+```
 
 - Set environment variables (temp):
 ```
-export PRECIP_HOME=~/code/precip
+export PRECIP_HOME=$HOME/code/precip
 ```
-- Prepend to your $PATH
+- Prepend to your `$PATH`
 ```
 export PATH=${PRECIP_HOME}/src/precip/cli:$PATH
 export PYTHONPATH=${PRECIP_HOME}/src:$PYTHONPATH
