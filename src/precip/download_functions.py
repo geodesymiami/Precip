@@ -15,7 +15,7 @@ import paramiko
 import tempfile
 
 
-def crontab_volcano_json(json_path, json_download_url=json_download_url):
+def download_volcano_json(json_path, json_download_url=json_download_url):
     """
     Downloads a JSON file containing volcano eruption data from a specified URL and saves it to the given file path.
 
@@ -29,12 +29,11 @@ def crontab_volcano_json(json_path, json_download_url=json_download_url):
     Returns:
         None
     """
-    # TODO add crontab to update json file every ???
-    # TODO call the variable from the config file 
-    json_download_url = json_download_url
-    
     try:
         result = requests.get(json_download_url)
+
+        with open(json_path, 'wb') as f:
+            f.write(result.content)
     
     except requests.exceptions.HTTPError as err:
         if err.response.status_code == 404:
@@ -45,9 +44,6 @@ def crontab_volcano_json(json_path, json_download_url=json_download_url):
             print('An HTTP error occurred: ' + str(err.response.status_code))
             sys.exit(1)
 
-    f = open(json_path, 'wb')
-    f.write(result.content)
-    f.close()
 
     if os.path.exists(json_path):
         print(f'Json file downloaded in {json_path}')
@@ -61,7 +57,7 @@ def generate_url_download(date, final06=final06, final07=final07):
     intervals = {"Final06": datetime.strptime(final06, '%Y-%m-%d').date(),
                  "Final07": datetime.strptime(final07, '%Y-%m-%d').date(),
                  "Late06": datetime.today().date() - relativedelta(days=1)}
-    
+    # For research purpose is better to use Late run data, possibly v06
     # Final Run 06
     if date <= intervals["Final06"]:    
         head = 'https://data.gesdisc.earthdata.nasa.gov/data/GPM_L3/GPM_3IMERGDF.06/'
@@ -239,11 +235,11 @@ def download_jetstream(date_list, ssh):
 
     # Download the file using the wget command
     for url in urls:
-        filename = url.split('/')[-1]
-        complete_file_path = os.path.join(pathJetstream, filename)
+        filename = os.path.basename(url)
+        file_path = os.path.join(pathJetstream, filename)
 
         # Check if the file already exists on the server
-        stdin, stdout, stderr = ssh.exec_command(f'ls {complete_file_path}')
+        stdin, stdout, stderr = ssh.exec_command(f'ls {file_path}')
 
         # Wait for the command to finish
         stdout.channel.recv_exit_status()
@@ -258,7 +254,7 @@ def download_jetstream(date_list, ssh):
 
         while attempts < 3:
             try:
-                stdin, stdout, stderr = ssh.exec_command(f'wget -O {complete_file_path} {url}')
+                stdin, stdout, stderr = ssh.exec_command(f'wget -O {file_path} {url}')
                 exit_status = stdout.channel.recv_exit_status()  # Wait for the command to finish
 
                 if exit_status == 0:
