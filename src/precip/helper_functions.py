@@ -637,7 +637,7 @@ def sql_extract_precipitation(latitude, longitude, date_list, folder, ssh = None
     lat = f"{latitude[0]}:{latitude[1]}"
     lon = f"{longitude[0]}:{longitude[1]}"
 
-    query = f"SELECT Date, Precipitation FROM volcanoes WHERE Latitude = '{lat}' AND Longitude = '{lon}'"
+    query = f"SELECT Date, Precipitation FROM volcanoes WHERE Latitude = '{lat}' AND Longitude = '{lon}' and DATE between '{date_list[0]}' and '{date_list[-1]}'"
 
     # query = f"SELECT * FROM volcanoes"
     df = pd.read_sql_query(query, conn)
