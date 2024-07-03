@@ -102,7 +102,7 @@ def prompt_subplots(inps):
                 ylabel = f"Cumulative precipitation over {len(date_list)} days (mm)"
             
             else:
-                ylabel = f"Daily precipitation of {len(date_list)} days (mm/day)"
+                ylabel = f"Daily precipitation over {len(date_list)} days (mm/day)"
 
         else:
             ylabel = f" {inps.style} precipitation (mm)"
