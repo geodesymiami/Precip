@@ -97,16 +97,25 @@ def prompt_subplots(inps):
         if inps.style == 'daily' or inps.style == 'bar' or strength == True:
             ylabel = str(inps.roll) + " day precipitation (mm)"
 
+        elif inps.style == 'map':
+            if inps.cumulate:
+                ylabel = f"Cumulative precipitation over {len(date_list)} days (mm)"
+            
+            else:
+                ylabel = f"Daily precipitation of {len(date_list)} days (mm/day)"
+
         else:
             ylabel = f" {inps.style} precipitation (mm)"
         
+
         labels = {'title': title,
                 'ylabel': ylabel,
                 'y2label': 'Cumulative precipitation'}
         
         # Average the precipitation data
-        if inps.average in ['W', 'M', 'Y']:
-            precipitation = weekly_monthly_yearly_precipitation(precipitation, inps.average)
+        if inps.average in ['W', 'M', 'Y'] or inps.cumulate:
+            precipitation = weekly_monthly_yearly_precipitation(precipitation, inps.average, inps.cumulate)
+
 
         # Plot the map of precipitation data
         if inps.style == 'map':
