@@ -508,9 +508,6 @@ def adapt_events(eruption_dates, date_list):
         # TODO remember this was a test
         eruption_date = pd.Timestamp(eruption_dates[i]).normalize()
 
-        if eruption_date < date_list.iloc[0]:
-            continue
-
         for j in range(len(date_list)):
             try:
                 if date_list.iloc[j] <= eruption_date < date_list.iloc[j+1]:
@@ -523,7 +520,7 @@ def adapt_events(eruption_dates, date_list):
                     valid_eruption_dates.append(date_list.iloc[j])
                 
                 else:
-                    print(f'Removing {eruption_dates} from the list of eruptions. Out of range')
+                    print(f'Removing {str(eruption_date.date())} from the list of eruptions. Out of range')
 
     return valid_eruption_dates
 

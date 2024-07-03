@@ -149,6 +149,10 @@ def dload_site_list_parallel(folder, date_list):
                 print(f"\rFile {filename} already exists, skipping download. ", end="")
                 time.sleep(0.001)
 
+    print('')
+    print('All files have been downloaded')
+    print('-----------------------------------------------')
+
     # if ask_user('check'):
     #     check_nc4_files(folder)    
 

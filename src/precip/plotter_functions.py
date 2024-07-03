@@ -12,7 +12,7 @@ from scipy.interpolate import interp2d
 import pygmt
 from precip.helper_functions import *
 from precip.download_functions import *
-from precip.config import startDate, elninos, pathJetstream, jsonVolcano
+from precip.config import *
 import requests
 
 # TODO to replace elninos with the following API #
@@ -265,7 +265,7 @@ def volcanoes_list(jsonfile):
 
     return volcanoName
 
-# TODO eventually to integrate with sql search
+
 def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
     """
     Extracts information about a specific volcano from a JSON file.
@@ -285,7 +285,7 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
     frame_data = []
 
     first_day = datetime.strptime(startDate, '%Y%m%d').date()
-    last_day = datetime.today().date() - relativedelta(days=1)
+    last_day = datetime.strptime(endDate, '%Y%m%d').date()
 
     # Iterate over the features in the data
     for j in data['features']:
@@ -326,8 +326,14 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
     start_dates = sorted(start_dates)
     first_date = start_dates[0]
 
+    print('---------------------------------')
+    print('Sorting eruptions by date...')
+    print('---------------------------------')
+
     for d in start_dates:
         print('Extracted eruption in date: ', d)
+    
+    print('---------------------------------')
 
     # Return the list of start dates, the list of dates, and the coordinates of the volcano
     return start_dates, coordinates
