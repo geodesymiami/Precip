@@ -587,7 +587,8 @@ def bar_plotter (precipitation, strength, log, labels, legend_handles):
         plt.yscale('log')
         plt.yticks([0.1, 1, 10, 100, 1000])
 
-    plt.xlabel('Year')
+    if not strength:
+        plt.xlabel('Year')
 
     plt.title(labels['title'])
 
@@ -658,7 +659,7 @@ def annual_plotter(precipitation, legend_handles, labels):
     ax0.set_xlabel("Month") 
     ax0.set_ylabel("Year") 
     ax0.set_title(labels['title']) 
-    ax0.legend(handles=legend_handles, fontsize='small')
+    # ax0.legend(handles=legend_handles, fontsize='small')
     ax1.set_title('Total (mm)') 
     ax1.set_yticks([start + (2*k) for k in range(((end + 1 - start) // 2))], [str(start + (2*k)) for k in range(((end + 1 - start) // 2))])
 
