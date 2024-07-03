@@ -116,18 +116,15 @@ def prompt_subplots(inps):
 
             map_precipitation(precipitation, inps.longitude, inps.latitude, date_list, inps.colorbar, inps.isolines, labels, inps.vlim)
 
+            fig = plt.gcf()
+            axes = plt.gca()
+            
             if not inps.no_show:
                 plt.show()
 
-            else:
-                # plt.close()
-
-                fig = plt.gcf()
-                axes = plt.gca()
-
-                return fig, axes
+            return fig, axes
             
-            sys.exit(0)
+            # sys.exit(0)
         
         # Add cumulative, rolling precipitation, and Decimal dates columns
         precipitation = volcano_rain_frame(precipitation, inps.roll)
@@ -204,6 +201,9 @@ def prompt_subplots(inps):
         plt.legend(handles=legend_handles, loc='upper left', fontsize='small')
         plt.tight_layout()
 
+        fig = plt.gcf()
+        axes = plt.gca()
+
         if inps.save:
             if inps.name:
                 saveName = inps.name[0]
@@ -217,15 +217,9 @@ def prompt_subplots(inps):
         if not inps.no_show:
             plt.show()
 
-        else:
-            # plt.close()
+        return fig, axes
 
-            fig = plt.gcf()
-            axes = plt.gca()
-
-            return fig, axes
-
-    sys.exit(0)
+    # sys.exit(0)
 
 
 def get_volcano_json(jsonfile, url):
