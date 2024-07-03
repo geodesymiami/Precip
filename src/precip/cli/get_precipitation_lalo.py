@@ -114,6 +114,9 @@ def create_parser():
                         nargs=1,
                         metavar=('LEVELS'),
                         help='Number of isolines to be plotted on the map')
+    parser.add_argument('--cumulate',
+                        action='store_true',
+                        help='Cumulate data')
     parser.add_argument('--average', 
                         choices=['D','W','M','Y'], 
                         metavar=('TIME_PERIOD'), 
@@ -444,5 +447,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# sys.exit(0)

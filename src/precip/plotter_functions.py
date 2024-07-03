@@ -12,7 +12,7 @@ from scipy.interpolate import interp2d
 import pygmt
 from precip.helper_functions import *
 from precip.download_functions import *
-from precip.config import startDate, elninos, pathJetstream, jsonVolcano
+from precip.config import *
 import requests
 
 # TODO to replace elninos with the following API #
@@ -97,16 +97,25 @@ def prompt_subplots(inps):
         if inps.style == 'daily' or inps.style == 'bar' or strength == True:
             ylabel = str(inps.roll) + " day precipitation (mm)"
 
+        elif inps.style == 'map':
+            if inps.cumulate:
+                ylabel = f"Cumulative precipitation over {len(date_list)} days (mm)"
+            
+            else:
+                ylabel = f"Daily precipitation over {len(date_list)} days (mm/day)"
+
         else:
             ylabel = f" {inps.style} precipitation (mm)"
         
+
         labels = {'title': title,
                 'ylabel': ylabel,
                 'y2label': 'Cumulative precipitation'}
         
         # Average the precipitation data
-        if inps.average in ['W', 'M', 'Y']:
-            precipitation = weekly_monthly_yearly_precipitation(precipitation, inps.average)
+        if inps.average in ['W', 'M', 'Y'] or inps.cumulate:
+            precipitation = weekly_monthly_yearly_precipitation(precipitation, inps.average, inps.cumulate)
+
 
         # Plot the map of precipitation data
         if inps.style == 'map':
@@ -116,18 +125,15 @@ def prompt_subplots(inps):
 
             map_precipitation(precipitation, inps.longitude, inps.latitude, date_list, inps.colorbar, inps.isolines, labels, inps.vlim)
 
+            fig = plt.gcf()
+            axes = plt.gca()
+            
             if not inps.no_show:
                 plt.show()
 
-            else:
-                # plt.close()
-
-                fig = plt.gcf()
-                axes = plt.gca()
-
-                return fig, axes
+            return fig, axes
             
-            sys.exit(0)
+            # sys.exit(0)
         
         # Add cumulative, rolling precipitation, and Decimal dates columns
         precipitation = volcano_rain_frame(precipitation, inps.roll)
@@ -204,6 +210,9 @@ def prompt_subplots(inps):
         plt.legend(handles=legend_handles, loc='upper left', fontsize='small')
         plt.tight_layout()
 
+        fig = plt.gcf()
+        axes = plt.gca()
+
         if inps.save:
             if inps.name:
                 saveName = inps.name[0]
@@ -217,15 +226,9 @@ def prompt_subplots(inps):
         if not inps.no_show:
             plt.show()
 
-        else:
-            # plt.close()
+        return fig, axes
 
-            fig = plt.gcf()
-            axes = plt.gca()
-
-            return fig, axes
-
-    sys.exit(0)
+    # sys.exit(0)
 
 
 def get_volcano_json(jsonfile, url):
@@ -271,7 +274,7 @@ def volcanoes_list(jsonfile):
 
     return volcanoName
 
-# TODO eventually to integrate with sql search
+
 def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
     """
     Extracts information about a specific volcano from a JSON file.
@@ -291,7 +294,7 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
     frame_data = []
 
     first_day = datetime.strptime(startDate, '%Y%m%d').date()
-    last_day = datetime.today().date() - relativedelta(days=1)
+    last_day = datetime.strptime(endDate, '%Y%m%d').date()
 
     # Iterate over the features in the data
     for j in data['features']:
@@ -332,8 +335,14 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
     start_dates = sorted(start_dates)
     first_date = start_dates[0]
 
+    print('---------------------------------')
+    print('Sorting eruptions by date...')
+    print('---------------------------------')
+
     for d in start_dates:
         print('Extracted eruption in date: ', d)
+    
+    print('---------------------------------')
 
     # Return the list of start dates, the list of dates, and the coordinates of the volcano
     return start_dates, coordinates
