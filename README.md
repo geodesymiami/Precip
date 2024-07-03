@@ -89,14 +89,14 @@ For more examples run:
 get_precipitation_lalo.py --h
 ```
 
-If You want to show all (almost) the available types of plot in one single command, run:
+If You want to show (almost) all the available types of plot in one single command, run:
 ```
 get_all.py Merapi --period=20060101:20070101
 ```
 You can add some of the arguments from `get_precipitation_lalo.py`, like:
 - `--roll`
-- `bins`
-- `log`
+- `--bins`
+- `--log`
 - `--save`
 
 For visual examples, refer to the following [Jupyter Notebook](Examples.ipynb).
