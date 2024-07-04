@@ -100,3 +100,7 @@ You can add some of the arguments from `get_precipitation_lalo.py`, like:
 - `--save`
 
 For visual examples, refer to the following [Jupyter Notebook](Examples.ipynb).
+
+# JetStream
+
+If you have special access to `149.165.154.65`, you can try to connect to JetStream and use the data uploaded there instead of downloading them locally with `--use-ssh` argument.
