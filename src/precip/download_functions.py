@@ -157,57 +157,6 @@ def dload_site_list_parallel(folder, date_list, parallel=5):
     #     check_nc4_files(folder)    
 
 
-# def download_jetstream(date_list, ssh, parallel=5):
-#     # Define the URL of the file you want to download
-#     urls = generealte_urls_list(date_list)
-
-
-#     # Download the file using the wget command
-#     with concurrent.futures.ThreadPoolExecutor(max_workers=parallel) as executor:
-#         for url in urls:
-#             filename = os.path.basename(url)
-#             file_path = os.path.join(pathJetstream, filename)
-
-#             # Check if the file already exists on the server
-#             stdin, stdout, stderr = ssh.exec_command(f'ls {file_path}')
-
-#             # Wait for the command to finish
-#             stdout.channel.recv_exit_status()
-
-#             if stdout.read().decode():
-#                 print(f"\rFile {filename} already exists, skipping download. ", end="")
-
-#                 continue
-
-#             print(f"Starting download of {url} ")
-#             attempts = 0
-
-#             while attempts < 3:
-#                 try:
-#                     stdin, stdout, stderr = ssh.exec_command(f'wget -O {file_path} {url}')
-#                     exit_status = stdout.channel.recv_exit_status()  # Wait for the command to finish
-
-#                     if exit_status == 0:
-#                         print(f"Finished download of {url} ")
-
-#                     else:
-#                         raise Exception(stderr.read().decode())
-
-#                     break
-
-#                 except Exception as e:
-#                     attempts += 1
-#                     print(f"Download attempt {attempts} failed for {url}. Retrying... Error: {str(e)}")
-#                     time.sleep(1)
-                    
-#             else:
-#                 print(f"Failed to download {url} after {attempts} attempts. Exiting...")
-#                 sys.exit(1)
-
-#     # Close the SSH client
-#     ssh.close()
-
-
 def check_nc4_files(folder, ssh):
     files = []
 
@@ -305,7 +254,7 @@ def connect_jetstream():
     return ssh
 
 
-def download_file(ssh, url, pathJetstream):
+def download_jetstream(ssh, url, pathJetstream):
     filename = os.path.basename(url)
     file_path = os.path.join(pathJetstream, filename)
 
@@ -344,13 +293,13 @@ def download_file(ssh, url, pathJetstream):
         sys.exit(1)
 
 
-def download_jetstream(date_list, ssh, parallel=5):
+def download_jetstream_parallel(date_list, ssh, parallel=5):
     # Generate the URLs
     urls = generealte_urls_list(date_list)
 
     # Use a ThreadPoolExecutor to download the files in parallel
     with concurrent.futures.ThreadPoolExecutor(max_workers=parallel) as executor:
-        futures = [executor.submit(download_file, ssh, url, pathJetstream) for url in urls]
+        futures = [executor.submit(download_jetstream, ssh, url, pathJetstream) for url in urls]
 
     # Close the SSH client
     ssh.close()

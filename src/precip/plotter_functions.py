@@ -39,7 +39,7 @@ def prompt_subplots(inps):
     if inps.download: 
 
         if ssh:
-            download_jetstream(date_list, ssh, inps.parallel)
+            download_jetstream_parallel(date_list, ssh, inps.parallel)
         
         else:
             dload_site_list_parallel(gpm_dir, date_list, inps.parallel)
@@ -83,7 +83,7 @@ def prompt_subplots(inps):
             ssh = connect_jetstream()
 
         if ssh:
-            download_jetstream(date_list, ssh, inps.parallel)
+            download_jetstream_parallel(date_list, ssh, inps.parallel)
 
         else:
             dload_site_list_parallel(gpm_dir, date_list, inps.parallel)
