@@ -79,8 +79,6 @@ def prompt_subplots(inps):
         else:
             strength = False
 
-        if inps.use_ssh:
-            ssh = connect_jetstream()
 
         if ssh:
             download_jetstream_parallel(date_list, ssh, inps.parallel)
@@ -88,6 +86,9 @@ def prompt_subplots(inps):
         else:
             dload_site_list_parallel(gpm_dir, date_list, inps.parallel)
         
+        if inps.use_ssh and not (ssh.get_transport() and ssh.get_transport().is_active()):
+            ssh = connect_jetstream()
+            
         # Extract precipitation data
         precipitation = sql_extract_precipitation(inps.latitude, inps.longitude, date_list, gpm_dir, ssh)
         

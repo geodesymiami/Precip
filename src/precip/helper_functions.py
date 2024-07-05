@@ -1,5 +1,6 @@
 import os
 import re
+import io
 import math
 import json
 from datetime import datetime, date
@@ -583,10 +584,6 @@ def extract_precipitation(latitude, longitude, date_list, folder, ssh=None):
         if result is not None:
             dictionary[result[0]] = result[1]
 
-    if client:
-        client.close()
-        ssh.close()
-
     df1 = pd.DataFrame(dictionary.items(), columns=['Date', 'Precipitation'])
     finaldf = pd.concat([finaldf, df1], ignore_index=True, sort=False)
 
@@ -599,20 +596,39 @@ def extract_precipitation(latitude, longitude, date_list, folder, ssh=None):
 def sql_extract_precipitation(latitude, longitude, date_list, folder, ssh = None):
     # Case for Jetstream
     if ssh:
-
         # Open an SFTP session
         sftp = ssh.open_sftp()
 
-        # Open the database file
-        with sftp.file(pathJetstream + 'volcanoes.db', 'rb') as f:
-            db = io.BytesIO(f.read())
+        # Create a temporary file
+        temp_file = tempfile.NamedTemporaryFile(delete=False)
+
+        # Try to open the database file
+        try:
+            with sftp.file(pathJetstream + 'volcanoes.db', 'rb') as f:
+                temp_file.write(f.read())
+
+            db_path = temp_file.name
+
+        except IOError:
+            # The file does not exist, create it
+            with sftp.file(pathJetstream + 'volcanoes.db', 'wb') as f:
+                pass
+
+            db_path = temp_file.name
+
 
         # Connect to the database
-        conn = sqlite3.connect(':memory:')
-        conn.cursor().executescript(db.getvalue().decode())
+        conn = sqlite3.connect(db_path)
     
     else:
-        conn = sqlite3.connect('volcanoes.db')
+        # Try to open the database file
+        try:
+            conn = sqlite3.connect('volcanoes.db')
+
+        except sqlite3.OperationalError:
+            # The file does not exist, create it
+            open('volcanoes.db', 'w').close()
+            conn = sqlite3.connect('volcanoes.db')
         
     # Check if the 'volcanoes' table exists
     cursor = conn.cursor()
@@ -661,10 +677,21 @@ def sql_extract_precipitation(latitude, longitude, date_list, folder, ssh = None
 
         df = pd.read_sql_query(query, conn)
 
+
+    # Upload the local database file back to the remote server
+    if ssh:
+        with sftp.file(pathJetstream + 'volcanoes.db', 'wb') as f:
+            with open(db_path, 'rb') as local_file:
+                f.write(local_file.read())
+
+        temp_file.close()
+
     conn.close()
 
     # Convert the 'Precipitation' column from a string to a list and then to a masked array
     df['Precipitation'] = df['Precipitation'].apply(lambda x: np.ma.array(json.loads(x)))
     print('')
+
+    ssh.close()
 
     return df
