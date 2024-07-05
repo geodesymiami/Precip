@@ -9,6 +9,8 @@ import sys
 from precip.plotter_functions import prompt_subplots
 from precip.config import *
 
+# TODO Add proper CITATION for GPM data and Volcano data
+
 EXAMPLE = f"""
 Date format: YYYYMMDD
 
@@ -59,9 +61,6 @@ def create_parser():
     parser.add_argument('positional', 
                         nargs='*',
                         help='Volcano name or coordinates')
-    parser.add_argument('--download', 
-                        action='store_true',
-                        help='Use ssh')
     parser.add_argument('--start-date',
                         nargs=1,
                         metavar='YYYYMMDD', 
@@ -85,49 +84,19 @@ def create_parser():
                         nargs=1,
                         metavar=('LATITUDE:LONGITUDE, LATITUDE,LONGITUDE'),
                         help='Latitude and longitude')
-    parser.add_argument('--list', 
-                        action='store_true', 
-                        help='List volcanoes')
+    parser.add_argument('--polygon', 
+                        metavar='POLYGON', 
+                        help='Poligon of the wanted area (Format from ASF Vertex Tool https://search.asf.alaska.edu/#/)')
+    parser.add_argument('--name',
+                        nargs=1,
+                        type=str,
+                        metavar=('NAME'),
+                        help='Name of the volcano')
+    
     parser.add_argument('--add-event',
                         nargs='*',
                         metavar=('YYYYMMDD, YYYY-MM-DD'),
                         help='Add event to the time series')
-    parser.add_argument('--dir', 
-                        nargs=1, 
-                        metavar=('PATH'), 
-                        help='Specify path to download the data, if not specified, the data will be downloaded either in $WORKDIR or $HOME directory')
-    parser.add_argument("--vlim", 
-                        nargs=2, 
-                        metavar=("VMIN", "VMAX"), 
-                        default=None,
-                        type=float, 
-                        help="Velocity limit for the colorbar (default: None)")
-    parser.add_argument('--polygon', 
-                        metavar='POLYGON', 
-                        help='Poligon of the wanted area (Format from ASF Vertex Tool https://search.asf.alaska.edu/#/)')
-    parser.add_argument('--interpolate',
-                        nargs=1,
-                        metavar=('GRANULARITY'),
-                        type=int, 
-                        help='Interpolate data')
-    parser.add_argument('--isolines',
-                        nargs=1,
-                        metavar=('LEVELS'),
-                        help='Number of isolines to be plotted on the map')
-    parser.add_argument('--cumulate',
-                        action='store_true',
-                        help='Cumulate data')
-    parser.add_argument('--average', 
-                        choices=['D','W','M','Y'], 
-                        metavar=('TIME_PERIOD'), 
-                        help='Average data, default is daily')
-    parser.add_argument('--check', 
-                        action='store_true', 
-                        help='Check if the file is corrupted')
-    parser.add_argument('--colorbar', 
-                        nargs=1,
-                        metavar=('COLORBAR'), 
-                        help='Colorbar')
     parser.add_argument('--log', 
                         action='store_true',
                         help='Enable logaritmic scale')
@@ -144,18 +113,55 @@ def create_parser():
     parser.add_argument('--ninos',
                         action='store_true',
                         help='Plot Nino/Nina events')
-    parser.add_argument('--name',
+    
+    parser.add_argument("--vlim", 
+                        nargs=2, 
+                        metavar=("VMIN", "VMAX"), 
+                        default=None,
+                        type=float, 
+                        help="Velocity limit for the colorbar (default: None)")
+    parser.add_argument('--interpolate',
                         nargs=1,
-                        type=str,
-                        metavar=('NAME'),
-                        help='Name of the volcano')
+                        metavar=('GRANULARITY'),
+                        type=int, 
+                        help='Interpolate data')
+    parser.add_argument('--isolines',
+                        nargs=1,
+                        metavar=('LEVELS'),
+                        help='Number of isolines to be plotted on the map')
+    parser.add_argument('--cumulate',
+                        action='store_true',
+                        help='Cumulate data')
+    parser.add_argument('--average', 
+                        choices=['D','W','M','Y'], 
+                        metavar=('TIME_PERIOD'), 
+                        help='Average data, default is daily')
+    parser.add_argument('--colorbar', 
+                        nargs=1,
+                        metavar=('COLORBAR'), 
+                        help='Colorbar')
+    
     parser.add_argument('--style',
                         choices=['daily','weekly','monthly','yearly','map','bar','annual','strength'],
                         help='Choose plot type')
+    parser.add_argument('--download', 
+                        action='store_true',
+                        help='Use ssh')
+    parser.add_argument('--list', 
+                        action='store_true', 
+                        help='List volcanoes')
+    parser.add_argument('--check', 
+                        action='store_true', 
+                        help='Check if the file is corrupted')
+    
     parser.add_argument('--save',
                         nargs='*',
                         metavar=('FOLDERNAME'),
                         help='Save the plot')
+    parser.add_argument('--dir', 
+                        nargs=1, 
+                        metavar=('PATH'), 
+                        help='Specify path to download the data, if not specified, the data will be downloaded either in $WORKDIR or $HOME directory')
     parser.add_argument('--no-show',
                         action='store_true',
                         help='Do not show the plot')
@@ -163,6 +169,9 @@ def create_parser():
                         action='store_true',
                         dest='use_ssh',
                         help='Use ssh')
+    parser.add_argument('--parallel',
+                        type=int,
+                        help='Number of parallel downloads')
     # TODO later
     parser.add_argument('--setup',
                     help='Setup environment')
