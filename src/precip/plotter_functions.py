@@ -42,7 +42,7 @@ def prompt_subplots(inps):
             download_jetstream(date_list, ssh)
         
         else:
-            dload_site_list_parallel(gpm_dir, date_list)
+            dload_site_list_parallel(gpm_dir, date_list, inps.parallel)
 
     if inps.check:
         check_nc4_files(gpm_dir, ssh)
@@ -343,8 +343,8 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
         print('Extracted eruption in date: ', d)
     
     print('---------------------------------')
+    print('')
 
-    # Return the list of start dates, the list of dates, and the coordinates of the volcano
     return start_dates, coordinates
 
 
@@ -405,77 +405,6 @@ def interpolate_map(dataframe, resolution=5):
     return new_values
 
 
-# def extract_precipitation(latitude, longitude, date_list, folder, ssh=None):
-#     """
-#     Creates a map of precipitation data for a given latitude, longitude, and date range.
-
-#     Parameters:
-#     latitude (list): A list containing the minimum and maximum latitude values.
-#     longitude (list): A list containing the minimum and maximum longitude values.
-#     date_list (list): A list of dates to include in the map.
-#     folder (str): The path to the folder containing the data files.
-
-#     Returns:
-#     pandas.DataFrame: A DataFrame containing the precipitation data for the specified location and dates to be plotted.
-#     """
-#     finaldf = pd.DataFrame()
-#     dictionary = {}
-
-#     lon, lat = generate_coordinate_array()
-
-# ##################### Try to use Jetstream ###############################
-    
-#     if ssh:
-#         stdin, stdout, stderr = ssh.exec_command(f"ls {pathJetstream}")
-
-#         # Wait for the command to finish executing
-#         stdout.channel.recv_exit_status()
-
-#         all_files = stdout.read().decode()
-
-#         # Get a list of all .nc4 files in the directory
-#         files = [f for f in all_files.split('\n') if f.endswith('.nc4')]
-
-#         client = ssh.open_sftp()
-
-# ################ If Jetstream is not available ###########################
-        
-#     else: 
-#         # Get a list of all .nc4 files in the data folder
-#         files = [folder + '/' + f for f in os.listdir(folder) if f.endswith('.nc4')]
-
-#         client = None
-
-#     # Check for duplicate files
-#     print("Checking for duplicate files...")
-    
-#     if len(files) != len(set(files)):
-#         print("There are duplicate files in the list.")
-
-#     else:
-#         print("There are no duplicate files in the list.")
-
-#     dictionary = {}
-
-#     for file in files:
-#         result = process_file(file, date_list, lon, lat, longitude, latitude, client)
-
-#         if result is not None:
-#             dictionary[result[0]] = result[1]
-
-#     if client:
-#         client.close()
-#         ssh.close()
-
-#     df1 = pd.DataFrame(dictionary.items(), columns=['Date', 'Precipitation'])
-#     finaldf = pd.concat([finaldf, df1], ignore_index=True, sort=False)
-
-#     finaldf = finaldf.sort_values(by='Date', ascending=True)
-#     finaldf = finaldf.reset_index(drop=True)
-
-#     return finaldf
-
-
 def add_isolines(region, levels=0, inline=False):
     grid = pygmt.datasets.load_earth_relief(resolution="01m", region=region)
 
@@ -519,8 +448,8 @@ def map_precipitation(precipitation_series, lo, la, date, colorbar, levels, labe
     Returns:
         None
     """
+    # TODO go back here to check the logic around averaging and cumulate precipitation
     m_y = [28, 29, 30, 31, 365]
-    # print(precipitation_series)
 
     if type(precipitation_series) == pd.DataFrame:
         precip = precipitation_series.get('Precipitation')[0][0]
@@ -626,6 +555,7 @@ def annual_plotter(precipitation, legend_handles, labels):
     ax0 = axes[0]
     ax1 = axes[1]
 
+    # TODO by_season
     # Plots rain by quantile, and if by_season is True, then also by year.
     if False:
         for i in range(color_count):
@@ -659,7 +589,6 @@ def annual_plotter(precipitation, legend_handles, labels):
     ax0.set_xlabel("Month") 
     ax0.set_ylabel("Year") 
     ax0.set_title(labels['title']) 
-    # ax0.legend(handles=legend_handles, fontsize='small')
     ax1.set_title('Total (mm)') 
     ax1.set_yticks([start + (2*k) for k in range(((end + 1 - start) // 2))], [str(start + (2*k)) for k in range(((end + 1 - start) // 2))])
 
@@ -674,14 +603,13 @@ def plot_elninos(precipitation, legend_handles, axs=None):
 
     end = precipitation['Decimal'].max()
     ticks = int((precipitation['cumsum'].max() * 1.5) // 1)
-    linewidth = 21900 // len(precipitation['Date'].unique())  # Extract the linewidth calculation to avoid repetition
+    linewidth = 21900 // len(precipitation['Date'].unique())
 
-    for j in ['strong nino', 'strong nina']:  # Directly iterate over the keys we're interested in
+    for j in ['strong nino', 'strong nina']:
         for x1, x2 in elninos[j]:
-            # Skip this iteration if x1 is greater than end
             if x1 > end:
                 continue
-            # Ensure x2 is not greater than end
+
             x2 = min(x2, end)
 
             if axs:
