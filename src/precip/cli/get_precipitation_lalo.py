@@ -288,7 +288,8 @@ def create_parser(iargs=None, namespace=None):
 
         if inps.lalo:
             coordinates = parse_coordinates(inps.lalo[0])
-            inps.latitude, inps.longitude = parse_coordinates(coordinates[0], coordinates[1])
+            inps.latitude = parse_coordinates(coordinates[0])
+            inps.longitude = parse_coordinates(coordinates[1])
 
     else:
             inps.latitude, inps.longitude = parse_polygon(inps.polygon)
