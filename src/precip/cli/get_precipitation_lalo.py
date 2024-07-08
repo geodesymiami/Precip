@@ -4,6 +4,7 @@ import sys
 import os
 from datetime import datetime
 import argparse
+from dateutil.relativedelta import relativedelta
 import sys
 from precip.plotter_functions import prompt_subplots
 # DONT USE IMPORT * INSTEAD USE from... import START_DATE, END_DATE.... etc
@@ -102,6 +103,8 @@ def create_parser(iargs=None, namespace=None):
     parser.add_argument('--log', 
                         action='store_true',
                         help='Enable logaritmic scale')
+    # IF nargs=1, THEN THE ARGUMENT IS A LIST
+    # IF nargs IS NOT SPECIFIED, THEN THE ARGUMENT IS A SINGLE VALUE
     parser.add_argument('--bins',
                         type=int,
                         metavar=('BINS'),
@@ -184,6 +187,8 @@ def create_parser(iargs=None, namespace=None):
         os.environ[workDir] = inps.dir
         inps.dir = inps.dir + '/gpm_data'
 
+    # IF nargs=1, THEN THE ARGUMENT IS A LIST
+    # IF nargs IS NOT SPECIFIED, THEN THE ARGUMENT IS A SINGLE VALUE
     else:
         inps.dir = inps.dir[0]
 
@@ -212,6 +217,8 @@ def create_parser(iargs=None, namespace=None):
                     inps.save = dir_path
 
 
+    # IF nargs=1, THEN THE ARGUMENT IS A LIST
+    # IF nargs IS NOT SPECIFIED, THEN THE ARGUMENT IS A SINGLE VALUE
         elif len(inps.save) == 1:
             inps.save = inps.save[0] 
 
@@ -348,6 +355,8 @@ def create_parser(iargs=None, namespace=None):
         inps.colorbar = 'viridis'
 
 
+    # IF nargs=1, THEN THE ARGUMENT IS A LIST
+    # IF nargs IS NOT SPECIFIED, THEN THE ARGUMENT IS A SINGLE VALUE
     if inps.interpolate:
         inps.interpolate = inps.interpolate[0]
 
