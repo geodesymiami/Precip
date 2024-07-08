@@ -329,8 +329,8 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
     else:
         if not start_dates:
             # Print an error message and exit the program
-            print(f'Error: {volcanoName} eruption date is out of range')
-            sys.exit(1)
+            msg = f'Error: {volcanoName} eruption date is out of range'
+            raise ValueError(msg)
 
     start_dates = sorted(start_dates)
     first_date = start_dates[0]
