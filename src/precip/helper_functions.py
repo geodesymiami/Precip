@@ -685,13 +685,12 @@ def sql_extract_precipitation(latitude, longitude, date_list, folder, ssh = None
                 f.write(local_file.read())
 
         temp_file.close()
+        ssh.close()
 
     conn.close()
 
     # Convert the 'Precipitation' column from a string to a list and then to a masked array
     df['Precipitation'] = df['Precipitation'].apply(lambda x: np.ma.array(json.loads(x)))
     print('')
-
-    ssh.close()
 
     return df
