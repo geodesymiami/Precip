@@ -50,7 +50,7 @@ Example:
 path_data = '/Users/giacomo/Library/CloudStorage/OneDrive-UniversityofMiami/GetPrecipitation/'
 
 
-def create_parser():
+def create_parser(iargs=None, namespace=None):
     """ Creates command line argument parser object. """
 
     parser = argparse.ArgumentParser(
@@ -176,8 +176,9 @@ def create_parser():
     parser.add_argument('--setup',
                     help='Setup environment')
 
-    inps = parser.parse_args()
+    inps = parser.parse_args(iargs, namespace)
 
+    print('inps.dir', inps.dir)
     if not inps.dir:
         inps.dir = (os.getenv(workDir)) if workDir in os.environ else (os.getenv('HOME'))
         os.environ[workDir] = inps.dir
@@ -186,6 +187,7 @@ def create_parser():
     else:
         inps.dir = inps.dir[0]
 
+    print('inps.dir', inps.dir)
     if inps.save is not None:
         if len(inps.save) == 0:
             if prodDir in os.environ:
@@ -213,6 +215,7 @@ def create_parser():
         elif len(inps.save) == 1:
             inps.save = inps.save[0] 
 
+    print(inps)
     ############################ POSITIONAL ARGUMENTS ############################
             
     if len(inps.positional) == 1:
@@ -323,16 +326,11 @@ def create_parser():
         inps.bins = 1
 
     else:
-        if inps.bins[0] > 4:
-            inps.bins[0] = 4
-
-        inps.bins = inps.bins[0]
+        if inps.bins > 4:
+            inps.bins = 4
 
     if not inps.roll:
         inps.roll = 1
-
-    else:
-        inps.roll = inps.roll[0]
 
     if not inps.ninos:
         inps.ninos = False
@@ -447,9 +445,8 @@ def parse_coordinates(coordinates):
 #################### END TEST AREA ########################
 
 
-def main():
-    inps = create_parser()
-
+def main(iargs=None, namespace=None):
+    inps = create_parser(iargs, namespace)
     fig, axes = prompt_subplots(inps)
 
     return fig, axes
