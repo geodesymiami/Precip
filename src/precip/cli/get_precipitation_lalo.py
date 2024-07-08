@@ -4,9 +4,9 @@ import sys
 import os
 from datetime import datetime
 import argparse
-from dateutil.relativedelta import relativedelta
 import sys
 from precip.plotter_functions import prompt_subplots
+# DONT USE IMPORT * INSTEAD USE from... import START_DATE, END_DATE.... etc
 from precip.config import *
 
 # TODO Add proper CITATION for GPM data and Volcano data
@@ -47,6 +47,7 @@ Example:
 
 """
 
+# USE CAPITILIZED VARIABLES FOR CONSTANTS
 path_data = '/Users/giacomo/Library/CloudStorage/OneDrive-UniversityofMiami/GetPrecipitation/'
 
 
@@ -58,6 +59,7 @@ def create_parser(iargs=None, namespace=None):
         formatter_class=argparse.RawTextHelpFormatter,
         epilog=EXAMPLE)
     
+    # USE DEFAULT OPTION FOR DEFAULT VALUES
     parser.add_argument('positional', 
                         nargs='*',
                         help='Volcano name or coordinates')
@@ -101,12 +103,10 @@ def create_parser(iargs=None, namespace=None):
                         action='store_true',
                         help='Enable logaritmic scale')
     parser.add_argument('--bins',
-                        nargs=1,
                         type=int,
                         metavar=('BINS'),
                         help='Number of bins for the histogram')
     parser.add_argument('--roll',
-                        nargs=1,
                         type=int,
                         metavar=('ROLL'),
                         help='Rolling average')
@@ -178,7 +178,7 @@ def create_parser(iargs=None, namespace=None):
 
     inps = parser.parse_args(iargs, namespace)
 
-    print('inps.dir', inps.dir)
+    # DON'T USE import *; USE import WORKDIR, SCRATCHDIR, etc.
     if not inps.dir:
         inps.dir = (os.getenv(workDir)) if workDir in os.environ else (os.getenv('HOME'))
         os.environ[workDir] = inps.dir
@@ -187,12 +187,12 @@ def create_parser(iargs=None, namespace=None):
     else:
         inps.dir = inps.dir[0]
 
-    print('inps.dir', inps.dir)
     if inps.save is not None:
         if len(inps.save) == 0:
             if prodDir in os.environ:
                 inps.save = (os.getenv(prodDir))
 
+            # ASSIGN os.getenv(scratchDir) TO A VARIABLE INSTEAD OF CALLING IT MULTIPLE TIMES
             elif scratchDir in os.environ:
                 if os.path.exists(os.getenv(scratchDir) + '/precip_products'):
                     inps.save = (os.getenv(scratchDir) + '/precip_products')
@@ -215,7 +215,6 @@ def create_parser(iargs=None, namespace=None):
         elif len(inps.save) == 1:
             inps.save = inps.save[0] 
 
-    print(inps)
     ############################ POSITIONAL ARGUMENTS ############################
             
     if len(inps.positional) == 1:
@@ -281,9 +280,7 @@ def create_parser(iargs=None, namespace=None):
                 parser.error("--longitude requires 1 or 2 arguments")
 
         if inps.lalo:
-            coordinates = parse_coordinates(inps.lalo[0])
-            inps.latitude = parse_coordinates(coordinates[0])
-            inps.longitude = parse_coordinates(coordinates[1])
+            inps.latitude, inps.longitude = parse_coordinates(inps.lalo[0])
 
     else:
             inps.latitude, inps.longitude = parse_polygon(inps.polygon)
@@ -320,8 +317,12 @@ def create_parser(iargs=None, namespace=None):
             except ValueError:
                 print('Error: Date format not valid, it must be in the format YYYYMMDD or YYYY-MM-DD')
                 sys.exit(1)
+                # DONT USE SYSEXIT, USE RAISE EXCEPTION ex:
+                # msg = 'Date format not valid, it must be in the format YYYYMMDD or YYYY-MM-DD'
+                # raise ValueError(msg)
 
 
+    # USE DEFAULT OPTION FOR DEFAULT VALUES
     if not inps.bins:
         inps.bins = 1
 
@@ -329,18 +330,23 @@ def create_parser(iargs=None, namespace=None):
         if inps.bins > 4:
             inps.bins = 4
 
+    # USE DEFAULT OPTION FOR DEFAULT VALUES
     if not inps.roll:
         inps.roll = 1
 
+    # USE DEFAULT OPTION FOR DEFAULT VALUES
     if not inps.ninos:
         inps.ninos = False
 
+    # USE DEFAULT OPTION FOR DEFAULT VALUES
     # TODO check if is better to use true as default value
     if not inps.log:
         inps.log = False
 
+    # USE DEFAULT OPTION FOR DEFAULT VALUES
     if not inps.colorbar:
         inps.colorbar = 'viridis'
+
 
     if inps.interpolate:
         inps.interpolate = inps.interpolate[0]
