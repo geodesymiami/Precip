@@ -324,8 +324,8 @@ def create_parser(iargs=None, namespace=None):
                 inps.add_event = tuple(datetime.strptime(date_string, '%Y%m%d').date() for date_string in inps.add_event)
 
             except ValueError:
-                print('Error: Date format not valid, it must be in the format YYYYMMDD or YYYY-MM-DD')
-                sys.exit(1)
+                msg = 'Date format not valid, it must be in the format YYYYMMDD or YYYY-MM-DD'
+                raise ValueError(msg)
                 # DONT USE SYSEXIT, USE RAISE EXCEPTION ex:
                 # msg = 'Date format not valid, it must be in the format YYYYMMDD or YYYY-MM-DD'
                 # raise ValueError(msg)
@@ -427,8 +427,8 @@ def parse_coordinates(coordinates):
                 coordinates = [float(coordinates), float(coordinates)]
 
         except ValueError:
-            print(f'Error: {coordinates} invalid coordinate/s')
-            sys.exit(1)
+            msg=f'Error: {coordinates} invalid coordinate/s'
+            raise ValueError(msg)
 
         return coordinates
     

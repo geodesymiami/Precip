@@ -72,10 +72,9 @@ def prompt_subplots(inps):
             title = f'{inps.name[0]} - Latitude: {inps.latitude}, Longitude: {inps.longitude}'
         
         else:
-            print('Error: Please provide valid coordinates or volcano name.')
-            print('Try using --list to get a list of volcanoes.')
-            sys.exit(1)
-
+            msg = 'Error: Please provide valid coordinates or volcano name.\n Try using --list to get a list of volcanoes.'
+            raise ValueError(msg)
+        
         if inps.style == 'strength':
             strength = True
 
