@@ -7,6 +7,7 @@ import argparse
 from dateutil.relativedelta import relativedelta
 import sys
 from precip.plotter_functions import prompt_subplots
+# DONT USE IMPORT * INSTEAD USE from... import START_DATE, END_DATE.... etc
 from precip.config import *
 
 # TODO Add proper CITATION for GPM data and Volcano data
@@ -47,10 +48,11 @@ Example:
 
 """
 
+# USE CAPITILIZED VARIABLES FOR CONSTANTS
 path_data = '/Users/giacomo/Library/CloudStorage/OneDrive-UniversityofMiami/GetPrecipitation/'
 
 
-def create_parser():
+def create_parser(iargs=None, namespace=None):
     """ Creates command line argument parser object. """
 
     parser = argparse.ArgumentParser(
@@ -58,6 +60,7 @@ def create_parser():
         formatter_class=argparse.RawTextHelpFormatter,
         epilog=EXAMPLE)
     
+    # USE DEFAULT OPTION FOR DEFAULT VALUES
     parser.add_argument('positional', 
                         nargs='*',
                         help='Volcano name or coordinates')
@@ -100,13 +103,13 @@ def create_parser():
     parser.add_argument('--log', 
                         action='store_true',
                         help='Enable logaritmic scale')
+    # IF nargs=1, THEN THE ARGUMENT IS A LIST
+    # IF nargs IS NOT SPECIFIED, THEN THE ARGUMENT IS A SINGLE VALUE
     parser.add_argument('--bins',
-                        nargs=1,
                         type=int,
                         metavar=('BINS'),
                         help='Number of bins for the histogram')
     parser.add_argument('--roll',
-                        nargs=1,
                         type=int,
                         metavar=('ROLL'),
                         help='Rolling average')
@@ -176,13 +179,16 @@ def create_parser():
     parser.add_argument('--setup',
                     help='Setup environment')
 
-    inps = parser.parse_args()
+    inps = parser.parse_args(iargs, namespace)
 
+    # DON'T USE import *; USE import WORKDIR, SCRATCHDIR, etc.
     if not inps.dir:
         inps.dir = (os.getenv(workDir)) if workDir in os.environ else (os.getenv('HOME'))
         os.environ[workDir] = inps.dir
         inps.dir = inps.dir + '/gpm_data'
 
+    # IF nargs=1, THEN THE ARGUMENT IS A LIST
+    # IF nargs IS NOT SPECIFIED, THEN THE ARGUMENT IS A SINGLE VALUE
     else:
         inps.dir = inps.dir[0]
 
@@ -191,6 +197,7 @@ def create_parser():
             if prodDir in os.environ:
                 inps.save = (os.getenv(prodDir))
 
+            # ASSIGN os.getenv(scratchDir) TO A VARIABLE INSTEAD OF CALLING IT MULTIPLE TIMES
             elif scratchDir in os.environ:
                 if os.path.exists(os.getenv(scratchDir) + '/precip_products'):
                     inps.save = (os.getenv(scratchDir) + '/precip_products')
@@ -210,6 +217,8 @@ def create_parser():
                     inps.save = dir_path
 
 
+    # IF nargs=1, THEN THE ARGUMENT IS A LIST
+    # IF nargs IS NOT SPECIFIED, THEN THE ARGUMENT IS A SINGLE VALUE
         elif len(inps.save) == 1:
             inps.save = inps.save[0] 
 
@@ -317,33 +326,39 @@ def create_parser():
             except ValueError:
                 print('Error: Date format not valid, it must be in the format YYYYMMDD or YYYY-MM-DD')
                 sys.exit(1)
+                # DONT USE SYSEXIT, USE RAISE EXCEPTION ex:
+                # msg = 'Date format not valid, it must be in the format YYYYMMDD or YYYY-MM-DD'
+                # raise ValueError(msg)
 
 
+    # USE DEFAULT OPTION FOR DEFAULT VALUES
     if not inps.bins:
         inps.bins = 1
 
     else:
-        if inps.bins[0] > 4:
-            inps.bins[0] = 4
+        if inps.bins > 4:
+            inps.bins = 4
 
-        inps.bins = inps.bins[0]
-
+    # USE DEFAULT OPTION FOR DEFAULT VALUES
     if not inps.roll:
         inps.roll = 1
 
-    else:
-        inps.roll = inps.roll[0]
-
+    # USE DEFAULT OPTION FOR DEFAULT VALUES
     if not inps.ninos:
         inps.ninos = False
 
+    # USE DEFAULT OPTION FOR DEFAULT VALUES
     # TODO check if is better to use true as default value
     if not inps.log:
         inps.log = False
 
+    # USE DEFAULT OPTION FOR DEFAULT VALUES
     if not inps.colorbar:
         inps.colorbar = 'viridis'
 
+
+    # IF nargs=1, THEN THE ARGUMENT IS A LIST
+    # IF nargs IS NOT SPECIFIED, THEN THE ARGUMENT IS A SINGLE VALUE
     if inps.interpolate:
         inps.interpolate = inps.interpolate[0]
 
@@ -447,9 +462,8 @@ def parse_coordinates(coordinates):
 #################### END TEST AREA ########################
 
 
-def main():
-    inps = create_parser()
-
+def main(iargs=None, namespace=None):
+    inps = create_parser(iargs, namespace)
     fig, axes = prompt_subplots(inps)
 
     return fig, axes
