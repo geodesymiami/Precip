@@ -63,8 +63,11 @@ def prompt_subplots(inps):
             inps.latitude, inps.longitude = adapt_coordinates(lalo[0], lalo[1])
 
             if inps.style == 'map':
+                volcano_position = [inps.latitude[0], inps.longitude[0]]
+
                 inps.latitude = [min(inps.latitude) - 2, max(inps.latitude) + 2]
                 inps.longitude = [min(inps.longitude) - 2, max(inps.longitude) + 2]
+
 
             title = f'{inps.name[0]} - Latitude: {inps.latitude}, Longitude: {inps.longitude}'
         
@@ -125,6 +128,9 @@ def prompt_subplots(inps):
                 precipitation = interpolate_map(precipitation, inps.interpolate)
 
             map_precipitation(precipitation, inps.longitude, inps.latitude, date_list, inps.colorbar, inps.isolines, labels, inps.vlim)
+            if inps.name:
+                plt.scatter(volcano_position[1], volcano_position[0], color='red', marker='^', s=50, label=inps.name[0], zorder=3)
+                plt.legend(fontsize='small', frameon=True, framealpha=0.3)
 
             fig = plt.gcf()
             axes = plt.gca()
