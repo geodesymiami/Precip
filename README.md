@@ -4,18 +4,18 @@ Python code to display precipitation globally using [GPM dataset](https://gpm.na
 
 # Installation
 - Create destination folder from terminal and clone the repo:
-```
+```bash
 cd $HOME
 mkdir -p $HOME/code/Precip
 git clone git@github.com:geodesymiami/Precip.git $HOME/code/Precip
 ```
 
 - Set environment variables (temp):
-```
+```bash
 export PRECIP_HOME=$HOME/code/Precip
 ```
 - Prepend to your `$PATH`
-```
+```bash
 export PATH=${PRECIP_HOME}/src/Precip/cli:$PATH
 export PYTHONPATH=${PRECIP_HOME}/src:$PYTHONPATH
 ```
@@ -33,18 +33,18 @@ Otherwise you can use a mockup account, just copy paste the following code in yo
 ## Mac/Linux
 
 ### Create `.netrc` file
-```
+```bash
 cd $HOME
 touch .netrc
 echo "machine urs.earthdata.nasa.gov login emrehavazli password 4302749" >> .netrc
 chmod 0600 .netrc
 ```
 ### Create `.urs_cookies` file
-```
+```bash
 touch $HOME/.urs_cookies
 ```
 ### Create `.dodsrc` file
-```
+```bash
 touch $HOME/.dodsrc
 
 echo "HTTP.NETRC=$HOME/.netrc" >> $HOME/.dodsrc
@@ -64,12 +64,12 @@ Save as C:\.netrc
 ### Create `.urs_cookies` file
 From terminal (`Win` + **R**, type _cmd_ )
 
-```
+```bash
 cd %USERPROFILE%
 NUL > .urs_cookies
 ```
 ### Create `.dodsrc` file
-```
+```bash
 cd %USERPROFILE%
 NUL > .dodsrc
 echo "HTTP.NETRC=%USERPROFILE%/.netrc" >> %USERPROFILE%\.dodsrc
@@ -78,18 +78,18 @@ echo "HTTP.COOKIEJAR=%USERPROFILE%/.urs_cookies" >> %USERPROFILE%\.dodsrc
 
 # Examples
 You can run the code through command line by simply runnig the following command:
-```
+```bash
 get_precipitation_lalo.py Merapi --style bar --period=20060101:20070101
 ```
 This line will show the precipitation over **Merapi** volcano from **01 January 2006** to **2007** as a **bar** plot, with vertical lines representing the eruptions.
 
 For more examples run:
-```
+```bash
 get_precipitation_lalo.py --h
 ```
 
 If You want to show (almost) all the available types of plot in one single command, run:
-```
+```bash
 get_all.py Merapi --period=20060101:20070101
 ```
 You can add some of the arguments from `get_precipitation_lalo.py`, like:
