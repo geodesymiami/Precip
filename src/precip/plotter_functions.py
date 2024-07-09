@@ -74,13 +74,21 @@ def prompt_subplots(inps):
         else:
             msg = 'Error: Please provide valid coordinates or volcano name.\n Try using --list to get a list of volcanoes.'
             raise ValueError(msg)
+
+        if inps.save:
+            if inps.name:
+                saveName = inps.name[0]
+
+            elif inps.latitude and inps.longitude:
+                saveName = f'{inps.latitude}_{inps.longitude}'
+                
+            save_path = f'{inps.save}/{saveName}_{inps.start_date}_{inps.end_date}_{inps.style}.png'
         
         if inps.style == 'strength':
             strength = True
 
         else:
             strength = False
-
 
         if ssh:
             download_jetstream_parallel(date_list, ssh, inps.parallel)
@@ -133,14 +141,15 @@ def prompt_subplots(inps):
 
             fig = plt.gcf()
             axes = plt.gca()
+
+            if inps.save:
+                plt.savefig(save_path)
             
             if not inps.no_show:
                 plt.show()
 
             return fig, axes
-            
-            # sys.exit(0)
-        
+
         # Add cumulative, rolling precipitation, and Decimal dates columns
         precipitation = volcano_rain_frame(precipitation, inps.roll)
 
@@ -220,13 +229,6 @@ def prompt_subplots(inps):
         axes = plt.gca()
 
         if inps.save:
-            if inps.name:
-                saveName = inps.name[0]
-
-            elif inps.latitude and inps.longitude:
-                saveName = f'{inps.latitude}_{inps.longitude}'
-                
-            save_path = f'{inps.save}/{saveName}_{inps.start_date}_{inps.end_date}_{inps.style}.png'
             plt.savefig(save_path)
         
         if not inps.no_show:

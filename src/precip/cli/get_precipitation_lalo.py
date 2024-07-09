@@ -222,7 +222,13 @@ def create_parser(iargs=None, namespace=None):
     # IF nargs=1, THEN THE ARGUMENT IS A LIST
     # IF nargs IS NOT SPECIFIED, THEN THE ARGUMENT IS A SINGLE VALUE
         elif len(inps.save) == 1:
-            inps.save = inps.save[0] 
+            inps.save = inps.save[0]
+
+            if not os.path.exists(inps.save):
+                if not os.path.isabs(inps.save):
+                    os.chdir(os.getenv('HOME'))
+                
+                os.mkdir(inps.save)
 
     ############################ POSITIONAL ARGUMENTS ############################
             
