@@ -1,4 +1,4 @@
-# precip
+# Precip
 
 Python code to display precipitation globally using [GPM dataset](https://gpm.nasa.gov/data/visualizations/precip-apps).
 
@@ -7,17 +7,17 @@ Python code to display precipitation globally using [GPM dataset](https://gpm.na
 ```
 cd $HOME
 mkdir ./code
-mkdir ./code/precip
-git clone git@github.com:geodesymiami/precip.git ./code/precip
+mkdir ./code/Precip
+git clone git@github.com:geodesymiami/Precip.git ./code/Precip
 ```
 
 - Set environment variables (temp):
 ```
-export PRECIP_HOME=$HOME/code/precip
+export PRECIP_HOME=$HOME/code/Precip
 ```
 - Prepend to your `$PATH`
 ```
-export PATH=${PRECIP_HOME}/src/precip/cli:$PATH
+export PATH=${PRECIP_HOME}/src/Precip/cli:$PATH
 export PYTHONPATH=${PRECIP_HOME}/src:$PYTHONPATH
 ```
 
