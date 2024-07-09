@@ -109,12 +109,12 @@ def create_parser(iargs=None, namespace=None):
                         type=int,
                         metavar=('BINS'),
                         default=1,
-                        help='Number of bins for the histogram')
+                        help='Number of bins for the histogram (default: %(default)s)')
     parser.add_argument('--roll',
                         type=int,
                         metavar=('ROLL'),
-                        default=1,
-                        help='Rolling average')
+                        default=90,
+                        help='Rolling average (default: %(default)s)')
     parser.add_argument('--elnino',
                         action='store_true',
                         dest = 'elnino',
