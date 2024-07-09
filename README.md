@@ -6,9 +6,8 @@ Python code to display precipitation globally using [GPM dataset](https://gpm.na
 - Create destination folder from terminal and clone the repo:
 ```
 cd $HOME
-mkdir ./code
-mkdir ./code/Precip
-git clone git@github.com:geodesymiami/Precip.git ./code/Precip
+mkdir -p $HOME/code/Precip
+git clone git@github.com:geodesymiami/Precip.git $HOME/code/Precip
 ```
 
 - Set environment variables (temp):
