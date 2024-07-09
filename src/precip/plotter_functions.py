@@ -216,7 +216,7 @@ def prompt_subplots(inps):
                 
             legend_handles = bar_plotter(precipitation, strength, inps.log, labels, legend_handles)
 
-        if inps.ninos and not strength:
+        if inps.elnino and not strength:
             legend_handles = plot_elninos(precipitation, legend_handles, axs)
                 
         if inps.add_event or eruption_dates != []:            
