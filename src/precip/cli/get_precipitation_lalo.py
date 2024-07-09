@@ -117,6 +117,7 @@ def create_parser(iargs=None, namespace=None):
                         help='Rolling average')
     parser.add_argument('--elnino',
                         action='store_true',
+                        dest = 'elnino',
                         help='Plot Nino/Nina events')
     
     parser.add_argument("--vlim", 
