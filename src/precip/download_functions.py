@@ -37,12 +37,12 @@ def download_volcano_json(json_path, json_download_url=json_download_url):
     
     except requests.exceptions.HTTPError as err:
         if err.response.status_code == 404:
-            print(f'Error: {err.response.status_code} Url Not Found')
-            sys.exit(1)
+            msg = f'Error: {err.response.status_code} Url Not Found'
+            raise ValueError(msg)
 
         else:
-            print('An HTTP error occurred: ' + str(err.response.status_code))
-            sys.exit(1)
+            msg = 'An HTTP error occurred: ' + str(err.response.status_code)
+            raise ValueError(msg)
 
 
     if os.path.exists(json_path):
@@ -143,8 +143,8 @@ def dload_site_list_parallel(folder, date_list, parallel=5):
                         time.sleep(1)
                         
                 else:
-                    print(f"Failed to download {url} after {attempts} attempts. Exiting...")
-                    sys.exit(1)
+                    msg = f"Failed to download {url} after {attempts} attempts. Exiting..."
+                    raise ValueError(msg)
             else:
                 print(f"\rFile {filename} already exists, skipping download. ", end="")
                 time.sleep(0.001)
@@ -289,8 +289,8 @@ def download_jetstream(ssh, url, pathJetstream):
             time.sleep(1)
             
     else:
-        print(f"Failed to download {url} after {attempts} attempts. Exiting...")
-        sys.exit(1)
+        msg = f"Failed to download {url} after {attempts} attempts. Exiting..."
+        raise ValueError(msg)
 
 
 def download_jetstream_parallel(date_list, ssh, parallel=5):

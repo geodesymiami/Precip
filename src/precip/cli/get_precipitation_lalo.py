@@ -27,7 +27,7 @@ Example:
     get_precipitation_lalo.py --style annual --start-date 20190101 --end-date 20210929 --latitude 19.5 --longitude -156.5 --roll 10 --bins 2 --add-event 20200929 20210929
 
   Add single events and el niño/niña events to the time series:
-    get_precipitation_lalo.py --style strength --lalo 19.5:-156.5 ---period 20190101:20210929 --add-event 20200929 20210929 --ninos
+    get_precipitation_lalo.py --style strength --lalo 19.5:-156.5 ---period 20190101:20210929 --add-event 20200929 20210929 --elnino
 
   Create a map plot for the precipitation data of a specific location at a given date range:
     get_precipitation_lalo.py --style map --end-date 20210929 --polygon 'POLYGON((113.4496 -8.0893,113.7452 -8.0893,113.7452 -7.817,113.4496 -7.817,113.4496 -8.0893))'
@@ -108,12 +108,14 @@ def create_parser(iargs=None, namespace=None):
     parser.add_argument('--bins',
                         type=int,
                         metavar=('BINS'),
+                        default=1,
                         help='Number of bins for the histogram')
     parser.add_argument('--roll',
                         type=int,
                         metavar=('ROLL'),
+                        default=1,
                         help='Rolling average')
-    parser.add_argument('--ninos',
+    parser.add_argument('--elnino',
                         action='store_true',
                         help='Plot Nino/Nina events')
     
@@ -197,13 +199,13 @@ def create_parser(iargs=None, namespace=None):
             if prodDir in os.environ:
                 inps.save = (os.getenv(prodDir))
 
-            # ASSIGN os.getenv(scratchDir) TO A VARIABLE INSTEAD OF CALLING IT MULTIPLE TIMES
             elif scratchDir in os.environ:
-                if os.path.exists(os.getenv(scratchDir) + '/precip_products'):
-                    inps.save = (os.getenv(scratchDir) + '/precip_products')
+                scratch_dir = os.getenv(scratchDir)
+                if os.path.exists(scratch_dir + '/precip_products'):
+                    inps.save = (scratch_dir + '/precip_products')
 
                 else:
-                    dir_path = os.path.join(os.getenv(scratchDir), 'precip_products')
+                    dir_path = os.path.join(scratch_dir, 'precip_products')
                     os.mkdir(dir_path)
                     inps.save = dir_path
 
@@ -220,7 +222,13 @@ def create_parser(iargs=None, namespace=None):
     # IF nargs=1, THEN THE ARGUMENT IS A LIST
     # IF nargs IS NOT SPECIFIED, THEN THE ARGUMENT IS A SINGLE VALUE
         elif len(inps.save) == 1:
-            inps.save = inps.save[0] 
+            inps.save = inps.save[0]
+
+            if not os.path.exists(inps.save):
+                if not os.path.isabs(inps.save):
+                    os.chdir(os.getenv('HOME'))
+                
+                os.mkdir(inps.save)
 
     ############################ POSITIONAL ARGUMENTS ############################
             
@@ -324,28 +332,12 @@ def create_parser(iargs=None, namespace=None):
                 inps.add_event = tuple(datetime.strptime(date_string, '%Y%m%d').date() for date_string in inps.add_event)
 
             except ValueError:
-                print('Error: Date format not valid, it must be in the format YYYYMMDD or YYYY-MM-DD')
-                sys.exit(1)
-                # DONT USE SYSEXIT, USE RAISE EXCEPTION ex:
-                # msg = 'Date format not valid, it must be in the format YYYYMMDD or YYYY-MM-DD'
-                # raise ValueError(msg)
+                msg = 'Date format not valid, it must be in the format YYYYMMDD or YYYY-MM-DD'
+                raise ValueError(msg)
 
-
-    # USE DEFAULT OPTION FOR DEFAULT VALUES
     if not inps.bins:
-        inps.bins = 1
-
-    else:
         if inps.bins > 4:
             inps.bins = 4
-
-    # USE DEFAULT OPTION FOR DEFAULT VALUES
-    if not inps.roll:
-        inps.roll = 1
-
-    # USE DEFAULT OPTION FOR DEFAULT VALUES
-    if not inps.ninos:
-        inps.ninos = False
 
     # USE DEFAULT OPTION FOR DEFAULT VALUES
     # TODO check if is better to use true as default value
@@ -427,8 +419,8 @@ def parse_coordinates(coordinates):
                 coordinates = [float(coordinates), float(coordinates)]
 
         except ValueError:
-            print(f'Error: {coordinates} invalid coordinate/s')
-            sys.exit(1)
+            msg=f'Error: {coordinates} invalid coordinate/s'
+            raise ValueError(msg)
 
         return coordinates
     
