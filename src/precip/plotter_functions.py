@@ -81,8 +81,9 @@ def prompt_subplots(inps):
 
             elif inps.latitude and inps.longitude:
                 saveName = f'{inps.latitude}_{inps.longitude}'
-                
-            save_path = f'{inps.save}/{saveName}_{inps.start_date}_{inps.end_date}_{inps.style}.png'
+            strStart = str(inps.start_date).replace('-', '') if not isinstance(inps.start_date, str) else inps.start_date.replace('-', '')
+            strEnd = str(inps.end_date).replace('-', '') if not isinstance(inps.end_date, str) else inps.end_date.replace('-', '')
+            save_path = f'{inps.save}/{saveName}_{strStart}_{strEnd}_{inps.style}.png'
         
         if inps.style == 'strength':
             strength = True
