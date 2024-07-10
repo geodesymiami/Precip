@@ -2,6 +2,8 @@
 
 Python code to display precipitation globally using [GPM dataset](https://gpm.nasa.gov/data/visualizations/precip-apps).
 
+Information on volcanoes is retrieved from [Global Volcanism Program](https://volcano.si.edu/) webservice.
+
 # Installation
 - Create destination folder from terminal and clone the repo:
 ```bash
