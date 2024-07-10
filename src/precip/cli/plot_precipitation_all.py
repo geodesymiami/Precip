@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from precip.cli import get_precipitation_lalo
+from precip.cli import plot_precipitation
 import argparse
 
 DEFAULT_STYLES = ['map', 'bar', 'annual', 'strength']
@@ -14,17 +14,17 @@ Plot all styles for a volcano:
 Plot all styles for a volcano with two styles:
     get_all.py Merapi --period=20060101:20070101 --styles map bar
 
-Plot all stles and pass additional arguments to get_precipitation_lalo:
+Plot all stles and pass additional arguments to plot_precipitation:
     get_all.py Merapi --period=20060101:20070101 --styles map bar --no-show
     get_all.py Merapi --period=20060101:20070101 --styles map bar --dir '/home/user/Downloads'
 
-get_precipitation_lalo --help for more options
+plot_precipitation --help for more options
 """
 
 
 def create_parser():
     parser = argparse.ArgumentParser(
-        description='Wrapper tool to run get_precipitation_lalo for a volcano with muliple plot styles',
+        description='Wrapper tool to run plot_precipitation for a volcano with muliple plot styles',
         formatter_class=argparse.RawTextHelpFormatter,
         epilog=EXAMPLES
     )
@@ -39,7 +39,7 @@ def main():
     args, unknown_args = parser.parse_known_args()
     for style in args.styles:
         inps = argparse.Namespace(style=style)
-        get_precipitation_lalo.main(unknown_args, inps)
+        plot_precipitation.main(unknown_args, inps)
 
 if __name__ == '__main__':
     main()
