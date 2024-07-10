@@ -19,7 +19,7 @@ Example:
   Create a bar plot with a rolling average of 30 days, 3 bins (colors divided by ascending values), on a log scale for the precipitation data of Merapi volcano (if eruptions are included in the date range, they will be plotted), default start date is {START_DATE} and default end date is {END_DATE}:
     get_precipitation_lalo.py Merapi --style bar --roll 30 --bins 3 --log
 
-  Create a bar plot ordered by strength for the precipitation data of a specific location at a given date range and save (If path not specified, the data will be downloaded either in $WORKDIR or $HOME directory + /precip_products):
+  Create a bar plot ordered by strength for the precipitation data of a specific location at a given date range and save (If path not specified, the data will be downloaded either in {PRODDIR}, {SCRATCHDIR}/precip_products or HOME/precip_products):
     get_precipitation_lalo.py --style strength --lalo 19.5:-156.5 ---period 20190101:20210929 --save
 
   Create a 'Line' plot for the precipitation data of a specific location at a given date range ordered by year, with a rolling average of 10 days and 2 binsand add 2 events to the time series:
@@ -59,7 +59,6 @@ def create_parser(iargs=None, namespace=None):
         formatter_class=argparse.RawTextHelpFormatter,
         epilog=EXAMPLE)
     
-    # USE DEFAULT OPTION FOR DEFAULT VALUES
     parser.add_argument('positional', 
                         nargs='*',
                         help='Volcano name or coordinates')
@@ -102,8 +101,6 @@ def create_parser(iargs=None, namespace=None):
     parser.add_argument('--log', 
                         action='store_true',
                         help='Enable logaritmic scale')
-    # IF nargs=1, THEN THE ARGUMENT IS A LIST
-    # IF nargs IS NOT SPECIFIED, THEN THE ARGUMENT IS A SINGLE VALUE
     parser.add_argument('--bins',
                         type=int,
                         metavar=('BINS'),
@@ -126,7 +123,6 @@ def create_parser(iargs=None, namespace=None):
                         type=float, 
                         help="Velocity limit for the colorbar (default: None)")
     parser.add_argument('--interpolate',
-                        nargs=1,
                         metavar=('GRANULARITY'),
                         type=int, 
                         help='Interpolate data')
@@ -183,14 +179,11 @@ def create_parser(iargs=None, namespace=None):
 
     inps = parser.parse_args(iargs, namespace)
 
-    # DON'T USE import *; USE import WORKDIR, SCRATCHDIR, etc.
     if not inps.dir:
         inps.dir = (os.getenv(WORKDIR)) if WORKDIR in os.environ else (os.getenv('HOME'))
         os.environ[WORKDIR] = inps.dir
         inps.dir = inps.dir + '/gpm_data'
 
-    # IF nargs=1, THEN THE ARGUMENT IS A LIST
-    # IF nargs IS NOT SPECIFIED, THEN THE ARGUMENT IS A SINGLE VALUE
     else:
         inps.dir = inps.dir[0]
 
@@ -218,9 +211,6 @@ def create_parser(iargs=None, namespace=None):
                     os.mkdir(dir_path)
                     inps.save = dir_path
 
-
-    # IF nargs=1, THEN THE ARGUMENT IS A LIST
-    # IF nargs IS NOT SPECIFIED, THEN THE ARGUMENT IS A SINGLE VALUE
         elif len(inps.save) == 1:
             inps.save = inps.save[0]
 
@@ -336,8 +326,7 @@ def create_parser(iargs=None, namespace=None):
                 raise ValueError(msg)
 
     if not inps.bins:
-        if inps.bins > 4:
-            inps.bins = 4
+        inps.bins = 4 if inps.bins > 4 else inps.bins
 
     # USE DEFAULT OPTION FOR DEFAULT VALUES
     # TODO check if is better to use true as default value
@@ -347,12 +336,6 @@ def create_parser(iargs=None, namespace=None):
     # USE DEFAULT OPTION FOR DEFAULT VALUES
     if not inps.colorbar:
         inps.colorbar = 'viridis'
-
-
-    # IF nargs=1, THEN THE ARGUMENT IS A LIST
-    # IF nargs IS NOT SPECIFIED, THEN THE ARGUMENT IS A SINGLE VALUE
-    if inps.interpolate:
-        inps.interpolate = inps.interpolate[0]
 
     return inps
 
