@@ -10,7 +10,7 @@ import subprocess
 import time
 import netCDF4 as nc
 from precip.helper_functions import ask_user
-from precip.config import JSON_DOWNLOAD_URL, FINAL06, FINAL07, pathJetstream
+from precip.config import JSON_DOWNLOAD_URL, FINAL06, FINAL07, PATH_JETSTREAM
 import paramiko
 import tempfile
 
@@ -161,7 +161,7 @@ def check_nc4_files(folder, ssh):
     files = []
 
     if ssh:
-        stdin, stdout, stderr = ssh.exec_command(f'ls {pathJetstream}/*.nc4')
+        stdin, stdout, stderr = ssh.exec_command(f'ls {PATH_JETSTREAM}/*.nc4')
         files = stdout.read().decode().splitlines()
 
         client = ssh.open_sftp()
@@ -299,7 +299,7 @@ def download_jetstream_parallel(date_list, ssh, parallel=5):
 
     # Use a ThreadPoolExecutor to download the files in parallel
     with concurrent.futures.ThreadPoolExecutor(max_workers=parallel) as executor:
-        futures = [executor.submit(download_jetstream, ssh, url, pathJetstream) for url in urls]
+        futures = [executor.submit(download_jetstream, ssh, url, PATH_JETSTREAM) for url in urls]
 
     # Close the SSH client
     ssh.close()
