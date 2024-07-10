@@ -12,7 +12,7 @@ from scipy.interpolate import interp2d
 import pygmt
 from precip.helper_functions import *
 from precip.download_functions import *
-from precip.config import *
+from precip.config import JSON_DOWNLOAD_URL, JSON_VOLCANO, START_DATE, END_DATE, ELNINOS
 import requests
 
 # TODO to replace elninos with the following API #
@@ -26,7 +26,7 @@ if False:
 
 def prompt_subplots(inps):
     gpm_dir = inps.dir
-    volcano_json_dir = inps.dir + '/' + jsonVolcano
+    volcano_json_dir = inps.dir + '/' + JSON_VOLCANO
 
     date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
 
@@ -81,8 +81,9 @@ def prompt_subplots(inps):
 
             elif inps.latitude and inps.longitude:
                 saveName = f'{inps.latitude}_{inps.longitude}'
-                
-            save_path = f'{inps.save}/{saveName}_{inps.start_date}_{inps.end_date}_{inps.style}.png'
+            strStart = str(inps.start_date).replace('-', '') if not isinstance(inps.start_date, str) else inps.start_date.replace('-', '')
+            strEnd = str(inps.end_date).replace('-', '') if not isinstance(inps.end_date, str) else inps.end_date.replace('-', '')
+            save_path = f'{inps.save}/{saveName}_{strStart}_{strEnd}_{inps.style}.png'
         
         if inps.style == 'strength':
             strength = True
@@ -251,7 +252,7 @@ def get_volcano_json(jsonfile, url):
         print("Loading from local file")
 
         if not os.path.exists(jsonfile):
-            download_volcano_json(jsonfile, json_download_url)
+            download_volcano_json(jsonfile, JSON_DOWNLOAD_URL)
 
         f = open(jsonfile)
         data = json.load(f)
@@ -269,7 +270,7 @@ def volcanoes_list(jsonfile):
     Returns:
         None
     """
-    data = get_volcano_json(jsonfile, json_download_url)
+    data = get_volcano_json(jsonfile, JSON_DOWNLOAD_URL)
 
     volcanoName = []
 
@@ -296,13 +297,13 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
     """
     column_names = ['Volcano', 'Start', 'End', 'Max Explosivity']
     
-    data = get_volcano_json(jsonfile, json_download_url)
+    data = get_volcano_json(jsonfile, JSON_DOWNLOAD_URL)
 
     start_dates = []
     frame_data = []
 
-    first_day = datetime.strptime(startDate, '%Y%m%d').date()
-    last_day = datetime.strptime(endDate, '%Y%m%d').date()
+    first_day = datetime.strptime(START_DATE, '%Y%m%d').date()
+    last_day = datetime.strptime(END_DATE, '%Y%m%d').date()
 
     # Iterate over the features in the data
     for j in data['features']:
@@ -550,7 +551,7 @@ def bar_plotter (precipitation, strength, log, labels, legend_handles):
 
 
 def annual_plotter(precipitation, legend_handles, labels):
-    global elninos
+    global ELNINOS
 
     first_date = precipitation['Decimal'].min()
     last_date = precipitation['Decimal'].max() 
@@ -604,7 +605,7 @@ def annual_plotter(precipitation, legend_handles, labels):
 
 
 def plot_elninos(precipitation, legend_handles, axs=None):
-    global elninos
+    global ELNINOS
 
     cmap = plt.cm.bwr
     colors = {'strong nino': [cmap(253), 'Strong El Niño'], 'strong nina': [cmap(3), 'Strong La Niña']}
@@ -614,7 +615,7 @@ def plot_elninos(precipitation, legend_handles, axs=None):
     linewidth = 21900 // len(precipitation['Date'].unique())
 
     for j in ['strong nino', 'strong nina']:
-        for x1, x2 in elninos[j]:
+        for x1, x2 in ELNINOS[j]:
             if x1 > end:
                 continue
 

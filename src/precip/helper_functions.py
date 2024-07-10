@@ -11,12 +11,9 @@ import threading
 import tempfile
 import numpy as np
 import pandas as pd
-from pandas import NaT
 from matplotlib import cm
-from matplotlib import patches as mpatches
 import netCDF4 as nc
-from netCDF4 import Dataset
-from precip.config import pathJetstream, scratchDir
+from precip.config import PATH_JETSTREAM
 
 
 def date_to_decimal_year(date_str):
@@ -319,7 +316,7 @@ def process_file(file, date_list, lon, lat, longitude, latitude, client):
 
     if client is not None:
         with tempfile.NamedTemporaryFile(suffix='.nc4', delete=True) as tmp:
-            remote_file_path = pathJetstream + file
+            remote_file_path = PATH_JETSTREAM + file
             
             # Download the file to your local system
             client.get(remote_file_path, tmp.name)
@@ -547,7 +544,7 @@ def extract_precipitation(latitude, longitude, date_list, folder, ssh=None):
 ##################### Try to use Jetstream ###############################
     
     if ssh:
-        stdin, stdout, stderr = ssh.exec_command(f"ls {pathJetstream}")
+        stdin, stdout, stderr = ssh.exec_command(f"ls {PATH_JETSTREAM}")
 
         # Wait for the command to finish executing
         stdout.channel.recv_exit_status()
@@ -604,14 +601,14 @@ def sql_extract_precipitation(latitude, longitude, date_list, folder, ssh = None
 
         # Try to open the database file
         try:
-            with sftp.file(pathJetstream + 'volcanoes.db', 'rb') as f:
+            with sftp.file(PATH_JETSTREAM + 'volcanoes.db', 'rb') as f:
                 temp_file.write(f.read())
 
             db_path = temp_file.name
 
         except IOError:
             # The file does not exist, create it
-            with sftp.file(pathJetstream + 'volcanoes.db', 'wb') as f:
+            with sftp.file(PATH_JETSTREAM + 'volcanoes.db', 'wb') as f:
                 pass
 
             db_path = temp_file.name
@@ -680,7 +677,7 @@ def sql_extract_precipitation(latitude, longitude, date_list, folder, ssh = None
 
     # Upload the local database file back to the remote server
     if ssh:
-        with sftp.file(pathJetstream + 'volcanoes.db', 'wb') as f:
+        with sftp.file(PATH_JETSTREAM + 'volcanoes.db', 'wb') as f:
             with open(db_path, 'rb') as local_file:
                 f.write(local_file.read())
 

@@ -2,12 +2,12 @@ import pandas as pd
 import os
 from fuzzywuzzy import process
 from precip.plotter_functions import volcanoes_list
-from precip.config import workDir, jsonVolcano
+from precip.config import WORKDIR, JSON_VOLCANO
 import subprocess
 
-dir = (os.getenv(workDir)) if workDir in os.environ else (os.getenv('HOME'))
+dir = (os.getenv(WORKDIR)) if WORKDIR in os.environ else (os.getenv('HOME'))
 
-other_volcanoes = volcanoes_list(dir + '/' + jsonVolcano)
+other_volcanoes = volcanoes_list(dir + '/' + JSON_VOLCANO)
 
 # Invert the order of the list
 other_volcanoes = other_volcanoes[::-1]

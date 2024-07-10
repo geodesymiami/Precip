@@ -7,8 +7,7 @@ import argparse
 from dateutil.relativedelta import relativedelta
 import sys
 from precip.plotter_functions import prompt_subplots
-# DONT USE IMPORT * INSTEAD USE from... import START_DATE, END_DATE.... etc
-from precip.config import *
+from precip.config import WORKDIR, SCRATCHDIR, PRODDIR, START_DATE, END_DATE
 
 # TODO Add proper CITATION for GPM data and Volcano data
 
@@ -17,10 +16,10 @@ Date format: YYYYMMDD
 
 Example:
 
-  Create a bar plot with a rolling average of 30 days, 3 bins (colors divided by ascending values), on a log scale for the precipitation data of Merapi volcano (if eruptions are included in the date range, they will be plotted), default start date is {startDate} and default end date is {endDate}:
+  Create a bar plot with a rolling average of 30 days, 3 bins (colors divided by ascending values), on a log scale for the precipitation data of Merapi volcano (if eruptions are included in the date range, they will be plotted), default start date is {START_DATE} and default end date is {END_DATE}:
     get_precipitation_lalo.py Merapi --style bar --roll 30 --bins 3 --log
 
-  Create a bar plot ordered by strength for the precipitation data of a specific location at a given date range and save (If path not specified, the data will be downloaded either in $WORKDIR or $HOME directory + /precip_products):
+  Create a bar plot ordered by strength for the precipitation data of a specific location at a given date range and save (If path not specified, the data will be downloaded either in {PRODDIR}, {SCRATCHDIR}/precip_products or HOME/precip_products):
     get_precipitation_lalo.py --style strength --lalo 19.5:-156.5 ---period 20190101:20210929 --save
 
   Create a 'Line' plot for the precipitation data of a specific location at a given date range ordered by year, with a rolling average of 10 days and 2 binsand add 2 events to the time series:
@@ -60,7 +59,6 @@ def create_parser(iargs=None, namespace=None):
         formatter_class=argparse.RawTextHelpFormatter,
         epilog=EXAMPLE)
     
-    # USE DEFAULT OPTION FOR DEFAULT VALUES
     parser.add_argument('positional', 
                         nargs='*',
                         help='Volcano name or coordinates')
@@ -103,8 +101,6 @@ def create_parser(iargs=None, namespace=None):
     parser.add_argument('--log', 
                         action='store_true',
                         help='Enable logaritmic scale')
-    # IF nargs=1, THEN THE ARGUMENT IS A LIST
-    # IF nargs IS NOT SPECIFIED, THEN THE ARGUMENT IS A SINGLE VALUE
     parser.add_argument('--bins',
                         type=int,
                         metavar=('BINS'),
@@ -127,7 +123,6 @@ def create_parser(iargs=None, namespace=None):
                         type=float, 
                         help="Velocity limit for the colorbar (default: None)")
     parser.add_argument('--interpolate',
-                        nargs=1,
                         metavar=('GRANULARITY'),
                         type=int, 
                         help='Interpolate data')
@@ -184,24 +179,21 @@ def create_parser(iargs=None, namespace=None):
 
     inps = parser.parse_args(iargs, namespace)
 
-    # DON'T USE import *; USE import WORKDIR, SCRATCHDIR, etc.
     if not inps.dir:
-        inps.dir = (os.getenv(workDir)) if workDir in os.environ else (os.getenv('HOME'))
-        os.environ[workDir] = inps.dir
+        inps.dir = (os.getenv(WORKDIR)) if WORKDIR in os.environ else (os.getenv('HOME'))
+        os.environ[WORKDIR] = inps.dir
         inps.dir = inps.dir + '/gpm_data'
 
-    # IF nargs=1, THEN THE ARGUMENT IS A LIST
-    # IF nargs IS NOT SPECIFIED, THEN THE ARGUMENT IS A SINGLE VALUE
     else:
         inps.dir = inps.dir[0]
 
     if inps.save is not None:
         if len(inps.save) == 0:
-            if prodDir in os.environ:
-                inps.save = (os.getenv(prodDir))
+            if PRODDIR in os.environ:
+                inps.save = (os.getenv(PRODDIR))
 
-            elif scratchDir in os.environ:
-                scratch_dir = os.getenv(scratchDir)
+            elif SCRATCHDIR in os.environ:
+                scratch_dir = os.getenv(SCRATCHDIR)
                 if os.path.exists(scratch_dir + '/precip_products'):
                     inps.save = (scratch_dir + '/precip_products')
 
@@ -219,16 +211,26 @@ def create_parser(iargs=None, namespace=None):
                     os.mkdir(dir_path)
                     inps.save = dir_path
 
-
-    # IF nargs=1, THEN THE ARGUMENT IS A LIST
-    # IF nargs IS NOT SPECIFIED, THEN THE ARGUMENT IS A SINGLE VALUE
         elif len(inps.save) == 1:
-            inps.save = inps.save[0]
+            folder = inps.save[0]
+
+            if not os.path.isabs(folder):
+                if './' in folder:
+                    inps.save = os.getcwd() + '/' + folder
+
+                elif PRODDIR in os.environ:
+                    inps.save = (os.getenv(PRODDIR) + '/' + folder)
+
+                elif SCRATCHDIR in os.environ:
+                    inps.save = (os.getenv(SCRATCHDIR) + '/precip_products/' + folder)
+
+                else:
+                    inps.save = inps.save = os.getcwd() + '/' + folder
+
+            else:
+                inps.save = folder
 
             if not os.path.exists(inps.save):
-                if not os.path.isabs(inps.save):
-                    os.chdir(os.getenv('HOME'))
-                
                 os.mkdir(inps.save)
 
     ############################ POSITIONAL ARGUMENTS ############################
@@ -256,9 +258,9 @@ def create_parser(iargs=None, namespace=None):
     ###############################################################################
                 
     if not inps.period:
-        inps.start_date = datetime.strptime(inps.start_date[0], '%Y%m%d').date() if inps.start_date else datetime.strptime(startDate, '%Y%m%d').date()
+        inps.start_date = datetime.strptime(inps.start_date[0], '%Y%m%d').date() if inps.start_date else datetime.strptime(START_DATE, '%Y%m%d').date()
         #End date subject to variations, check for alternatives on config.py
-        inps.end_date = datetime.strptime(inps.end_date[0], '%Y%m%d').date() if inps.end_date else datetime.strptime(endDate, '%Y%m%d').date()
+        inps.end_date = datetime.strptime(inps.end_date[0], '%Y%m%d').date() if inps.end_date else datetime.strptime(END_DATE, '%Y%m%d').date()
 
     else:
         if ':' in inps.period:
@@ -337,8 +339,7 @@ def create_parser(iargs=None, namespace=None):
                 raise ValueError(msg)
 
     if not inps.bins:
-        if inps.bins > 4:
-            inps.bins = 4
+        inps.bins = 4 if inps.bins > 4 else inps.bins
 
     # USE DEFAULT OPTION FOR DEFAULT VALUES
     # TODO check if is better to use true as default value
@@ -348,12 +349,6 @@ def create_parser(iargs=None, namespace=None):
     # USE DEFAULT OPTION FOR DEFAULT VALUES
     if not inps.colorbar:
         inps.colorbar = 'viridis'
-
-
-    # IF nargs=1, THEN THE ARGUMENT IS A LIST
-    # IF nargs IS NOT SPECIFIED, THEN THE ARGUMENT IS A SINGLE VALUE
-    if inps.interpolate:
-        inps.interpolate = inps.interpolate[0]
 
     return inps
 
@@ -444,7 +439,7 @@ def parse_coordinates(coordinates):
 # eruption_dates, lalo = extract_volcanoes_info(None, 'Merapi')
 # latitude, longitude = adapt_coordinates(lalo[0], lalo[1])
 
-# gpm_dir = os.getenv(scratchDir) + '/gpm_data'
+# gpm_dir = os.getenv(SCRATCHDIR) + '/gpm_data'
 
 # precipitation = sql_extract_precipitation(latitude, longitude, date_list, gpm_dir)
 
