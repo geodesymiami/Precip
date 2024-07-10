@@ -10,12 +10,12 @@ import subprocess
 import time
 import netCDF4 as nc
 from precip.helper_functions import ask_user
-from precip.config import json_download_url, final06, final07, pathJetstream
+from precip.config import JSON_DOWNLOAD_URL, FINAL06, FINAL07, pathJetstream
 import paramiko
 import tempfile
 
 
-def download_volcano_json(json_path, json_download_url=json_download_url):
+def download_volcano_json(json_path, json_download_url=JSON_DOWNLOAD_URL):
     """
     Downloads a JSON file containing volcano eruption data from a specified URL and saves it to the given file path.
 
@@ -52,7 +52,7 @@ def download_volcano_json(json_path, json_download_url=json_download_url):
         print('Cannot create json file')
 
 
-def generate_url_download(date, final06=final06, final07=final07):
+def generate_url_download(date, final06=FINAL06, final07=FINAL07):
     # Creates gpm_data folder if it doesn't exist
     intervals = {"Final06": datetime.strptime(final06, '%Y-%m-%d').date(),
                  "Final07": datetime.strptime(final07, '%Y-%m-%d').date(),
