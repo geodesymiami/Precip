@@ -212,12 +212,25 @@ def create_parser(iargs=None, namespace=None):
                     inps.save = dir_path
 
         elif len(inps.save) == 1:
-            inps.save = inps.save[0]
+            folder = inps.save[0]
+
+            if not os.path.isabs(folder):
+                if './' in folder:
+                    inps.save = os.getcwd() + '/' + folder
+
+                elif PRODDIR in os.environ:
+                    inps.save = (os.getenv(PRODDIR) + '/' + folder)
+
+                elif SCRATCHDIR in os.environ:
+                    inps.save = (os.getenv(SCRATCHDIR) + '/precip_products/' + folder)
+
+                else:
+                    inps.save = inps.save = os.getcwd() + '/' + folder
+
+            else:
+                inps.save = folder
 
             if not os.path.exists(inps.save):
-                if not os.path.isabs(inps.save):
-                    os.chdir(os.getenv('HOME'))
-                
                 os.mkdir(inps.save)
 
     ############################ POSITIONAL ARGUMENTS ############################
