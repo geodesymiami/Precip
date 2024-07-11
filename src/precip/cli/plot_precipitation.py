@@ -7,9 +7,16 @@ import argparse
 from dateutil.relativedelta import relativedelta
 import sys
 from precip.plotter_functions import prompt_subplots
-from precip.config import WORKDIR, SCRATCHDIR, PRODDIR, START_DATE, END_DATE
+from precip.config import WORKDIR, SCRATCHDIR, PRODDIR, GPM_FOLDER, START_DATE, END_DATE
 
 # TODO Add proper CITATION for GPM data and Volcano data
+
+WORK_DIR = os.getenv(WORKDIR)
+SCRATCH_DIR = os.getenv(SCRATCHDIR)
+PROD_DIR = os.getenv(PRODDIR)
+HOME_DIR = os.getenv('HOME')
+SCRATCH_PROD = os.path.join(SCRATCH_DIR, 'precip_products')
+HOME_PROD = os.path.join(HOME_DIR, 'precip_products')
 
 EXAMPLE = f"""
 Date format: YYYYMMDD
@@ -19,7 +26,7 @@ Example:
   Create a bar plot with a rolling average of 30 days, 3 bins (colors divided by ascending values), on a log scale for the precipitation data of Merapi volcano (if eruptions are included in the date range, they will be plotted), default start date is {START_DATE} and default end date is {END_DATE}:
     plot_precipitation.py Merapi --style bar --roll 30 --bins 3 --log
 
-  Create a bar plot ordered by strength for the precipitation data of a specific location at a given date range and save (If path not specified, the data will be downloaded either in {PRODDIR}, {SCRATCHDIR}/precip_products or HOME/precip_products):
+  Create a bar plot ordered by strength for the precipitation data of a specific location at a given date range and save (If path not specified, the data will be downloaded either in {PRODDIR}, {SCRATCH_PROD}or {HOME_PROD}):
     plot_precipitation.py --style strength --lalo 19.5:-156.5 ---period 20190101:20210929 --save
 
   Create a 'Line' plot for the precipitation data of a specific location at a given date range ordered by year, with a rolling average of 10 days and 2 binsand add 2 events to the time series:
@@ -180,9 +187,9 @@ def create_parser(iargs=None, namespace=None):
     inps = parser.parse_args(iargs, namespace)
 
     if not inps.dir:
-        inps.dir = (os.getenv(WORKDIR)) if WORKDIR in os.environ else (os.getenv('HOME'))
+        inps.dir = (WORK_DIR) if WORKDIR in os.environ else (HOME_DIR)
         os.environ[WORKDIR] = inps.dir
-        inps.dir = inps.dir + '/gpm_data'
+        inps.dir = os.path.join(inps.dir, GPM_FOLDER)
 
     else:
         inps.dir = inps.dir[0]
@@ -190,24 +197,23 @@ def create_parser(iargs=None, namespace=None):
     if inps.save is not None:
         if len(inps.save) == 0:
             if PRODDIR in os.environ:
-                inps.save = (os.getenv(PRODDIR))
+                inps.save = (PROD_DIR)
 
             elif SCRATCHDIR in os.environ:
-                scratch_dir = os.getenv(SCRATCHDIR)
-                if os.path.exists(scratch_dir + '/precip_products'):
-                    inps.save = (scratch_dir + '/precip_products')
+                if os.path.exists(SCRATCH_PROD):
+                    inps.save = (SCRATCH_PROD)
 
                 else:
-                    dir_path = os.path.join(scratch_dir, 'precip_products')
+                    dir_path = SCRATCH_PROD
                     os.mkdir(dir_path)
                     inps.save = dir_path
 
             else:
-                if os.path.exists(os.getenv('HOME') + '/precip_products'):
-                    inps.save = (os.getenv('HOME') + '/precip_products')
+                if os.path.exists(HOME_PROD):
+                    inps.save = (HOME_PROD)
 
                 else:
-                    dir_path = os.path.join(os.getenv('HOME'), 'precip_products')
+                    dir_path = HOME_PROD
                     os.mkdir(dir_path)
                     inps.save = dir_path
 
@@ -219,10 +225,10 @@ def create_parser(iargs=None, namespace=None):
                     inps.save = os.getcwd() + '/' + folder
 
                 elif PRODDIR in os.environ:
-                    inps.save = (os.getenv(PRODDIR) + '/' + folder)
+                    inps.save = (PROD_DIR + '/' + folder)
 
                 elif SCRATCHDIR in os.environ:
-                    inps.save = (os.getenv(SCRATCHDIR) + '/precip_products/' + folder)
+                    inps.save = (os.path.join(SCRATCH_PROD, folder))
 
                 else:
                     inps.save = inps.save = os.getcwd() + '/' + folder
