@@ -200,22 +200,12 @@ def create_parser(iargs=None, namespace=None):
                 inps.save = (PROD_DIR)
 
             elif SCRATCHDIR in os.environ:
-                if os.path.exists(SCRATCH_PROD):
-                    inps.save = (SCRATCH_PROD)
-
-                else:
-                    dir_path = SCRATCH_PROD
-                    os.mkdir(dir_path)
-                    inps.save = dir_path
+                os.makedirs(SCRATCH_PROD, exist_ok=True)
+                inps.save = SCRATCH_PROD
 
             else:
-                if os.path.exists(HOME_PROD):
-                    inps.save = (HOME_PROD)
-
-                else:
-                    dir_path = HOME_PROD
-                    os.mkdir(dir_path)
-                    inps.save = dir_path
+                os.mkdir(HOME_PROD, exist_ok=True)
+                inps.save = (HOME_PROD)
 
         elif len(inps.save) == 1:
             folder = inps.save[0]
@@ -236,8 +226,7 @@ def create_parser(iargs=None, namespace=None):
             else:
                 inps.save = folder
 
-            if not os.path.exists(inps.save):
-                os.mkdir(inps.save)
+            os.makedirs(inps.save, exist_ok=True)
 
     ############################ POSITIONAL ARGUMENTS ############################
             

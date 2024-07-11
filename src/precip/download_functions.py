@@ -236,6 +236,7 @@ def connect_jetstream():
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
+    # TODO change to your own credentials
     hostname = '149.165.154.65'
     username = 'exouser'
     path_id_rsa = os.getenv('HOME') + '/.ssh/id_rsa'
