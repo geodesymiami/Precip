@@ -305,21 +305,20 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
             name = (j['properties']['VolcanoName'])
             start = datetime.strptime((j['properties']['StartDate']), '%Y%m%d').date()
 
+            coordinates = j['geometry']['coordinates']
+            coordinates = coordinates[::-1]
             try:
                 end = datetime.strptime((j['properties']['EndDate']), '%Y%m%d').date()
 
             except:
                 end = 'None'
-            
+
             print(f'{name} eruption started {start} and ended {end}')
 
             # If the start date is within the date range
             if start >= first_day and start <= last_day:
                 start_dates.append(start)
-                
-                coordinates = j['geometry']['coordinates']
-                coordinates = coordinates[::-1]
-            
+
             if strength:
                 stren = j['properties']['ExplosivityIndexMax']
                 frame_data.append([name, start, end, stren])
@@ -329,21 +328,22 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
         df = pd.DataFrame(frame_data, columns=column_names)
         return df
 
-    else:
-        if not start_dates:
-            # Print an error message and exit the program
-            msg = f'Error: {volcanoName} eruption date is out of range'
-            raise ValueError(msg)
+    # else:
+    #     if not start_dates:
+    #         # Print an error message and exit the program
+    #         msg = f'Error: {volcanoName} eruption date is out of range'
+    #         raise ValueError(msg)
 
-    start_dates = sorted(start_dates)
-    first_date = start_dates[0]
+    if start_dates != []:
 
-    print('---------------------------------')
-    print('Sorting eruptions by date...')
-    print('---------------------------------')
+        start_dates = sorted(start_dates)
 
-    for d in start_dates:
-        print('Extracted eruption in date: ', d)
+        print('---------------------------------')
+        print('Sorting eruptions by date...')
+        print('---------------------------------')
+
+        for d in start_dates:
+            print('Extracted eruption in date: ', d)
     
     print('---------------------------------')
     print('')
