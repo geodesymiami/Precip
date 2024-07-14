@@ -27,22 +27,7 @@ if False:
 def prompt_subplots(inps):
     gpm_dir = inps.dir
     volcano_json_dir = inps.dir + '/' + JSON_VOLCANO
-
-    date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
-
-    if inps.use_ssh:
-        ssh = connect_jetstream()
-
-    else:
-        ssh = None
-
-    if inps.download: 
-
-        if ssh:
-            download_jetstream_parallel(date_list, ssh, inps.parallel)
-        
-        else:
-            dload_site_list_parallel(gpm_dir, date_list, inps.parallel)
+    date_list = []
 
     if inps.check:
         check_nc4_files(gpm_dir, ssh)
@@ -50,8 +35,27 @@ def prompt_subplots(inps):
     if inps.list:
         volcanoes_list(volcano_json_dir)
 
+    if inps.use_ssh:
+        ssh = connect_jetstream()
+
+    else:
+        ssh = None
+
+
+    if inps.download: 
+        date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
+
+        if ssh:
+            download_jetstream_parallel(date_list, ssh, inps.parallel)
+        
+        else:
+            dload_site_list_parallel(gpm_dir, date_list, inps.parallel)
+
     if inps.style:
         eruption_dates = []
+
+        if date_list == []:
+            date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
 
         if inps.latitude and inps.longitude:
             inps.latitude, inps.longitude = adapt_coordinates(inps.latitude, inps.longitude)
@@ -90,21 +94,12 @@ def prompt_subplots(inps):
 
         else:
             strength = False
-
-        if ssh:
-            download_jetstream_parallel(date_list, ssh, inps.parallel)
-
-        else:
-            dload_site_list_parallel(gpm_dir, date_list, inps.parallel)
         
         if inps.use_ssh and not (ssh.get_transport() and ssh.get_transport().is_active()):
             ssh = connect_jetstream()
             
         # Extract precipitation data
         precipitation = sql_extract_precipitation(inps.latitude, inps.longitude, date_list, gpm_dir, ssh)
-        
-        # TODO delete this comment
-        # precipitation = extract_precipitation(inps.latitude, inps.longitude, date_list, gpm_dir, ssh)
 
         if inps.style == 'daily' or inps.style == 'bar' or strength == True:
             ylabel = str(inps.roll) + " day precipitation (mm)"
