@@ -27,22 +27,10 @@ if False:
 def prompt_subplots(inps):
     gpm_dir = inps.dir
     volcano_json_dir = inps.dir + '/' + JSON_VOLCANO
-
-    date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
+    date_list = []
 
     if inps.use_ssh:
         ssh = connect_jetstream()
-
-    else:
-        ssh = None
-
-    if inps.download: 
-
-        if ssh:
-            download_jetstream_parallel(date_list, ssh, inps.parallel)
-        
-        else:
-            dload_site_list_parallel(gpm_dir, date_list, inps.parallel)
 
     if inps.check:
         check_nc4_files(gpm_dir, ssh)
@@ -50,8 +38,23 @@ def prompt_subplots(inps):
     if inps.list:
         volcanoes_list(volcano_json_dir)
 
+    else:
+        ssh = None
+
+    if inps.download: 
+        date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
+
+        if ssh:
+            download_jetstream_parallel(date_list, ssh, inps.parallel)
+        
+        else:
+            dload_site_list_parallel(gpm_dir, date_list, inps.parallel)
+
     if inps.style:
         eruption_dates = []
+
+        if date_list == []:
+            date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
 
         if inps.latitude and inps.longitude:
             inps.latitude, inps.longitude = adapt_coordinates(inps.latitude, inps.longitude)
@@ -90,21 +93,12 @@ def prompt_subplots(inps):
 
         else:
             strength = False
-
-        if ssh:
-            download_jetstream_parallel(date_list, ssh, inps.parallel)
-
-        else:
-            dload_site_list_parallel(gpm_dir, date_list, inps.parallel)
         
         if inps.use_ssh and not (ssh.get_transport() and ssh.get_transport().is_active()):
             ssh = connect_jetstream()
             
         # Extract precipitation data
         precipitation = sql_extract_precipitation(inps.latitude, inps.longitude, date_list, gpm_dir, ssh)
-        
-        # TODO delete this comment
-        # precipitation = extract_precipitation(inps.latitude, inps.longitude, date_list, gpm_dir, ssh)
 
         if inps.style == 'daily' or inps.style == 'bar' or strength == True:
             ylabel = str(inps.roll) + " day precipitation (mm)"
@@ -311,21 +305,20 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
             name = (j['properties']['VolcanoName'])
             start = datetime.strptime((j['properties']['StartDate']), '%Y%m%d').date()
 
+            coordinates = j['geometry']['coordinates']
+            coordinates = coordinates[::-1]
             try:
                 end = datetime.strptime((j['properties']['EndDate']), '%Y%m%d').date()
 
             except:
                 end = 'None'
-            
+
             print(f'{name} eruption started {start} and ended {end}')
 
             # If the start date is within the date range
             if start >= first_day and start <= last_day:
                 start_dates.append(start)
-                
-                coordinates = j['geometry']['coordinates']
-                coordinates = coordinates[::-1]
-            
+
             if strength:
                 stren = j['properties']['ExplosivityIndexMax']
                 frame_data.append([name, start, end, stren])
@@ -335,21 +328,22 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
         df = pd.DataFrame(frame_data, columns=column_names)
         return df
 
-    else:
-        if not start_dates:
-            # Print an error message and exit the program
-            msg = f'Error: {volcanoName} eruption date is out of range'
-            raise ValueError(msg)
+    # else:
+    #     if not start_dates:
+    #         # Print an error message and exit the program
+    #         msg = f'Error: {volcanoName} eruption date is out of range'
+    #         raise ValueError(msg)
 
-    start_dates = sorted(start_dates)
-    first_date = start_dates[0]
+    if start_dates != []:
 
-    print('---------------------------------')
-    print('Sorting eruptions by date...')
-    print('---------------------------------')
+        start_dates = sorted(start_dates)
 
-    for d in start_dates:
-        print('Extracted eruption in date: ', d)
+        print('---------------------------------')
+        print('Sorting eruptions by date...')
+        print('---------------------------------')
+
+        for d in start_dates:
+            print('Extracted eruption in date: ', d)
     
     print('---------------------------------')
     print('')

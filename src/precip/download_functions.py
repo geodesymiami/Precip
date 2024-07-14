@@ -243,16 +243,18 @@ def connect_jetstream():
 
     ssh_key = path_id_rsa + '_jetstream' if os.path.exists(path_id_rsa + '_jetstream') else path_id_rsa
 
-    try:
-        # Connect to the server
-        ssh.connect(hostname=hostname, username=username, key_filename=ssh_key)
+    for i in range(3):
+        try:
+            # Connect to the server
+            ssh.connect(hostname=hostname, username=username, key_filename=ssh_key)
+            return ssh
 
-    except Exception as e:
-        
-        print(f"Failed to connect to the server: {e}")
-        return None
-
-    return ssh
+        except Exception as e:
+            print(f"Attempt {i+1} failed to connect to the server: {e}")
+            if i < 2:
+                continue
+            else:
+                return None
 
 
 def download_jetstream(ssh, url, pathJetstream):

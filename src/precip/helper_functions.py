@@ -286,6 +286,7 @@ def generate_date_list(start, end=None, average='M'):
     date_list = pd.date_range(start=sdate, end=edate).date
 
     print('Generated date list ranging from', sdate, 'to', edate, 'containing', len(date_list), 'days')
+    print('-------------------------------------------------------')
 
     return date_list
 
@@ -598,17 +599,17 @@ def sql_extract_precipitation(latitude, longitude, date_list, folder, ssh = None
 
         # Create a temporary file
         temp_file = tempfile.NamedTemporaryFile(delete=False)
-
+        database_path = os.path.join(PATH_JETSTREAM, 'volcanoes.db')
         # Try to open the database file
         try:
-            with sftp.file(PATH_JETSTREAM + 'volcanoes.db', 'rb') as f:
+            with sftp.file(database_path, 'rb') as f:
                 temp_file.write(f.read())
 
             db_path = temp_file.name
 
         except IOError:
             # The file does not exist, create it
-            with sftp.file(PATH_JETSTREAM + 'volcanoes.db', 'wb') as f:
+            with sftp.file(database_path, 'wb') as f:
                 pass
 
             db_path = temp_file.name
@@ -618,14 +619,15 @@ def sql_extract_precipitation(latitude, longitude, date_list, folder, ssh = None
         conn = sqlite3.connect(db_path)
     
     else:
+        database_path = os.path.join(folder, 'volcanoes.db')
         # Try to open the database file
         try:
-            conn = sqlite3.connect('volcanoes.db')
+            conn = sqlite3.connect(database_path)
 
         except sqlite3.OperationalError:
             # The file does not exist, create it
-            open('volcanoes.db', 'w').close()
-            conn = sqlite3.connect('volcanoes.db')
+            open(database_path, 'w').close()
+            conn = sqlite3.connect(database_path)
         
     # Check if the 'volcanoes' table exists
     cursor = conn.cursor()
