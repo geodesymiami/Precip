@@ -32,14 +32,14 @@ def date_to_decimal_year(date_str):
     """
     if date_str is None or pd.isna(date_str):
         return None
-    
+
     if type(date_str) == str:
         try:
             date_obj = datetime.strptime(date_str, '%Y-%m-%d')
 
         except:
             date_obj = datetime.strptime(date_str, '%Y%m%d')
-            
+
     else:
         date_obj = date_str
 
@@ -49,7 +49,7 @@ def date_to_decimal_year(date_str):
     # Check if it's a leap year
     if (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0):
         days_in_year = 366.0
-        
+
     else:
         days_in_year = 365.0
 
@@ -77,7 +77,7 @@ def days_in_month(date):
         year, month, day = map(int, date.split("-"))
     except:
         year, month = date.year, date.month 
-    
+
     num_days = calendar.monthrange(year, month)[1]
 
     return num_days
@@ -129,7 +129,7 @@ def adapt_coordinates(latitude, longitude):
         latitude = [latitude, latitude]
 
     for i in range(len(latitude)):
-        
+
         la = int(float(latitude[i]) *  10) /  10.0
 
         if -89.95 <= la <= 89.95:
@@ -139,7 +139,7 @@ def adapt_coordinates(latitude, longitude):
 
         else:
             raise ValueError(f'Values not in the Interval (-89.95, 89.95)')
-            
+
     for i in range(len(longitude)):
         lo = int(float(longitude[i]) *  10) /  10.0
 
@@ -149,7 +149,7 @@ def adapt_coordinates(latitude, longitude):
             longitude[i] = round(lo + val, 2)
         else:
             raise ValueError(f'Values not in the Interval (-179.5, 179.5)')
-        
+
     return latitude, longitude
 
 
@@ -189,7 +189,7 @@ def weekly_monthly_yearly_precipitation(dictionary, time_period=None, cumulate=F
             print('-------------------------------------------------------')
 
             return precipitation
-    
+
         elif cumulate:
             # Calculate the total of the 'Precipitation' column
             print('Calculating the cumulative precipitation...')
@@ -203,10 +203,10 @@ def weekly_monthly_yearly_precipitation(dictionary, time_period=None, cumulate=F
             print('Calculating the average precipitation...')
             average = df['Precipitation'].cumsum().sum()/len(df)
             print('-------------------------------------------------------')
-            
+
             return average
-        
-        
+
+
     else:
         raise KeyError('Error: Precipitation field not found in the dictionary')
 
@@ -268,7 +268,7 @@ def generate_date_list(start, end=None, average='M'):
             edate = end
 
     elif end is None:
-        if average == 'M':            
+        if average == 'M':
             if sdate.day == 1:
                 edate = datetime(sdate.year, sdate.month, days_in_month(sdate)).date()
 
@@ -318,7 +318,7 @@ def process_file(file, date_list, lon, lat, longitude, latitude, client):
     if client is not None:
         with tempfile.NamedTemporaryFile(suffix='.nc4', delete=True) as tmp:
             remote_file_path = PATH_JETSTREAM + file
-            
+
             # Download the file to your local system
             client.get(remote_file_path, tmp.name)
 
@@ -355,7 +355,6 @@ def ask_user(operation):
     print(msg, "(yes/no): ")
     answer = 'no'
 
-    
     def check():
         nonlocal answer
         answer = input()
@@ -433,7 +432,7 @@ def volcano_rain_frame(rainfall, roll_count, lon=None, lat=None, centered=False,
     Return:
         volc_rain: A new dataframe with additional columns for decimal date, rolling average, and cumulative rain.
 
-    """    
+    """
 
     # Would be useful if we decide to average over nearby coordinates.
     # lat = volcanos[pick][1]
@@ -449,7 +448,7 @@ def volcano_rain_frame(rainfall, roll_count, lon=None, lat=None, centered=False,
     elif lon == 'NaN':
         volc_rain = rainfall[(rainfall['Longitude'].isna()) & (rainfall['Latitude'].isna())].copy()
 
-    else:    
+    else:
         volc_rain = rainfall[(rainfall['Longitude'] == lon) & (rainfall['Latitude'] == lat)].copy()
 
     if 'Decimal' not in rainfall.columns:
@@ -462,7 +461,7 @@ def volcano_rain_frame(rainfall, roll_count, lon=None, lat=None, centered=False,
 
         else:
             volc_rain['roll'] = volc_rain.Precipitation.rolling(roll_count).sum()
-        
+
     volc_rain = volc_rain.dropna(subset=['roll'])
 
     if 'Precipitation' in volc_rain.columns:
@@ -471,7 +470,7 @@ def volcano_rain_frame(rainfall, roll_count, lon=None, lat=None, centered=False,
 
     if 'Date' in volc_rain.columns:
         volc_rain['Date'] = pd.to_datetime(volc_rain['Date'])
-        
+
     return volc_rain
 
 
@@ -517,7 +516,7 @@ def adapt_events(eruption_dates, date_list):
                 # Only add the date to valid_eruption_dates if it's not greater than the last date in date_list
                 if eruption_date <= date_list.iloc[j]:
                     valid_eruption_dates.append(date_list.iloc[j])
-                
+
                 else:
                     print(f'Removing {str(eruption_date.date())} from the list of eruptions. Out of range')
 
@@ -543,7 +542,7 @@ def extract_precipitation(latitude, longitude, date_list, folder, ssh=None):
     lon, lat = generate_coordinate_array()
 
 ##################### Try to use Jetstream ###############################
-    
+
     if ssh:
         stdin, stdout, stderr = ssh.exec_command(f"ls {PATH_JETSTREAM}")
 
@@ -558,8 +557,8 @@ def extract_precipitation(latitude, longitude, date_list, folder, ssh=None):
         client = ssh.open_sftp()
 
 ################ If Jetstream is not available ###########################
-        
-    else: 
+
+    else:
         # Get a list of all .nc4 files in the data folder
         files = [folder + '/' + f for f in os.listdir(folder) if f.endswith('.nc4')]
 
@@ -567,7 +566,7 @@ def extract_precipitation(latitude, longitude, date_list, folder, ssh=None):
 
     # Check for duplicate files
     print("Checking for duplicate files...")
-    
+
     if len(files) != len(set(files)):
         print("There are duplicate files in the list.")
 
@@ -628,7 +627,7 @@ def sql_extract_precipitation(latitude, longitude, date_list, folder, ssh = None
             # The file does not exist, create it
             open(database_path, 'w').close()
             conn = sqlite3.connect(database_path)
-        
+
     # Check if the 'volcanoes' table exists
     cursor = conn.cursor()
     cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='volcanoes'")

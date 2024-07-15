@@ -34,7 +34,7 @@ def download_volcano_json(json_path, json_download_url=JSON_DOWNLOAD_URL):
 
         with open(json_path, 'wb') as f:
             f.write(result.content)
-    
+
     except requests.exceptions.HTTPError as err:
         if err.response.status_code == 404:
             msg = f'Error: {err.response.status_code} Url Not Found'
@@ -141,7 +141,7 @@ def dload_site_list_parallel(folder, date_list, parallel=5):
                         attempts += 1
                         print(f"Download attempt {attempts} failed for {url}. Retrying...")
                         time.sleep(1)
-                        
+
                 else:
                     msg = f"Failed to download {url} after {attempts} attempts. Exiting..."
                     raise ValueError(msg)
@@ -171,7 +171,7 @@ def check_nc4_files(folder, ssh):
         files = [folder + '/' + f for f in os.listdir(folder) if f.endswith('.nc4')]
 
         client = None
-        
+
     corrupted_files = []
     print('Checking for corrupted files...')
 
@@ -200,7 +200,7 @@ def check_nc4_files(folder, ssh):
 
             if client is not None:
                 client.remove(file)
-            
+
             else:
                 # Delete the corrupted file
                 os.remove(file)
@@ -220,7 +220,7 @@ def check_nc4_files(folder, ssh):
 
         if client is not None:
             download_jetstream(date_list, ssh)
-        
+
         else:
             dload_site_list_parallel(folder, date_list)
 
@@ -290,7 +290,7 @@ def download_jetstream(ssh, url, pathJetstream):
             attempts += 1
             print(f"Download attempt {attempts} failed for {url}. Retrying... Error: {str(e)}")
             time.sleep(1)
-            
+
     else:
         msg = f"Failed to download {url} after {attempts} attempts. Exiting..."
         raise ValueError(msg)

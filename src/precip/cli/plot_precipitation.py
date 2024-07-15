@@ -65,7 +65,7 @@ def create_parser(iargs=None, namespace=None):
         description='Plot precipitation data from GPM dataset for a specific location at a given date range',
         formatter_class=argparse.RawTextHelpFormatter,
         epilog=EXAMPLE)
-    
+
     parser.add_argument('positional', 
                         nargs='*',
                         help='Volcano name or coordinates')
@@ -100,7 +100,7 @@ def create_parser(iargs=None, namespace=None):
                         type=str,
                         metavar=('NAME'),
                         help='Name of the volcano')
-    
+
     parser.add_argument('--add-event',
                         nargs='*',
                         metavar=('YYYYMMDD, YYYY-MM-DD'),
@@ -122,7 +122,7 @@ def create_parser(iargs=None, namespace=None):
                         action='store_true',
                         dest = 'elnino',
                         help='Plot Nino/Nina events')
-    
+
     parser.add_argument("--vlim", 
                         nargs=2, 
                         metavar=("VMIN", "VMAX"), 
@@ -148,7 +148,7 @@ def create_parser(iargs=None, namespace=None):
                         nargs=1,
                         metavar=('COLORBAR'), 
                         help='Colorbar')
-    
+
     parser.add_argument('--style',
                         choices=['daily','weekly','monthly','yearly','map','bar','annual','strength'],
                         help='Choose plot type')
@@ -161,7 +161,7 @@ def create_parser(iargs=None, namespace=None):
     parser.add_argument('--check', 
                         action='store_true', 
                         help='Check if the file is corrupted')
-    
+
     parser.add_argument('--save',
                         nargs='*',
                         metavar=('FOLDERNAME'),
@@ -229,7 +229,7 @@ def create_parser(iargs=None, namespace=None):
             os.makedirs(inps.save, exist_ok=True)
 
     ############################ POSITIONAL ARGUMENTS ############################
-            
+
     if len(inps.positional) == 1:
 
         # Unfortunately this can never work if we pass the coordinates since negative numbers are viewed as options
@@ -251,7 +251,7 @@ def create_parser(iargs=None, namespace=None):
         inps.longitude = parse_coordinates(inps.positional[1])
 
     ###############################################################################
-                
+
     if not inps.period:
         inps.start_date = datetime.strptime(inps.start_date[0], '%Y%m%d').date() if inps.start_date else datetime.strptime(START_DATE, '%Y%m%d').date()
         #End date subject to variations, check for alternatives on config.py
@@ -271,7 +271,7 @@ def create_parser(iargs=None, namespace=None):
         inps.end_date = datetime.strptime(dates[1], '%Y%m%d').date()
 
     if not inps.polygon:
-        
+
         if inps.latitude:
             if len(inps.latitude) == 1:
                 inps.latitude = parse_coordinates(inps.latitude[0])
@@ -317,10 +317,10 @@ def create_parser(iargs=None, namespace=None):
             inps.end_date = None
 
         inps.add_event = None
-            
+
     else:
         inps.average = 'D'
-    
+
     if inps.add_event:
         try:
             inps.add_event = tuple(datetime.strptime(date_string, '%Y-%m-%d').date() for date_string in inps.add_event)
@@ -393,7 +393,7 @@ def parse_coordinates(coordinates):
     """
     if isinstance(coordinates, str):
         coordinates = coordinates.replace("'", '').replace('"', '')
-        
+
         try:
             if ',' in coordinates:
                 coordinates = coordinates.split(',')
@@ -414,7 +414,7 @@ def parse_coordinates(coordinates):
             raise ValueError(msg)
 
         return coordinates
-    
+
     else:
         coordinates = [coordinates, coordinates]
 
