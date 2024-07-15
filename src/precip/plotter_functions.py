@@ -46,7 +46,7 @@ def prompt_subplots(inps):
 
         if ssh:
             download_jetstream_parallel(date_list, ssh, inps.parallel)
-        
+
         else:
             dload_site_list_parallel(gpm_dir, date_list, inps.parallel)
 
@@ -175,9 +175,9 @@ def prompt_subplots(inps):
             precipitation['Eruptions'] = precipitation.Eruptions.apply(date_to_decimal_year)
 
         #########################################################################################################
-            
+
         ######################################### COLORS ##############################################
-        
+
         if inps.bins > 1:
             legend_handles = [mpatches.Patch(color=colors[i], label=quantile + str(i+1)) for i in range(inps.bins)]
 
@@ -528,7 +528,7 @@ def bar_plotter (precipitation, strength, log, labels, legend_handles):
     ticks = int((precipitation['roll'].max() * 1.5) // 1)
 
     plt.bar(x, y, color=precipitation['color'], width=width, alpha=1)
-    
+
     if strength == False:
         start = int(precipitation['Decimal'].min() // 1)
         end = int(precipitation['Decimal'].max() // 1 + 1)
