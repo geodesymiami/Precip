@@ -32,14 +32,24 @@ def create_parser():
                         nargs='+',
                         default=DEFAULT_STYLES,
                         help='List of plot styles to use (default: %(default)s)')
+    parser.add_argument('--show-together',
+                        dest='together',
+                        action='store_true',
+                        help='Show all plots together')
     return parser
 
 def main():
     parser = create_parser()
     args, unknown_args = parser.parse_known_args()
+    no_show = args.together
     for style in args.styles:
-        inps = argparse.Namespace(style=style)
-        plot_precipitation.main(unknown_args, inps)
+        inps = argparse.Namespace(style=style, no_show=no_show)
+        fig, axs = plot_precipitation.main(unknown_args, inps)
+
+    if no_show:
+        from matplotlib import pyplot as plt
+        fig.show()
+        plt.show()
 
 if __name__ == '__main__':
     main()
