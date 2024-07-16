@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 
-import sys
 import os
 from datetime import datetime
 import argparse
-from dateutil.relativedelta import relativedelta
-import sys
 from precip.plotter_functions import prompt_subplots
 from precip.config import WORKDIR, SCRATCHDIR, PRODDIR, GPM_FOLDER, START_DATE, END_DATE
 
@@ -188,7 +185,6 @@ def create_parser(iargs=None, namespace=None):
 
     if not inps.dir:
         inps.dir = (WORK_DIR) if WORKDIR in os.environ else (HOME_DIR)
-        os.environ[WORKDIR] = inps.dir
         inps.dir = os.path.join(inps.dir, GPM_FOLDER)
 
     else:
@@ -242,13 +238,12 @@ def create_parser(iargs=None, namespace=None):
                 inps.latitude = parse_coordinates(coordinates[0])
                 inps.longitude = parse_coordinates(coordinates[1])
 
-        else:
-            inps.name = inps.positional
+    inps.name = inps.positional
     # Same issue here
-    if len(inps.positional) == 2:
-        inps.latitude = parse_coordinates(inps.positional[0])
+    # if len(inps.positional) == 2:
+    #     inps.latitude = parse_coordinates(inps.positional[0])
 
-        inps.longitude = parse_coordinates(inps.positional[1])
+    #     inps.longitude = parse_coordinates(inps.positional[1])
 
     ###############################################################################
 

@@ -81,18 +81,18 @@ echo "HTTP.COOKIEJAR=%USERPROFILE%/.urs_cookies" >> %USERPROFILE%\.dodsrc
 # Examples
 You can run the code through command line by simply runnig the following command:
 ```bash
-get_precipitation_lalo.py Merapi --style bar --period=20060101:20070101
+plot_precipitation.py Merapi --style bar --period=20060101:20070101
 ```
 This line will show the precipitation over **Merapi** volcano from **01 January 2006** to **2007** as a **bar** plot, with vertical lines representing the eruptions.
 
 For more examples run:
 ```bash
-get_precipitation_lalo.py --h
+plot_precipitation.py --h
 ```
 
 If You want to show (almost) all the available types of plot in one single command, run:
 ```bash
-get_all.py Merapi --period=20060101:20070101
+plot_precipitation_all.py Merapi --period=20060101:20070101
 ```
 You can add some of the arguments from `get_precipitation_lalo.py`, like:
 - `--roll`
