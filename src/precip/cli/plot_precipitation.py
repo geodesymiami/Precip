@@ -7,6 +7,7 @@ from precip.plotter_functions import prompt_subplots
 from precip.config import WORKDIR, SCRATCHDIR, PRODDIR, GPM_FOLDER, START_DATE, END_DATE
 
 # TODO Add proper CITATION for GPM data and Volcano data
+
 WORK_DIR = os.getenv(WORKDIR)
 SCRATCH_DIR = os.getenv(SCRATCHDIR)
 PROD_DIR = os.getenv(PRODDIR)
