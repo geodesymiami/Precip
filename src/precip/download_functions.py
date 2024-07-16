@@ -117,8 +117,7 @@ def dload_site_list_parallel(folder, date_list, parallel=5):
         None
     """
 
-    if not os.path.exists(folder):
-        os.makedirs(folder)
+    os.makedirs(folder, exist_ok=True)
 
     urls = generealte_urls_list(date_list)
 
