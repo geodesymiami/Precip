@@ -46,7 +46,7 @@ def prompt_subplots(inps):
 
         if ssh:
             download_jetstream_parallel(date_list, ssh, inps.parallel)
-        
+
         else:
             dload_site_list_parallel(gpm_dir, date_list, inps.parallel)
 
@@ -73,7 +73,7 @@ def prompt_subplots(inps):
 
 
             title = f'{inps.name[0]} - Latitude: {inps.latitude}, Longitude: {inps.longitude}'
-        
+
         else:
             msg = 'Error: Please provide valid coordinates or volcano name.\n Try using --list to get a list of volcanoes.'
             raise ValueError(msg)
@@ -84,19 +84,20 @@ def prompt_subplots(inps):
 
             elif inps.latitude and inps.longitude:
                 saveName = f'{inps.latitude}_{inps.longitude}'
+
             strStart = str(inps.start_date).replace('-', '') if not isinstance(inps.start_date, str) else inps.start_date.replace('-', '')
             strEnd = str(inps.end_date).replace('-', '') if not isinstance(inps.end_date, str) else inps.end_date.replace('-', '')
             save_path = f'{inps.save}/{saveName}_{strStart}_{strEnd}_{inps.style}.png'
-        
+
         if inps.style == 'strength':
             strength = True
 
         else:
             strength = False
-        
+
         if inps.use_ssh and not (ssh.get_transport() and ssh.get_transport().is_active()):
             ssh = connect_jetstream()
-            
+
         # Extract precipitation data
         precipitation = sql_extract_precipitation(inps.latitude, inps.longitude, date_list, gpm_dir, ssh)
 
@@ -106,18 +107,18 @@ def prompt_subplots(inps):
         elif inps.style == 'map':
             if inps.cumulate:
                 ylabel = f"Cumulative precipitation over {len(date_list)} days (mm)"
-            
+
             else:
                 ylabel = f"Daily precipitation over {len(date_list)} days (mm/day)"
 
         else:
             ylabel = f" {inps.style} precipitation (mm)"
-        
+
 
         labels = {'title': title,
                 'ylabel': ylabel,
                 'y2label': 'Cumulative precipitation'}
-        
+
         # Average the precipitation data
         if inps.average in ['W', 'M', 'Y'] or inps.cumulate:
             precipitation = weekly_monthly_yearly_precipitation(precipitation, inps.average, inps.cumulate)
@@ -139,7 +140,7 @@ def prompt_subplots(inps):
 
             if inps.save:
                 plt.savefig(save_path)
-            
+
             if not inps.no_show:
                 plt.show()
 
@@ -174,9 +175,9 @@ def prompt_subplots(inps):
             precipitation['Eruptions'] = precipitation.Eruptions.apply(date_to_decimal_year)
 
         #########################################################################################################
-            
+
         ######################################### COLORS ##############################################
-        
+
         if inps.bins > 1:
             legend_handles = [mpatches.Patch(color=colors[i], label=quantile + str(i+1)) for i in range(inps.bins)]
 
@@ -195,7 +196,7 @@ def prompt_subplots(inps):
 
         if inps.style == 'annual':
             legend_handles, axs = annual_plotter(precipitation, legend_handles, labels)
-        
+
         else:
             axs = None
 
@@ -208,15 +209,15 @@ def prompt_subplots(inps):
                 precipitation = precipitation.reset_index(drop=True) 
 
             ########################################################
-                
+
             legend_handles = bar_plotter(precipitation, strength, inps.log, labels, legend_handles)
 
         if inps.elnino and not strength:
             legend_handles = plot_elninos(precipitation, legend_handles, axs)
-                
+
         if inps.add_event or eruption_dates != []:            
             legend_handles = plot_eruptions(precipitation, legend_handles, strength, axs)
-        
+
         plt.legend(handles=legend_handles, loc='upper left', fontsize='small')
         plt.tight_layout()
 
@@ -225,7 +226,7 @@ def prompt_subplots(inps):
 
         if inps.save:
             plt.savefig(save_path)
-        
+
         if not inps.no_show:
             plt.show()
 
@@ -290,7 +291,7 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
         tuple: A tuple containing the start dates of eruptions, a date list, and the coordinates of the volcano.
     """
     column_names = ['Volcano', 'Start', 'End', 'Max Explosivity']
-    
+
     data = get_volcano_json(jsonfile, JSON_DOWNLOAD_URL)
 
     start_dates = []
@@ -344,7 +345,7 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
 
         for d in start_dates:
             print('Extracted eruption in date: ', d)
-    
+
     print('---------------------------------')
     print('')
 
@@ -386,7 +387,7 @@ def interpolate_map(dataframe, resolution=5):
     Returns:
     numpy.ndarray: The interpolated precipitation map.
     """
-    
+
     try:
         values = dataframe.get('Precipitation')[0][0]
 
@@ -428,7 +429,7 @@ def add_isolines(region, levels=0, inline=False):
 
     if levels !=0:
         plt.clabel(cont, inline=inline, fontsize=8)
-    
+
     return plt
 
 
@@ -527,7 +528,7 @@ def bar_plotter (precipitation, strength, log, labels, legend_handles):
     ticks = int((precipitation['roll'].max() * 1.5) // 1)
 
     plt.bar(x, y, color=precipitation['color'], width=width, alpha=1)
-    
+
     if strength == False:
         start = int(precipitation['Decimal'].min() // 1)
         end = int(precipitation['Decimal'].max() // 1 + 1)
@@ -540,7 +541,7 @@ def bar_plotter (precipitation, strength, log, labels, legend_handles):
         legend_handles += [mpatches.Patch(color='gray', label=labels['y2label'])]
 
     ######################################################
-        
+
     return legend_handles
 
 
@@ -571,13 +572,13 @@ def annual_plotter(precipitation, legend_handles, labels):
                     x = dates_j % 1
                     y = dates_j // 1
                     ax0.scatter(x[i*bin_size:(i+1)*bin_size], y[i*bin_size:(i+1)*bin_size], color=colors[i], marker='s', s=(219000 // len(rainfall['Date'].unique())))
-    
+
     x = precipitation['Decimal'] % 1
     y = precipitation['Decimal'] // 1
     ax0.scatter(x, y, color=precipitation['color'], marker='s', s=(219000 // len(precipitation['Date'].unique())))
 
     ################### SIDEPLOT OF CUMULATIVE PER YEAR ###################
-        
+
     totals = []
     for year in range(start, end+1):
         totals.append(precipitation['Precipitation'][precipitation['Decimal'] // 1 == year].sum())
