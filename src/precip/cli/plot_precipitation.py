@@ -190,6 +190,8 @@ def create_parser(iargs=None, namespace=None):
     else:
         inps.dir = inps.dir[0]
 
+    os.makedirs(inps.dir, exist_ok=True)
+
     if inps.save is not None:
         if len(inps.save) == 0:
             if PRODDIR in os.environ:
