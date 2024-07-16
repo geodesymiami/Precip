@@ -185,7 +185,9 @@ def create_parser(iargs=None, namespace=None):
 
     if not inps.dir:
         inps.dir = (WORK_DIR) if WORKDIR in os.environ else (HOME_DIR)
-        inps.dir = os.path.join(inps.dir, GPM_FOLDER)
+
+        if GPM_FOLDER not in inps.dir:
+            inps.dir = os.path.join(inps.dir, GPM_FOLDER)
 
     else:
         inps.dir = inps.dir[0]
