@@ -565,7 +565,7 @@ def extract_precipitation(latitude, longitude, date_list, folder, ssh=None):
         client = None
 
     # Check for duplicate files
-    print("Checking for duplicate files...")
+    print(f"Checking for duplicate files in {folder} ...")
 
     if len(files) != len(set(files)):
         print("There are duplicate files in the list.")
