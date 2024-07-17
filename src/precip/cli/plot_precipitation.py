@@ -20,23 +20,14 @@ Date format: YYYYMMDD
 Example:
 
     plot_precipitation.py Merapi --style bar --roll 30 --bins 3 --log
-
     plot_precipitation.py --style strength --lalo 19.5:-156.5 ---period 20190101:20210929 --save
-
     plot_precipitation.py --style annual --start-date 20190101 --end-date 20210929 --latitude 19.5 --longitude -156.5 --roll 10 --bins 2 --add-event 20200929 20210929
-
     plot_precipitation.py --style strength --lalo 19.5:-156.5 ---period 20190101:20210929 --add-event 20200929 20210929 --elnino
-
     plot_precipitation.py --style map --end-date 20210929 --polygon 'POLYGON((113.4496 -8.0893,113.7452 -8.0893,113.7452 -7.817,113.4496 -7.817,113.4496 -8.0893))'
-
     plot_precipitation.py --style map --end-date 20210929 --lalo 19.5:20.5,-155.5:-156.5 --vlim -3 3 --colorbar 'RdBu'
-
     plot_precipitation.py --download
-
     plot_precipitation.py --download 20190101 20210929 --dir '/home/user/Downloads'
-  
     plot_precipitation.py --list
-
     plot_precipitation.py --check
 
 """
