@@ -32,14 +32,14 @@ def prompt_subplots(inps):
     if inps.use_ssh:
         ssh = connect_jetstream()
 
+    else:
+        ssh = None
+
     if inps.check:
         check_nc4_files(gpm_dir, ssh)
 
     if inps.list:
         volcanoes_list(volcano_json_dir)
-
-    else:
-        ssh = None
 
     if inps.download: 
         date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
@@ -156,7 +156,7 @@ def prompt_subplots(inps):
         ############################################### ERUPTIONS ##############################################
 
         # Create list of eruption dates and adapt to the averaged precipitation data
-        if inps.add_event:            
+        if inps.add_event:
             eruption_dates = list(inps.add_event) if not isinstance(inps.add_event, list) else eruption_dates
 
         if eruption_dates != []:

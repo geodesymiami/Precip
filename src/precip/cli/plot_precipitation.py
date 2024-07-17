@@ -32,9 +32,6 @@ Example:
 
 """
 
-# USE CAPITILIZED VARIABLES FOR CONSTANTS
-path_data = '/Users/giacomo/Library/CloudStorage/OneDrive-UniversityofMiami/GetPrecipitation/'
-
 
 def create_parser(iargs=None, namespace=None):
     """ Creates command line argument parser object. """
