@@ -62,7 +62,7 @@ def prompt_subplots(inps):
             title = f'Latitude: {inps.latitude}, Longitude: {inps.longitude}'
 
         elif inps.name:
-            eruption_dates, lalo = extract_volcanoes_info(volcano_json_dir, inps.name[0])
+            eruption_dates, lalo, id = extract_volcanoes_info(volcano_json_dir, inps.name[0])
             inps.latitude, inps.longitude = adapt_coordinates(lalo[0], lalo[1])
 
             if inps.style == 'map':
@@ -80,14 +80,18 @@ def prompt_subplots(inps):
 
         if inps.save:
             if inps.name:
-                saveName = inps.name[0]
+                if inps.save[0] == 'volcano-id':
+                    saveName = id
+
+                elif inps.save[0] == 'volcano-name':
+                    saveName = inps.name[0]
 
             elif inps.latitude and inps.longitude:
                 saveName = f'{inps.latitude}_{inps.longitude}'
 
             strStart = str(inps.start_date).replace('-', '') if not isinstance(inps.start_date, str) else inps.start_date.replace('-', '')
             strEnd = str(inps.end_date).replace('-', '') if not isinstance(inps.end_date, str) else inps.end_date.replace('-', '')
-            save_path = f'{inps.save}/{saveName}_{strStart}_{strEnd}_{inps.style}.png'
+            save_path = f'{inps.save[1]}/{saveName}_{strStart}_{strEnd}_{inps.style}.png'
 
         if inps.style == 'strength':
             strength = True
@@ -303,6 +307,7 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
     # Iterate over the features in the data
     for j in data['features']:
         if j['properties']['VolcanoName'] == volcanoName:
+            id = j['properties']['VolcanoNumber']
             name = (j['properties']['VolcanoName'])
             start = datetime.strptime((j['properties']['StartDate']), '%Y%m%d').date()
 
@@ -314,7 +319,7 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
             except:
                 end = 'None'
 
-            print(f'{name} eruption started {start} and ended {end}')
+            print(f'{name}, id: {id} eruption started {start} and ended {end}')
 
             # If the start date is within the date range
             if start >= first_day and start <= last_day:
@@ -349,7 +354,7 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
     print('---------------------------------')
     print('')
 
-    return start_dates, coordinates
+    return start_dates, coordinates, id
 
 
 def plot_eruptions(precipitation, legend_handles, strength = False, axs = None):
@@ -497,6 +502,7 @@ def map_precipitation(precipitation_series, lo, la, date, colorbar, levels, labe
 
 
 def bar_plotter (precipitation, strength, log, labels, legend_handles):
+    # TODO better plot x axis
     plt.subplots(figsize=(10, 5))
 
     if strength:

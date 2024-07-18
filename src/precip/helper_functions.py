@@ -616,7 +616,7 @@ def sql_extract_precipitation(latitude, longitude, date_list, folder, ssh = None
 
         # Connect to the database
         conn = sqlite3.connect(db_path)
-    
+
     else:
         database_path = os.path.join(folder, 'volcanoes.db')
         # Try to open the database file

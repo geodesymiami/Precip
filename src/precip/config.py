@@ -2,20 +2,21 @@
 This file contains the configuration for the precip package.
 """
 
-WORKDIR = 'PRECIP_DIR'
+PRECIP_DIR = 'PRECIP_DIR'
+PRECIPPRODUCTS_DIR = 'PRECIPPRODUCTS_DIR'
 SCRATCHDIR = 'SCRATCHDIR'
-PRODDIR = 'PRECIP_PRODUCTS_DIR'
 PATH_JETSTREAM = '/var/www/html/data/HDF5EOS/gpm_data/'
 GPM_FOLDER = 'gpm_data'
 JSON_DOWNLOAD_URL = 'https://webservices.volcano.si.edu/geoserver/GVP-VOTW/wms?service=WFS&version=1.0.0&request=GetFeature&typeName=GVP-VOTW:E3WebApp_Eruptions1960&outputFormat=application%2Fjson'
 JSON_VOLCANO = 'volcanoes.json'
-START_DATE = '20000601'
 
 #End Date may vary, check on https://disc.gsfc.nasa.gov/datasets?keywords=%22IMERG%20Late%22&page=1
 if True:
     END_DATE ='20240601' 
 else:
     END_DATE = str(datetime.today().date() - relativedelta(days=1)).replace('-', '')
+
+START_DATE = '20000601'
 
 FINAL06 = '2021-09-30'
 FINAL07 = '2024-01-31'

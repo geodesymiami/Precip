@@ -4,15 +4,11 @@ import os
 from datetime import datetime
 import argparse
 from precip.plotter_functions import prompt_subplots
-from precip.config import WORKDIR, SCRATCHDIR, PRODDIR, GPM_FOLDER, START_DATE, END_DATE
+from precip.config import PRECIP_DIR, PRECIPPRODUCTS_DIR, GPM_FOLDER, START_DATE, END_DATE
 
 # TODO Add proper CITATION for GPM data and Volcano data
-WORK_DIR = os.getenv(WORKDIR)
-SCRATCH_DIR = os.getenv(SCRATCHDIR)
-PROD_DIR = os.getenv(PRODDIR)
-HOME_DIR = os.getenv('HOME')
-SCRATCH_PROD = os.path.join(SCRATCH_DIR, 'precip_products')
-HOME_PROD = os.path.join(HOME_DIR, 'precip_products')
+PRECIP_DIR = os.getenv(PRECIP_DIR)
+PROD_DIR = os.getenv(PRECIPPRODUCTS_DIR)
 
 EXAMPLE = f"""
 Date format: YYYYMMDD
@@ -20,13 +16,13 @@ Date format: YYYYMMDD
 Example:
 
     plot_precipitation.py Merapi --style bar --roll 30 --bins 3 --log
-    plot_precipitation.py --style strength --lalo 19.5:-156.5 ---period 20190101:20210929 --save
+    plot_precipitation.py --style strength --lalo 19.5,-156.5 ---period 20190101:20210929 --save
     plot_precipitation.py --style annual --start-date 20190101 --end-date 20210929 --latitude 19.5 --longitude -156.5 --roll 10 --bins 2 --add-event 20200929 20210929
-    plot_precipitation.py --style strength --lalo 19.5:-156.5 ---period 20190101:20210929 --add-event 20200929 20210929 --elnino
+    plot_precipitation.py --style strength --lalo 19.5,-156.5 ---period 20190101:20210929 --add-event 20200929 20210929 --elnino
     plot_precipitation.py --style map --end-date 20210929 --polygon 'POLYGON((113.4496 -8.0893,113.7452 -8.0893,113.7452 -7.817,113.4496 -7.817,113.4496 -8.0893))'
     plot_precipitation.py --style map --end-date 20210929 --lalo 19.5:20.5,-155.5:-156.5 --vlim -3 3 --colorbar 'RdBu'
     plot_precipitation.py --download
-    plot_precipitation.py --download 20190101 20210929 --dir '/home/user/Downloads'
+    plot_precipitation.py --download 20190101 20210929 --dir $PRECIP_DIR
     plot_precipitation.py --list
     plot_precipitation.py --check
 
@@ -138,13 +134,18 @@ def create_parser(iargs=None, namespace=None):
                         help='Check if the file is corrupted')
 
     parser.add_argument('--save',
-                        nargs='*',
-                        metavar=('FOLDERNAME'),
-                        help='Save the plot')
+                        choices=['volcano-id', 'volcano-name'],
+                        nargs=1,
+                        help=f'Save and name the plot with a volcano name or id in your specified folder(use --outdir) or in $PRECIPPRODUCTS_DIR')
+    parser.add_argument('--outdir',
+                        type=str,
+                        default=PROD_DIR,
+                        metavar=('PATH'),
+                        help='Specify path to save the plot, if not specified, the plot will be saved in $PRECIPPRODUCTS_DIR')
     parser.add_argument('--dir', 
                         nargs=1, 
                         metavar=('PATH'), 
-                        help='Specify path to download the data, if not specified, the data will be downloaded either in $WORKDIR or $HOME directory')
+                        help='Specify path to download the data, if not specified, the data will be downloaded either in $PRECIP_DIR')
     parser.add_argument('--no-show',
                         action='store_true',
                         help='Do not show the plot')
@@ -154,6 +155,7 @@ def create_parser(iargs=None, namespace=None):
                         help='Use ssh')
     parser.add_argument('--parallel',
                         type=int,
+                        default=5,
                         help='Number of parallel downloads')
     # TODO later
     parser.add_argument('--setup',
@@ -162,49 +164,34 @@ def create_parser(iargs=None, namespace=None):
     inps = parser.parse_args(iargs, namespace)
 
     if not inps.dir:
-        inps.dir = (WORK_DIR) if WORKDIR in os.environ else (HOME_DIR)
+        inps.dir = PRECIP_DIR
 
         if GPM_FOLDER not in inps.dir:
             inps.dir = os.path.join(inps.dir, GPM_FOLDER)
+
+        os.makedirs(PRECIP_DIR, exist_ok=True)
 
     else:
         inps.dir = inps.dir[0]
 
     os.makedirs(inps.dir, exist_ok=True)
 
-    if inps.save is not None:
-        if len(inps.save) == 0:
-            if PRODDIR in os.environ:
-                inps.save = (PROD_DIR)
+    if inps.save:
+        if inps.outdir:
+            if not os.path.isabs(inps.outdir):
+                if './' in inps.outdir:
+                    inps.save.append(os.path.join(os.getcwd(), inps.outdir))
 
-            elif SCRATCHDIR in os.environ:
-                os.makedirs(SCRATCH_PROD, exist_ok=True)
-                inps.save = SCRATCH_PROD
-
-            else:
-                os.mkdir(HOME_PROD, exist_ok=True)
-                inps.save = (HOME_PROD)
-
-        elif len(inps.save) == 1:
-            folder = inps.save[0]
-
-            if not os.path.isabs(folder):
-                if './' in folder:
-                    inps.save = os.getcwd() + '/' + folder
-
-                elif PRODDIR in os.environ:
-                    inps.save = (PROD_DIR + '/' + folder)
-
-                elif SCRATCHDIR in os.environ:
-                    inps.save = (os.path.join(SCRATCH_PROD, folder))
+                elif PRECIPPRODUCTS_DIR in os.environ:
+                    inps.save.append(os.path.join(PROD_DIR, inps.outdir))
 
                 else:
-                    inps.save = inps.save = os.getcwd() + '/' + folder
+                    inps.save.append(os.path.join(os.getcwd(), inps.outdir))
 
             else:
-                inps.save = folder
+                inps.save.append(inps.outdir)
 
-            os.makedirs(inps.save, exist_ok=True)
+        os.makedirs(inps.save[1], exist_ok=True)
 
     ############################ POSITIONAL ARGUMENTS ############################
 
