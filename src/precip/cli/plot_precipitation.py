@@ -134,9 +134,14 @@ def create_parser(iargs=None, namespace=None):
                         help='Check if the file is corrupted')
 
     parser.add_argument('--save',
-                        nargs='*',
-                        metavar=('FOLDERNAME'),
-                        help='Save the plot')
+                        choices=['volcano-id', 'volcano-name'],
+                        nargs=1,
+                        help=f'Save and name the plot with a volcano name or id in your specified folder(use --outdir) or in $PRECIPPRODUCTS_DIR')
+    parser.add_argument('--outdir',
+                        type=str,
+                        default=PROD_DIR,
+                        metavar=('PATH'),
+                        help='Specify path to save the plot, if not specified, the plot will be saved in $PRECIPPRODUCTS_DIR')
     parser.add_argument('--dir', 
                         nargs=1, 
                         metavar=('PATH'), 
@@ -171,28 +176,22 @@ def create_parser(iargs=None, namespace=None):
 
     os.makedirs(inps.dir, exist_ok=True)
 
-    if inps.save is not None:
-        if len(inps.save) == 0:
-            if PRECIPPRODUCTS_DIR in os.environ:
-                inps.save = PROD_DIR
-
-        elif len(inps.save) == 1:
-            folder = inps.save[0]
-
-            if not os.path.isabs(folder):
-                if './' in folder:
-                    inps.save = os.path.join(os.getcwd(), folder)
+    if inps.save:
+        if inps.outdir:
+            if not os.path.isabs(inps.outdir):
+                if './' in inps.outdir:
+                    inps.save.append(os.path.join(os.getcwd(), inps.outdir))
 
                 elif PRECIPPRODUCTS_DIR in os.environ:
-                    inps.save = os.path.join(PROD_DIR, folder)
+                    inps.save.append(os.path.join(PROD_DIR, inps.outdir))
 
                 else:
-                    inps.save = os.path.join(os.getcwd(), folder)
+                    inps.save.append(os.path.join(os.getcwd(), inps.outdir))
 
             else:
-                inps.save = folder
+                inps.save.append(inps.outdir)
 
-        os.makedirs(inps.save, exist_ok=True)
+        os.makedirs(inps.save[1], exist_ok=True)
 
     ############################ POSITIONAL ARGUMENTS ############################
 
