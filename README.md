@@ -21,7 +21,10 @@ export PRECIP_HOME=$HOME/code/Precip
 export PATH=${PRECIP_HOME}/src/Precip/cli:$PATH
 export PYTHONPATH=${PRECIP_HOME}/src:$PYTHONPATH
 ```
-
+## Install requirements
+```bash
+while read requirement; do conda install --yes $requirement; done < requirements.txt
+```
 # Enable download of GPM data
 In order to be able to download GPM data locally, you need to have an active **EarthData account**.
 
