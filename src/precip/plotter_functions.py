@@ -56,6 +56,10 @@ def prompt_subplots(inps):
         if date_list == []:
             date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
 
+        if len(date_list) <= inps.roll:
+            msg = 'Error: The number of dates is less than the rolling window.'
+            raise ValueError(msg)
+
         if inps.latitude and inps.longitude:
             inps.latitude, inps.longitude = adapt_coordinates(inps.latitude, inps.longitude)
 
