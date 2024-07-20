@@ -84,10 +84,10 @@ def prompt_subplots(inps):
 
         if inps.save:
             if inps.name:
-                if inps.save[0] == 'volcano-id':
+                if inps.save == 'volcano-id':
                     saveName = id
 
-                elif inps.save[0] == 'volcano-name':
+                elif inps.save == 'volcano-name':
                     saveName = inps.name[0]
 
             elif inps.latitude and inps.longitude:
@@ -95,7 +95,8 @@ def prompt_subplots(inps):
 
             strStart = str(inps.start_date).replace('-', '') if not isinstance(inps.start_date, str) else inps.start_date.replace('-', '')
             strEnd = str(inps.end_date).replace('-', '') if not isinstance(inps.end_date, str) else inps.end_date.replace('-', '')
-            save_path = f'{inps.save[1]}/{saveName}_{strStart}_{strEnd}_{inps.style}.png'
+            save_path = f'{inps.outdir}/{saveName}/{strStart}_{strEnd}_{inps.style}.png'
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
         if inps.style == 'strength':
             strength = True
@@ -233,6 +234,7 @@ def prompt_subplots(inps):
         axes = plt.gca()
 
         if inps.save:
+            print("Saving:", save_path)
             plt.savefig(save_path)
 
         if not inps.no_show:

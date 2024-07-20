@@ -4,11 +4,12 @@ import os
 from datetime import datetime
 import argparse
 from precip.plotter_functions import prompt_subplots
-from precip.config import PRECIP_DIR, PRECIPPRODUCTS_DIR, GPM_FOLDER, START_DATE, END_DATE
+from precip.config import START_DATE, END_DATE
+from pathlib import Path
 
 # TODO Add proper CITATION for GPM data and Volcano data
-PRECIP_DIR = os.getenv(PRECIP_DIR)
-PROD_DIR = os.getenv(PRECIPPRODUCTS_DIR)
+PRECIP_DIR = os.getenv('PRECIP_DIR')
+PRECIPPRODUCTS_DIR = os.getenv('PRECIPPRODUCTS_DIR')
 
 EXAMPLE = f"""
 Date format: YYYYMMDD
@@ -132,20 +133,17 @@ def create_parser(iargs=None, namespace=None):
     parser.add_argument('--check', 
                         action='store_true', 
                         help='Check if the file is corrupted')
-
     parser.add_argument('--save',
+                        nargs='?',  # Indicates the argument is optional
                         choices=['volcano-id', 'volcano-name'],
-                        nargs=1,
-                        help=f'Save and name the plot with a volcano name or id in your specified folder(use --outdir) or in $PRECIPPRODUCTS_DIR')
+                        const='volcano-name',  # Default value if --save is specified without an argument
+                        default='volcano-name',  # Default value if --save is not specified at all
+                        help=f'Save plot in folder with volcanoID or volcano name (default volcano-name)')
     parser.add_argument('--outdir',
                         type=str,
-                        default=PROD_DIR,
+                        default=os.getcwd(),
                         metavar=('PATH'),
-                        help='Specify path to save the plot, if not specified, the plot will be saved in $PRECIPPRODUCTS_DIR')
-    parser.add_argument('--dir', 
-                        nargs=1, 
-                        metavar=('PATH'), 
-                        help='Specify path to download the data, if not specified, the data will be downloaded either in $PRECIP_DIR')
+                        help='folder to save the plot (Default: $PRECIPPRODUCTS_DIR')
     parser.add_argument('--no-show',
                         action='store_true',
                         help='Do not show the plot')
@@ -162,37 +160,7 @@ def create_parser(iargs=None, namespace=None):
                     help='Setup environment')
 
     inps = parser.parse_args(iargs, namespace)
-
-    if not inps.dir:
-        inps.dir = PRECIP_DIR
-
-        if GPM_FOLDER not in inps.dir:
-            inps.dir = os.path.join(inps.dir, GPM_FOLDER)
-
-        os.makedirs(PRECIP_DIR, exist_ok=True)
-
-    else:
-        inps.dir = inps.dir[0]
-
-    os.makedirs(inps.dir, exist_ok=True)
-
-    if inps.save:
-        if inps.outdir:
-            if not os.path.isabs(inps.outdir):
-                if './' in inps.outdir:
-                    inps.save.append(os.path.join(os.getcwd(), inps.outdir))
-
-                elif PRECIPPRODUCTS_DIR in os.environ:
-                    inps.save.append(os.path.join(PROD_DIR, inps.outdir))
-
-                else:
-                    inps.save.append(os.path.join(os.getcwd(), inps.outdir))
-
-            else:
-                inps.save.append(inps.outdir)
-
-        os.makedirs(inps.save[1], exist_ok=True)
-
+    
     ############################ POSITIONAL ARGUMENTS ############################
 
     if len(inps.positional) == 1:
@@ -311,7 +279,6 @@ def create_parser(iargs=None, namespace=None):
 
     return inps
 
-
 def parse_polygon(polygon):
     """
     Parses a polygon string retreive from ASF vertex tool and extracts the latitude and longitude coordinates.
@@ -398,8 +365,6 @@ def parse_coordinates(coordinates):
 # eruption_dates, lalo = extract_volcanoes_info(None, 'Merapi')
 # latitude, longitude = adapt_coordinates(lalo[0], lalo[1])
 
-# gpm_dir = os.getenv(SCRATCHDIR) + '/gpm_data'
-
 # precipitation = sql_extract_precipitation(latitude, longitude, date_list, gpm_dir)
 
 # precipitation = from_nested_to_float(precipitation)
@@ -408,9 +373,25 @@ def parse_coordinates(coordinates):
 
 #################### END TEST AREA ########################
 
-
 def main(iargs=None, namespace=None):
+
     inps = create_parser(iargs, namespace)
+
+    # Set outdir based on whether --save was used
+    if not inps.outdir:
+       if inps.save:
+          inps.outdir = PRECIPPRODUCTS_DIR
+       else:
+          inps.outdir = os.getcwd()  # Current working directory
+
+    os.makedirs(PRECIP_DIR, exist_ok=True)
+
+    inps.dir = PRECIP_DIR
+    print('inps.outdir:', inps.outdir)
+    print('inps.save:', inps.save)
+    import time
+    time.sleep(5)
+
     fig, axes = prompt_subplots(inps)
 
     return fig, axes
