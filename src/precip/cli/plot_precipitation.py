@@ -165,10 +165,14 @@ def create_parser(iargs=None, namespace=None):
 
     inps = parser.parse_args(iargs, namespace)
     
+    # FA: create_parser has much too much. 
     ############################ POSITIONAL ARGUMENTS ############################
 
+    # FA: using len(inps.positional) looks strange. I would expect this is handled better by argparse?  
+    # FA: suggest to assign the positional argument to volcano_name in argparse. If the number of positional arguments is zero:  inps.latitude, inps.longitude = get_latitude_longitude(inps)
     if len(inps.positional) == 1:
 
+        # FA: this should be in a function
         # Unfortunately this can never work if we pass the coordinates since negative numbers are viewed as options
         if any(char.isdigit() for char in inps.positional):
             if 'POLYGON' in inps.positional:
@@ -188,6 +192,7 @@ def create_parser(iargs=None, namespace=None):
 
     ###############################################################################
 
+    # FA: Assuming that inps.start_date and inps.end_date will be later consider function: inps.start_date, inps.end_date=get_processing_dates(inps)
     if not inps.period:
         inps.start_date = datetime.strptime(inps.start_date[0], '%Y%m%d').date() if inps.start_date else datetime.strptime(START_DATE, '%Y%m%d').date()
         #End date subject to variations, check for alternatives on config.py
@@ -236,6 +241,7 @@ def create_parser(iargs=None, namespace=None):
     else:
             inps.latitude, inps.longitude = parse_polygon(inps.polygon)
 
+    # FA: Not sure why to introduce inps.average = 'W'. You can use use 'if inps.style == 'weekly'' later in the code?
     if inps.style == 'weekly':
         inps.average = 'W'
 
@@ -380,11 +386,15 @@ def parse_coordinates(coordinates):
 def main(iargs=None, namespace=None):
 
     inps = create_parser(iargs, namespace)
+    # FA: suggest function inps = configure_inps(inps)
+    # FA: configure_inps(inps) should update inps.outdir to either cwd/Merapi, cwd or $PRECIPPRODUCTS_DIR/Merapi or $PRECIPPRODUCTS_DIR/206030
+    # FA: suggest function inps = configure_plot_settings(inps)
 
     inps.dir = PRECIP_DIR
 
     os.makedirs(PRECIP_DIR, exist_ok=True)
 
+    # FA: The prompt_subplot function needs to be separated into functions for download, data preparation (write data into inps.outdir) and plotting.
     fig, axes = prompt_subplots(inps)
 
     return fig, axes

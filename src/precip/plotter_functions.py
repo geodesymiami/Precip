@@ -56,6 +56,7 @@ def prompt_subplots(inps):
         if date_list == []:
             date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
 
+        # FA: all this inps handling should be done in configure_inps function
         if len(date_list) <= inps.roll:
             msg = 'Error: The number of dates is less than the rolling window.'
             raise ValueError(msg)
@@ -82,6 +83,7 @@ def prompt_subplots(inps):
             msg = 'Error: Please provide valid coordinates or volcano name.\n Try using --list to get a list of volcanoes.'
             raise ValueError(msg)
 
+        # FA: use save_name instead of saveName
         if inps.volcano_name:
             if inps.save == 'volcano-id':
                 saveName = id
