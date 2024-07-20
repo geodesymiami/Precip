@@ -119,8 +119,9 @@ def create_parser(iargs=None, namespace=None):
                         help='Average data, default is daily')
     parser.add_argument('--colorbar', 
                         nargs=1,
+                        default='viridis',
                         metavar=('COLORBAR'), 
-                        help='Colorbar')
+                        help='Colorbar, default is %(default)s')
     parser.add_argument('--style',
                         choices=['daily','weekly','monthly','yearly','map','bar','annual','strength'],
                         help='Choose plot type')
@@ -281,15 +282,6 @@ def create_parser(iargs=None, namespace=None):
 
     if not inps.bins:
         inps.bins = 4 if inps.bins > 4 else inps.bins
-
-    # USE DEFAULT OPTION FOR DEFAULT VALUES
-    # TODO check if is better to use true as default value
-    if not inps.log:
-        inps.log = False
-
-    # USE DEFAULT OPTION FOR DEFAULT VALUES
-    if not inps.colorbar:
-        inps.colorbar = 'viridis'
 
     return inps
 
