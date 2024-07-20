@@ -17,11 +17,10 @@ Date format: YYYYMMDD
 Example:
 
     plot_precipitation.py Merapi --style bar --roll 30 --bins 3 --log
-    plot_precipitation.py Merapi --style strength --period 20190101:20210929 --save-folder volcano-name
-    plot_precipitation.py Merapi --style strength --period 20190101:20210929 --save-folder volcano-name
-    plot_precipitation.py Merapi --style strength --period 20190101:20210929 --save-folder volcano-id --no-show
-    plot_precipitation.py Merapi --style strength --period 20190101:20210929 --save-folder volcano-id --outdir $PRECIPPRODUCTS_DIR --no-show
-    plot_precipitation.py --style strength --lalo 19.5,-156.5 --period 20190101:20210929 --save-folder volcano-name --outdir $PRECIPPRODUCTS_DIR
+    plot_precipitation.py Merapi --style strength --period 20190101:20210929 
+    plot_precipitation.py Merapi --style strength --period 20190101:20210929 --no-show
+    plot_precipitation.py Merapi --style strength --period 20190101:20210929 --outdir $PRECIPPRODUCTS_DIR --no-show
+    plot_precipitation.py --style strength --lalo 19.5,-156.5 --period 20190101:20210929 --outdir $PRECIPPRODUCTS_DIR
     plot_precipitation.py --style annual --start-date 20190101 --end-date 20210929 --latitude 19.5 --longitude -156.5 --roll 10 --bins 2 --add-event 20200929 20210929
     plot_precipitation.py --style strength --lalo 19.5,-156.5 --period 20190101:20210929 --add-event 20200929 20210929 --elnino
     plot_precipitation.py --style map --end-date 20210929 --polygon 'POLYGON((113.4496 -8.0893,113.7452 -8.0893,113.7452 -7.817,113.4496 -7.817,113.4496 -8.0893))'
@@ -97,7 +96,6 @@ def create_parser(iargs=None, namespace=None):
                         action='store_true',
                         dest = 'elnino',
                         help='Plot Nino/Nina events')
-
     parser.add_argument("--vlim", 
                         nargs=2, 
                         metavar=("VMIN", "VMAX"), 
@@ -135,17 +133,14 @@ def create_parser(iargs=None, namespace=None):
     parser.add_argument('--check', 
                         action='store_true', 
                         help='Check if the file is corrupted')
-    parser.add_argument('--save-folder',
-                        dest="save",
-                        nargs='?',  # Indicates the argument is optional
-                        choices=['volcano-id', 'volcano-name'],
-                        const='volcano-name',  # Default value if --save-folder is specified without an argument
-                        default='',  # Default value if --save-folder is not specified at all
-                        help=f'Folder to save plot. (Default: no folder)')
+    parser.add_argument('--save',
+                        dest='save_flag',
+                        action='store_true',
+                        default=True,  # Default behavior is to save
+                        help='Save *png file')
     parser.add_argument('--no-save', 
                         dest='save_flag', 
                         action='store_false', 
-                        default=False, 
                         help='Do not save *png file')
     parser.add_argument('--outdir',
                         type=str,
@@ -155,7 +150,7 @@ def create_parser(iargs=None, namespace=None):
     parser.add_argument('--no-show',           
                         dest='show_flag',
                         action='store_false',
-                        default=False, 
+                        default=True, 
                         help='Do not show the plot')
     parser.add_argument('--use-ssh',
                         action='store_true',
@@ -171,9 +166,9 @@ def create_parser(iargs=None, namespace=None):
 
     inps = parser.parse_args(iargs, namespace)
     
-    if not inps.save_flag and inps.show_flag:
-        print('Setting show_flag to True because --no-save' )
-        inps.show_flag = False
+    print('save_flag:', inps.save_flag)
+    print('show_flag:', inps.show_flag)
+    #exit()
     # FA: create_parser has much too much. 
     ############################ POSITIONAL ARGUMENTS ############################
 
