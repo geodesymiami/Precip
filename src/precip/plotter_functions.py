@@ -56,6 +56,7 @@ def prompt_subplots(inps):
         if date_list == []:
             date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
 
+        # FA: all this inps handling should be done in configure_inps function
         if len(date_list) <= inps.roll:
             msg = 'Error: The number of dates is less than the rolling window.'
             raise ValueError(msg)
@@ -65,8 +66,8 @@ def prompt_subplots(inps):
 
             title = f'Latitude: {inps.latitude}, Longitude: {inps.longitude}'
 
-        elif inps.name:
-            eruption_dates, lalo, id = extract_volcanoes_info(volcano_json_dir, inps.name[0])
+        elif inps.volcano_name:
+            eruption_dates, lalo, id = extract_volcanoes_info(volcano_json_dir, inps.volcano_name[0])
             inps.latitude, inps.longitude = adapt_coordinates(lalo[0], lalo[1])
 
             if inps.style == 'map':
@@ -76,26 +77,21 @@ def prompt_subplots(inps):
                 inps.longitude = [min(inps.longitude) - 2, max(inps.longitude) + 2]
 
 
-            title = f'{inps.name[0]} - Latitude: {inps.latitude}, Longitude: {inps.longitude}'
+            title = f'{inps.volcano_name[0]} - Latitude: {inps.latitude}, Longitude: {inps.longitude}'
 
         else:
             msg = 'Error: Please provide valid coordinates or volcano name.\n Try using --list to get a list of volcanoes.'
             raise ValueError(msg)
 
-        if inps.save:
-            if inps.name:
-                if inps.save[0] == 'volcano-id':
-                    saveName = id
+        # FA: use save_name instead of saveName
+        if inps.volcano_name:
+                saveName = inps.volcano_name[0]
+        elif inps.latitude and inps.longitude:
+            saveName = f'{inps.latitude}_{inps.longitude}'
 
-                elif inps.save[0] == 'volcano-name':
-                    saveName = inps.name[0]
-
-            elif inps.latitude and inps.longitude:
-                saveName = f'{inps.latitude}_{inps.longitude}'
-
-            strStart = str(inps.start_date).replace('-', '') if not isinstance(inps.start_date, str) else inps.start_date.replace('-', '')
-            strEnd = str(inps.end_date).replace('-', '') if not isinstance(inps.end_date, str) else inps.end_date.replace('-', '')
-            save_path = f'{inps.save[1]}/{saveName}_{strStart}_{strEnd}_{inps.style}.png'
+        strStart = str(inps.start_date).replace('-', '') if not isinstance(inps.start_date, str) else inps.start_date.replace('-', '')
+        strEnd = str(inps.end_date).replace('-', '') if not isinstance(inps.end_date, str) else inps.end_date.replace('-', '')
+        save_path = f'{inps.outdir}/{saveName}_{strStart}_{strEnd}_{inps.style}.png'
 
         if inps.style == 'strength':
             strength = True
@@ -139,17 +135,17 @@ def prompt_subplots(inps):
                 precipitation = interpolate_map(precipitation, inps.interpolate)
 
             map_precipitation(precipitation, inps.longitude, inps.latitude, date_list, inps.colorbar, inps.isolines, labels, inps.vlim)
-            if inps.name:
-                plt.scatter(volcano_position[1], volcano_position[0], color='red', marker='^', s=50, label=inps.name[0], zorder=3)
+            if inps.volcano_name:
+                plt.scatter(volcano_position[1], volcano_position[0], color='red', marker='^', s=50, label=inps.volcano_name[0], zorder=3)
                 plt.legend(fontsize='small', frameon=True, framealpha=0.3)
 
             fig = plt.gcf()
             axes = plt.gca()
 
-            if inps.save:
+            if inps.save_flag:
                 plt.savefig(save_path)
 
-            if not inps.no_show:
+            if inps.show_flag:
                 plt.show()
 
             return fig, axes
@@ -232,10 +228,11 @@ def prompt_subplots(inps):
         fig = plt.gcf()
         axes = plt.gca()
 
-        if inps.save:
-            plt.savefig(save_path)
+        if inps.save_flag:
+           print("Saving:", save_path)
+           plt.savefig(save_path)
 
-        if not inps.no_show:
+        if inps.show_flag:
             plt.show()
 
         return fig, axes
