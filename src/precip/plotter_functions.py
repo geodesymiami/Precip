@@ -150,7 +150,7 @@ def prompt_subplots(inps):
             fig = plt.gcf()
             axes = plt.gca()
 
-            if inps.save:
+            if inps.save_flag:
                 plt.savefig(save_path)
 
             if not inps.no_show:
@@ -236,8 +236,9 @@ def prompt_subplots(inps):
         fig = plt.gcf()
         axes = plt.gca()
 
-        print("Saving:", save_path)
-        plt.savefig(save_path)
+        if inps.save_flag:
+           print("Saving:", save_path)
+           plt.savefig(save_path)
 
         if not inps.no_show:
             plt.show()

@@ -18,6 +18,7 @@ Example:
 
     plot_precipitation.py Merapi --style bar --roll 30 --bins 3 --log
     plot_precipitation.py Merapi --style strength --period 20190101:20210929 --save-folder volcano-name
+    plot_precipitation.py Merapi --style strength --period 20190101:20210929 --save-folder volcano-name
     plot_precipitation.py Merapi --style strength --period 20190101:20210929 --save-folder volcano-id --no-show
     plot_precipitation.py Merapi --style strength --period 20190101:20210929 --save-folder volcano-id --outdir $PRECIPPRODUCTS_DIR --no-show
     plot_precipitation.py --style strength --lalo 19.5,-156.5 --period 20190101:20210929 --save-folder volcano-name --outdir $PRECIPPRODUCTS_DIR
@@ -69,13 +70,12 @@ def create_parser(iargs=None, namespace=None):
                         help='Latitude and longitude')
     parser.add_argument('--polygon', 
                         metavar='POLYGON', 
-                        help='Poligon of the wanted area (Format from ASF Vertex Tool https://search.asf.alaska.edu/#/)')
+                        help='Polygon of the wanted area (Format from ASF Vertex Tool https://search.asf.alaska.edu/#/)')
     parser.add_argument('--volcano-name',
                         nargs=1,
                         type=str,
                         metavar=('NAME'),
                         help='Name of the volcano')
-
     parser.add_argument('--add-event',
                         nargs='*',
                         metavar=('YYYYMMDD, YYYY-MM-DD'),
@@ -123,7 +123,6 @@ def create_parser(iargs=None, namespace=None):
                         nargs=1,
                         metavar=('COLORBAR'), 
                         help='Colorbar')
-
     parser.add_argument('--style',
                         choices=['daily','weekly','monthly','yearly','map','bar','annual','strength'],
                         help='Choose plot type')
@@ -143,12 +142,17 @@ def create_parser(iargs=None, namespace=None):
                         const='volcano-name',  # Default value if --save-folder is specified without an argument
                         default='',  # Default value if --save-folder is not specified at all
                         help=f'Folder to save plot. (Default: no folder)')
+    parser.add_argument('--no-save', 
+                        dest='save_flag', 
+                        action='store_false', 
+                        default=False, 
+                        help='Do not save *png file')
     parser.add_argument('--outdir',
                         type=str,
                         default=os.getcwd(),
                         metavar=('PATH'),
                         help='folder to save the plot (Default: none)')
-    parser.add_argument('--no-show',
+    parser.add_argument('--no-show',           # FA: use --no-show but variable show or show_flag and set to store_false. Later we can use if inps.show_flag:
                         action='store_true',
                         help='Do not show the plot')
     parser.add_argument('--use-ssh',
@@ -165,6 +169,9 @@ def create_parser(iargs=None, namespace=None):
 
     inps = parser.parse_args(iargs, namespace)
     
+    if not inps.save_flag and inps.no_show:
+        print('Setting show_flag to True because --no-save' )
+        inps.no_show = False
     # FA: create_parser has much too much. 
     ############################ POSITIONAL ARGUMENTS ############################
 
