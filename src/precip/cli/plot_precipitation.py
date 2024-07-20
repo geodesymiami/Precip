@@ -152,8 +152,10 @@ def create_parser(iargs=None, namespace=None):
                         default=os.getcwd(),
                         metavar=('PATH'),
                         help='folder to save the plot (Default: none)')
-    parser.add_argument('--no-show',           # FA: use --no-show but variable show or show_flag and set to store_false. Later we can use if inps.show_flag:
-                        action='store_true',
+    parser.add_argument('--no-show',           
+                        dest='show_flag',
+                        action='store_false',
+                        default=False, 
                         help='Do not show the plot')
     parser.add_argument('--use-ssh',
                         action='store_true',
@@ -169,9 +171,9 @@ def create_parser(iargs=None, namespace=None):
 
     inps = parser.parse_args(iargs, namespace)
     
-    if not inps.save_flag and inps.no_show:
+    if not inps.save_flag and inps.show_flag:
         print('Setting show_flag to True because --no-save' )
-        inps.no_show = False
+        inps.show_flag = False
     # FA: create_parser has much too much. 
     ############################ POSITIONAL ARGUMENTS ############################
 

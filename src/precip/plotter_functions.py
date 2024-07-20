@@ -153,7 +153,7 @@ def prompt_subplots(inps):
             if inps.save_flag:
                 plt.savefig(save_path)
 
-            if not inps.no_show:
+            if inps.show_flag:
                 plt.show()
 
             return fig, axes
@@ -240,7 +240,7 @@ def prompt_subplots(inps):
            print("Saving:", save_path)
            plt.savefig(save_path)
 
-        if not inps.no_show:
+        if inps.show_flag:
             plt.show()
 
         return fig, axes
