@@ -65,8 +65,8 @@ def prompt_subplots(inps):
 
             title = f'Latitude: {inps.latitude}, Longitude: {inps.longitude}'
 
-        elif inps.name:
-            eruption_dates, lalo, id = extract_volcanoes_info(volcano_json_dir, inps.name[0])
+        elif inps.volcano_name:
+            eruption_dates, lalo, id = extract_volcanoes_info(volcano_json_dir, inps.volcano_name[0])
             inps.latitude, inps.longitude = adapt_coordinates(lalo[0], lalo[1])
 
             if inps.style == 'map':
@@ -76,27 +76,28 @@ def prompt_subplots(inps):
                 inps.longitude = [min(inps.longitude) - 2, max(inps.longitude) + 2]
 
 
-            title = f'{inps.name[0]} - Latitude: {inps.latitude}, Longitude: {inps.longitude}'
+            title = f'{inps.volcano_name[0]} - Latitude: {inps.latitude}, Longitude: {inps.longitude}'
 
         else:
             msg = 'Error: Please provide valid coordinates or volcano name.\n Try using --list to get a list of volcanoes.'
             raise ValueError(msg)
 
-        if inps.save:
-            if inps.name:
-                if inps.save == 'volcano-id':
-                    saveName = id
+        if inps.volcano_name:
+            if inps.save == 'volcano-id':
+                saveName = id
 
-                elif inps.save == 'volcano-name':
-                    saveName = inps.name[0]
+            elif inps.save == 'volcano-name':
+                saveName = inps.volcano_name[0]
+            else:
+                saveName = inps.save
 
-            elif inps.latitude and inps.longitude:
-                saveName = f'{inps.latitude}_{inps.longitude}'
+        elif inps.latitude and inps.longitude:
+            saveName = f'{inps.latitude}_{inps.longitude}'
 
-            strStart = str(inps.start_date).replace('-', '') if not isinstance(inps.start_date, str) else inps.start_date.replace('-', '')
-            strEnd = str(inps.end_date).replace('-', '') if not isinstance(inps.end_date, str) else inps.end_date.replace('-', '')
-            save_path = f'{inps.outdir}/{saveName}/{strStart}_{strEnd}_{inps.style}.png'
-            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        strStart = str(inps.start_date).replace('-', '') if not isinstance(inps.start_date, str) else inps.start_date.replace('-', '')
+        strEnd = str(inps.end_date).replace('-', '') if not isinstance(inps.end_date, str) else inps.end_date.replace('-', '')
+        save_path = f'{inps.outdir}/{saveName}/{strStart}_{strEnd}_{inps.style}.png'
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
         if inps.style == 'strength':
             strength = True
@@ -140,8 +141,8 @@ def prompt_subplots(inps):
                 precipitation = interpolate_map(precipitation, inps.interpolate)
 
             map_precipitation(precipitation, inps.longitude, inps.latitude, date_list, inps.colorbar, inps.isolines, labels, inps.vlim)
-            if inps.name:
-                plt.scatter(volcano_position[1], volcano_position[0], color='red', marker='^', s=50, label=inps.name[0], zorder=3)
+            if inps.volcano_name:
+                plt.scatter(volcano_position[1], volcano_position[0], color='red', marker='^', s=50, label=inps.volcano_name[0], zorder=3)
                 plt.legend(fontsize='small', frameon=True, framealpha=0.3)
 
             fig = plt.gcf()
@@ -233,9 +234,8 @@ def prompt_subplots(inps):
         fig = plt.gcf()
         axes = plt.gca()
 
-        if inps.save:
-            print("Saving:", save_path)
-            plt.savefig(save_path)
+        print("Saving:", save_path)
+        plt.savefig(save_path)
 
         if not inps.no_show:
             plt.show()

@@ -17,9 +17,12 @@ Date format: YYYYMMDD
 Example:
 
     plot_precipitation.py Merapi --style bar --roll 30 --bins 3 --log
-    plot_precipitation.py --style strength --lalo 19.5,-156.5 ---period 20190101:20210929 --save
+    plot_precipitation.py Merapi --style strength --period 20190101:20210929 --save-folder volcano-name
+    plot_precipitation.py Merapi --style strength --period 20190101:20210929 --save-folder volcano-id --no-show
+    plot_precipitation.py Merapi --style strength --period 20190101:20210929 --save-folder volcano-id --outdir $PRECIPPRODUCTS_DIR --no-show
+    plot_precipitation.py --style strength --lalo 19.5,-156.5 --period 20190101:20210929 --save-folder volcano-name --outdir $PRECIPPRODUCTS_DIR
     plot_precipitation.py --style annual --start-date 20190101 --end-date 20210929 --latitude 19.5 --longitude -156.5 --roll 10 --bins 2 --add-event 20200929 20210929
-    plot_precipitation.py --style strength --lalo 19.5,-156.5 ---period 20190101:20210929 --add-event 20200929 20210929 --elnino
+    plot_precipitation.py --style strength --lalo 19.5,-156.5 --period 20190101:20210929 --add-event 20200929 20210929 --elnino
     plot_precipitation.py --style map --end-date 20210929 --polygon 'POLYGON((113.4496 -8.0893,113.7452 -8.0893,113.7452 -7.817,113.4496 -7.817,113.4496 -8.0893))'
     plot_precipitation.py --style map --end-date 20210929 --lalo 19.5:20.5,-155.5:-156.5 --vlim -3 3 --colorbar 'RdBu'
     plot_precipitation.py --download
@@ -67,7 +70,7 @@ def create_parser(iargs=None, namespace=None):
     parser.add_argument('--polygon', 
                         metavar='POLYGON', 
                         help='Poligon of the wanted area (Format from ASF Vertex Tool https://search.asf.alaska.edu/#/)')
-    parser.add_argument('--name',
+    parser.add_argument('--volcano-name',
                         nargs=1,
                         type=str,
                         metavar=('NAME'),
@@ -133,17 +136,18 @@ def create_parser(iargs=None, namespace=None):
     parser.add_argument('--check', 
                         action='store_true', 
                         help='Check if the file is corrupted')
-    parser.add_argument('--save',
+    parser.add_argument('--save-folder',
+                        dest="save",
                         nargs='?',  # Indicates the argument is optional
                         choices=['volcano-id', 'volcano-name'],
-                        const='volcano-name',  # Default value if --save is specified without an argument
-                        default='volcano-name',  # Default value if --save is not specified at all
-                        help=f'Save plot in folder with volcanoID or volcano name (default volcano-name)')
+                        const='volcano-name',  # Default value if --save-folder is specified without an argument
+                        default='',  # Default value if --save-folder is not specified at all
+                        help=f'Folder to save plot. (Default: no folder)')
     parser.add_argument('--outdir',
                         type=str,
                         default=os.getcwd(),
                         metavar=('PATH'),
-                        help='folder to save the plot (Default: $PRECIPPRODUCTS_DIR')
+                        help='folder to save the plot (Default: none)')
     parser.add_argument('--no-show',
                         action='store_true',
                         help='Do not show the plot')
@@ -175,7 +179,7 @@ def create_parser(iargs=None, namespace=None):
                 inps.latitude = parse_coordinates(coordinates[0])
                 inps.longitude = parse_coordinates(coordinates[1])
 
-    inps.name = inps.positional
+    inps.volcano_name = inps.positional
     # Same issue here
     # if len(inps.positional) == 2:
     #     inps.latitude = parse_coordinates(inps.positional[0])
@@ -377,20 +381,9 @@ def main(iargs=None, namespace=None):
 
     inps = create_parser(iargs, namespace)
 
-    # Set outdir based on whether --save was used
-    if not inps.outdir:
-       if inps.save:
-          inps.outdir = PRECIPPRODUCTS_DIR
-       else:
-          inps.outdir = os.getcwd()  # Current working directory
+    inps.dir = PRECIP_DIR
 
     os.makedirs(PRECIP_DIR, exist_ok=True)
-
-    inps.dir = PRECIP_DIR
-    print('inps.outdir:', inps.outdir)
-    print('inps.save:', inps.save)
-    import time
-    time.sleep(5)
 
     fig, axes = prompt_subplots(inps)
 
