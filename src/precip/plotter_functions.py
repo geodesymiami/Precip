@@ -73,8 +73,8 @@ def prompt_subplots(inps):
             if inps.style == 'map':
                 volcano_position = [inps.latitude[0], inps.longitude[0]]
 
-                inps.latitude = [min(inps.latitude) - 2, max(inps.latitude) + 2]
-                inps.longitude = [min(inps.longitude) - 2, max(inps.longitude) + 2]
+                inps.latitude = [round(min(inps.latitude) - 2, 2), round(max(inps.latitude) + 2, 2)]
+                inps.longitude = [round(min(inps.longitude) - 2, 2), round(max(inps.longitude) + 2, 2)]
 
 
             title = f'{inps.volcano_name[0]} - Latitude: {inps.latitude}, Longitude: {inps.longitude}'
