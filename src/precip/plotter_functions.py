@@ -273,13 +273,15 @@ def volcanoes_list(jsonfile):
     data = get_volcano_json(jsonfile, JSON_DOWNLOAD_URL)
 
     volcanoName = []
+    volcanoId = []
 
     for j in data['features']:
         if j['properties']['VolcanoName'] not in volcanoName:
             volcanoName.append(j['properties']['VolcanoName'])
+            volcanoId.append(j['properties']['VolcanoNumber'])
 
-    for volcano in volcanoName:
-        print(volcano)
+    for volcano, id in zip(volcanoName, volcanoId):
+        print(f'{volcano}, id: {id}')
 
     return volcanoName
 
