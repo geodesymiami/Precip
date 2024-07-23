@@ -1,7 +1,6 @@
 import os
 import json
 from datetime import datetime
-import sys
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -23,12 +22,7 @@ if False:
     print(req.text)
 
 ###################################################
-
-def prompt_subplots(inps):
-    gpm_dir = inps.dir
-    volcano_json_dir = inps.dir + '/' + JSON_VOLCANO
-    date_list = []
-
+def handle_data_functions(inps):
     if inps.use_ssh:
         ssh = connect_jetstream()
 
@@ -36,10 +30,10 @@ def prompt_subplots(inps):
         ssh = None
 
     if inps.check:
-        check_nc4_files(gpm_dir, ssh)
+        check_nc4_files(inps.dir, ssh)
 
     if inps.list:
-        volcanoes_list(volcano_json_dir)
+        volcanoes_list(os.path.join(inps.dir, JSON_VOLCANO))
 
     if inps.download: 
         date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
@@ -48,13 +42,18 @@ def prompt_subplots(inps):
             download_jetstream_parallel(date_list, ssh, inps.parallel)
 
         else:
-            dload_site_list_parallel(gpm_dir, date_list, inps.parallel)
+            dload_site_list_parallel(inps.dir, date_list, inps.parallel)
+
+def prompt_subplots(inps):
+    handle_data_functions(inps)
+
+    gpm_dir = inps.dir
+    volcano_json_dir = os.path.join(inps.dir, JSON_VOLCANO)
 
     if inps.style:
         eruption_dates = []
 
-        if date_list == []:
-            date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
+        date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
 
         # FA: all this inps handling should be done in configure_inps function
         if len(date_list) <= inps.roll:
