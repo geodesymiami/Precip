@@ -83,15 +83,20 @@ def prompt_subplots(inps):
             msg = 'Error: Please provide valid coordinates or volcano name.\n Try using --list to get a list of volcanoes.'
             raise ValueError(msg)
 
-        # FA: use save_name instead of saveName
-        if inps.volcano_name:
-                saveName = inps.volcano_name[0]
-        elif inps.latitude and inps.longitude:
-            saveName = f'{inps.latitude}_{inps.longitude}'
+        if inps.save:
+            if inps.volcano_name:
+                    if inps.save == 'volcano-name':
+                        save_name = inps.volcano_name[0]
 
-        strStart = str(inps.start_date).replace('-', '') if not isinstance(inps.start_date, str) else inps.start_date.replace('-', '')
-        strEnd = str(inps.end_date).replace('-', '') if not isinstance(inps.end_date, str) else inps.end_date.replace('-', '')
-        save_path = f'{inps.outdir}/{saveName}_{strStart}_{strEnd}_{inps.style}.png'
+                    elif inps.save == 'volcano-id':
+                        save_name = id
+
+            elif inps.latitude and inps.longitude:
+                save_name = f'{inps.latitude}_{inps.longitude}'
+
+            strStart = str(inps.start_date).replace('-', '') if not isinstance(inps.start_date, str) else inps.start_date.replace('-', '')
+            strEnd = str(inps.end_date).replace('-', '') if not isinstance(inps.end_date, str) else inps.end_date.replace('-', '')
+            save_path = f'{inps.outdir}/{save_name}_{strStart}_{strEnd}_{inps.style}.png'
 
         if inps.style == 'strength':
             strength = True
@@ -142,7 +147,7 @@ def prompt_subplots(inps):
             fig = plt.gcf()
             axes = plt.gca()
 
-            if inps.save_flag:
+            if inps.save:
                 plt.savefig(save_path)
 
             if inps.show_flag:
@@ -228,7 +233,7 @@ def prompt_subplots(inps):
         fig = plt.gcf()
         axes = plt.gca()
 
-        if inps.save_flag:
+        if inps.save:
            print("Saving:", save_path)
            plt.savefig(save_path)
 
@@ -322,7 +327,7 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
             except:
                 end = 'None'
 
-            print(f'{name}, id: {id} eruption started {start} and ended {end}')
+            print(f'{name} (id: {id}) eruption started {start} and ended {end}')
 
             # If the start date is within the date range
             if start >= first_day and start <= last_day:

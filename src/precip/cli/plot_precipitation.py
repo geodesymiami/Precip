@@ -36,123 +36,41 @@ Example:
 def create_parser(iargs=None, namespace=None):
     """ Creates command line argument parser object. """
 
+    # parser = argparse.ArgumentParser(
+    #     description='Plot precipitation data from GPM dataset for a specific location at a given date range',
+    #     formatter_class=argparse.RawTextHelpFormatter,
+    #     epilog=EXAMPLE)
     parser = argparse.ArgumentParser(
         description='Plot precipitation data from GPM dataset for a specific location at a given date range',
         formatter_class=argparse.RawTextHelpFormatter,
         epilog=EXAMPLE)
 
-    parser.add_argument('positional', 
-                        nargs='*',
-                        help='Volcano name or coordinates')
-    parser.add_argument('--start-date',
-                        nargs=1,
-                        metavar='YYYYMMDD', 
-                        help='Start date of the search')
-    parser.add_argument('--end-date',
-                        nargs=1, 
-                        metavar='YYYYMMDD', 
-                        help='End date of the search')
-    parser.add_argument('--period',
-                        metavar='YYYYMMDD:YYYYMMDD, YYYYMMDD,YYYYMMDD',
-                        help='Period of the search')
-    parser.add_argument('--latitude', 
-                        nargs='+',  
-                        metavar=('MIN', 'MAX'),
-                        help='Latitude')
-    parser.add_argument('--longitude', 
-                        nargs='+', 
-                        metavar=('MIN', 'MAX'), 
-                        help='Longitude')
-    parser.add_argument('--lalo',
-                        nargs=1,
-                        metavar=('LATITUDE:LONGITUDE, LATITUDE,LONGITUDE'),
-                        help='Latitude and longitude')
-    parser.add_argument('--polygon', 
-                        metavar='POLYGON', 
-                        help='Polygon of the wanted area (Format from ASF Vertex Tool https://search.asf.alaska.edu/#/)')
+    parser.add_argument('name',
+                        nargs='?',
+                        type=str,
+                        help='Volcano name')
+    # parser.add_argument('coordinates', 
+    #                     nargs='1',
+    #                     help='Volcano name')
+
     parser.add_argument('--volcano-name',
                         nargs=1,
                         type=str,
                         metavar=('NAME'),
                         help='Name of the volcano')
-    parser.add_argument('--add-event',
-                        nargs='*',
-                        metavar=('YYYYMMDD, YYYY-MM-DD'),
-                        help='Add event to the time series')
-    parser.add_argument('--log', 
-                        action='store_true',
-                        help='Enable logaritmic scale')
-    parser.add_argument('--bins',
-                        type=int,
-                        metavar=('BINS'),
-                        default=1,
-                        help='Number of bins for the histogram (default: %(default)s)')
-    parser.add_argument('--roll',
-                        type=int,
-                        metavar=('ROLL'),
-                        default=90,
-                        help='Rolling average (default: %(default)s)')
-    parser.add_argument('--elnino',
-                        action='store_true',
-                        dest = 'elnino',
-                        help='Plot Nino/Nina events')
-    parser.add_argument("--vlim", 
-                        nargs=2, 
-                        metavar=("VMIN", "VMAX"), 
-                        default=None,
-                        type=float, 
-                        help="Velocity limit for the colorbar (default: None)")
-    parser.add_argument('--interpolate',
-                        metavar=('GRANULARITY'),
-                        type=int, 
-                        help='Interpolate data')
-    parser.add_argument('--isolines',
-                        nargs=1,
-                        metavar=('LEVELS'),
-                        help='Number of isolines to be plotted on the map')
-    parser.add_argument('--cumulate',
-                        action='store_true',
-                        help='Cumulate data')
-    parser.add_argument('--average', 
-                        choices=['D','W','M','Y'], 
-                        metavar=('TIME_PERIOD'), 
-                        help='Average data, default is daily')
-    parser.add_argument('--colorbar', 
-                        nargs=1,
-                        default='viridis',
-                        metavar=('COLORBAR'), 
-                        help='Colorbar, default is %(default)s')
+
     parser.add_argument('--style',
                         choices=['daily','weekly','monthly','yearly','map','bar','annual','strength'],
                         help='Choose plot type')
-    parser.add_argument('--download', 
+    parser.add_argument('--download',
                         action='store_true',
                         help='Use ssh')
-    parser.add_argument('--list', 
-                        action='store_true', 
-                        help='List volcanoes')
-    parser.add_argument('--check', 
-                        action='store_true', 
-                        help='Check if the file is corrupted')
-    parser.add_argument('--save',
-                        dest='save_flag',
+    parser.add_argument('--list',
                         action='store_true',
-                        default=True,  # Default behavior is to save
-                        help='Save *png file')
-    parser.add_argument('--no-save', 
-                        dest='save_flag', 
-                        action='store_false', 
-                        help='Do not save *png file')
-    parser.add_argument('--outdir',
-                        type=str,
-                        default=os.getcwd(),
-                        metavar=('PATH'),
-                        help='folder to save the plot (Default: none)')
-    parser.add_argument('--no-show',           
-                        dest='show_flag',
-                        action='store_false',
-                        default=True, 
-                        help='Do not show the plot')
+                        help='List volcanoes')
+    parser.add_argument('--check',
+                        action='store_true',
+                        help='Check if the file is corrupted')
     parser.add_argument('--use-ssh',
                         action='store_true',
                         dest='use_ssh',
@@ -161,34 +79,35 @@ def create_parser(iargs=None, namespace=None):
                         type=int,
                         default=5,
                         help='Number of parallel downloads')
-    # TODO later
-    parser.add_argument('--setup',
-                    help='Setup environment')
+
+    parser = add_location_arguments(parser)
+    parser = add_date_arguments(parser)
+    parser = add_plot_parameters_arguments(parser)
+    parser = add_map_parameters_arguments(parser)
+    parser = add_save_arguments(parser)
 
     inps = parser.parse_args(iargs, namespace)
-    
-    print('save_flag:', inps.save_flag)
-    print('show_flag:', inps.show_flag)
+
     #exit()
     # FA: create_parser has much too much. 
     ############################ POSITIONAL ARGUMENTS ############################
 
     # FA: using len(inps.positional) looks strange. I would expect this is handled better by argparse?  
     # FA: suggest to assign the positional argument to volcano_name in argparse. If the number of positional arguments is zero:  inps.latitude, inps.longitude = get_latitude_longitude(inps)
-    if len(inps.positional) == 1:
+    # if len(inps.name) == 1:
 
-        # FA: this should be in a function
-        # Unfortunately this can never work if we pass the coordinates since negative numbers are viewed as options
-        if any(char.isdigit() for char in inps.positional):
-            if 'POLYGON' in inps.positional:
-                inps.latitude, inps.longitude = parse_polygon(inps.positional[0])
+    #     # FA: this should be in a function
+    #     # Unfortunately this can never work if we pass the coordinates since negative numbers are viewed as options
+    #     if any(char.isdigit() for char in inps.name):
+    #         if 'POLYGON' in inps.name:
+    #             inps.latitude, inps.longitude = parse_polygon(inps.name[0])
 
-            else:
-                coordinates = parse_coordinates(inps.positional[0])
-                inps.latitude = parse_coordinates(coordinates[0])
-                inps.longitude = parse_coordinates(coordinates[1])
+    #         else:
+    #             coordinates = parse_coordinates(inps.name[0])
+    #             inps.latitude = parse_coordinates(coordinates[0])
+    #             inps.longitude = parse_coordinates(coordinates[1])
 
-    inps.volcano_name = inps.positional
+    # inps.volcano_name = inps.name
     # Same issue here
     # if len(inps.positional) == 2:
     #     inps.latitude = parse_coordinates(inps.positional[0])
@@ -196,12 +115,14 @@ def create_parser(iargs=None, namespace=None):
     #     inps.longitude = parse_coordinates(inps.positional[1])
 
     ###############################################################################
+    inps.volcano_name = [inps.name]
 
     # FA: Assuming that inps.start_date and inps.end_date will be later consider function: inps.start_date, inps.end_date=get_processing_dates(inps)
     if not inps.period:
-        inps.start_date = datetime.strptime(inps.start_date[0], '%Y%m%d').date() if inps.start_date else datetime.strptime(START_DATE, '%Y%m%d').date()
+        inps.start_date = datetime.strptime(inps.start_date, '%Y%m%d').date()
+
         #End date subject to variations, check for alternatives on config.py
-        inps.end_date = datetime.strptime(inps.end_date[0], '%Y%m%d').date() if inps.end_date else datetime.strptime(END_DATE, '%Y%m%d').date()
+        inps.end_date = datetime.strptime(inps.end_date, '%Y%m%d').date()
 
     else:
         if ':' in inps.period:
@@ -209,9 +130,6 @@ def create_parser(iargs=None, namespace=None):
         # TODO not sure if this is to be removed
         elif ',' in inps.period:
             dates = inps.period.split(',')
-
-        elif ' ' in inps.period:
-            dates = inps.period.split(' ')
 
         inps.start_date = datetime.strptime(dates[0], '%Y%m%d').date()
         inps.end_date = datetime.strptime(dates[1], '%Y%m%d').date()
@@ -260,13 +178,8 @@ def create_parser(iargs=None, namespace=None):
         inps.average = 'D'
 
     elif inps.style == 'map':
-        if inps.average:
-            inps.end_date = None
-
         inps.add_event = None
-
-    else:
-        inps.average = 'D'
+        inps.roll = 1
 
     if inps.add_event:
         try:
@@ -284,6 +197,136 @@ def create_parser(iargs=None, namespace=None):
         inps.bins = 4 if inps.bins > 4 else inps.bins
 
     return inps
+
+
+def add_date_arguments(parser):
+    """Argument parser for the date range of the search."""
+    date = parser.add_argument_group('Date range of the search')
+    date.add_argument('--start-date',
+                        nargs='?',
+                        default=START_DATE,
+                        metavar='YYYYMMDD',
+                        help='Start date of the search, default is %(default)s')
+    date.add_argument('--end-date',
+                        nargs='?',
+                        default=END_DATE,
+                        metavar='YYYYMMDD',
+                        help='End date of the search, default is %(default)s')
+    date.add_argument('--period',
+                        nargs='?',
+                        metavar='YYYYMMDD:YYYYMMDD, YYYYMMDD,YYYYMMDD',
+                        help='Period of the search')
+
+    return parser
+
+
+def add_location_arguments(parser):
+    """Argument pasrser for the location of the volcano or area of interest."""
+    location = parser.add_argument_group('Location of the volcano or area of interest')
+    location.add_argument('--latitude',
+                        nargs='?',
+                        metavar=('LATITUDE', 'LATITUDE:LATITUDE'),
+                        help='Latitude')
+    location.add_argument('--longitude',
+                        nargs='?',
+                        metavar=('LONGITUDE', 'LONGITUDE:LONGITUDE'),
+                        help='Longitude')
+    location.add_argument('--lalo',
+                        nargs='?',
+                        metavar=('LATITUDE,LONGITUDE', 'LATITUDE:LATITUDE, LONGITUDE:LONGITUDE'),
+                        help='Latitude and longitude')
+    location.add_argument('--polygon',
+                        metavar='POLYGON',
+                        help='Polygon of the wanted area (Format from ASF Vertex Tool https://search.asf.alaska.edu/#/)')
+
+    return parser
+
+
+def add_plot_parameters_arguments(parser):
+    """Argument parser for the plot parameters."""
+    plot_parameters = parser.add_argument_group('Plot parameters')
+    plot_parameters.add_argument('--add-event',
+                        nargs='*',
+                        metavar=('YYYYMMDD, YYYY-MM-DD'),
+                        help='Add event to the time series')
+    plot_parameters.add_argument('--log', 
+                        action='store_true',
+                        help='Enable logaritmic scale')
+    plot_parameters.add_argument('--bins',
+                        type=int,
+                        metavar=('BINS'),
+                        default=1,
+                        help='Number of bins for the histogram (default: %(default)s)')
+    plot_parameters.add_argument('--roll',
+                        type=int,
+                        metavar=('ROLL'),
+                        default=90,
+                        help='Rolling average (default: %(default)s)')
+    plot_parameters.add_argument('--elnino',
+                        action='store_true',
+                        dest = 'elnino',
+                        help='Plot Nino/Nina events')
+    plot_parameters.add_argument('--no-show',
+                        dest='show_flag',
+                        action='store_false',
+                        default=True,
+                        help='Do not show the plot')
+
+    return parser
+
+
+def add_map_parameters_arguments(parser):
+    """Argument parser for the map parameters."""
+    map_parameters = parser.add_argument_group('Map parameters')
+    map_parameters.add_argument('--vlim',
+                        nargs=2,
+                        metavar=('VMIN', 'VMAX'),
+                        help='Velocity limit for the colorbar')
+    map_parameters.add_argument('--interpolate',
+                        metavar='GRANULARITY',
+                        type=int,
+                        help='Interpolate data')
+    map_parameters.add_argument('--isolines',
+                        nargs=1,
+                        metavar='LEVELS',
+                        help='Number of isolines to be plotted on the map')
+    map_parameters.add_argument('--cumulate',
+                        action='store_true',
+                        help='Cumulate data')
+    map_parameters.add_argument('--average',
+                        choices={'D','W','M','Y', None},
+                        nargs='?',
+                        default=None,
+                        const='D',
+                        metavar='TIME_PERIOD',
+                        help='Average data, default is daily')
+    map_parameters.add_argument('--colorbar',
+                        nargs=1,
+                        default='viridis',
+                        metavar='COLORBAR',
+                        help='Colorbar, default is %(default)s')
+
+    return parser
+
+
+def add_save_arguments(parser):
+    """Argument parser for the save options."""
+    save = parser.add_argument_group('Save options')
+    save.add_argument('--save',
+                      choices={'volcano-name', 'volcano-id', None},
+                      dest='save',
+                      default=None,
+                      const='volcano-name',
+                      nargs='?',
+                      help='Save the plot. If --save is provided without a value, default is %(const)s.')
+    save.add_argument('--outdir',
+                        type=str,
+                        default=os.getcwd(),
+                        metavar='PATH',
+                        help='Folder to save the plot, default is %(default)s')
+
+    return parser
+
 
 def parse_polygon(polygon):
     """
