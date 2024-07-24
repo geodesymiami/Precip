@@ -16,11 +16,11 @@ Date format: YYYYMMDD
 Example:
 
     plot_precipitation.py Merapi --style bar --roll 30 --bins 3 --log
-    plot_precipitation.py Merapi --style strength --period 20190101:20210929 
+    plot_precipitation.py Merapi --style strength --period 20190101:20210929
     plot_precipitation.py Merapi --style strength --period 20190101:20210929 --no-show
     plot_precipitation.py Merapi --style strength --period 20190101:20210929 --no-save
     plot_precipitation.py Merapi --style strength --period 20190101:20210929 --outdir test_dir --no-show
-    plot_precipitation.py --style strength --lalo 19.5,-156.5 --period 20190101:20210929 --outdir test_dir 
+    plot_precipitation.py --style strength --lalo 19.5,-156.5 --period 20190101:20210929 --outdir test_dir
     plot_precipitation.py --style annual --start-date 20190101 --end-date 20210929 --latitude 19.5 --longitude -156.5 --roll 10 --bins 2 --add-event 20200929 20210929
     plot_precipitation.py --style strength --lalo 19.5,-156.5 --period 20190101:20210929 --add-event 20200929 20210929 --elnino
     plot_precipitation.py --style map --end-date 20210929 --polygon 'POLYGON((113.4496 -8.0893,113.7452 -8.0893,113.7452 -7.817,113.4496 -7.817,113.4496 -8.0893))'
@@ -92,7 +92,7 @@ def create_parser(iargs=None, namespace=None):
     # FA: create_parser has much too much. 
     ############################ POSITIONAL ARGUMENTS ############################
 
-    # FA: using len(inps.positional) looks strange. I would expect this is handled better by argparse?  
+    # FA: using len(inps.positional) looks strange. I would expect this is handled better by argparse?
     # FA: suggest to assign the positional argument to volcano_name in argparse. If the number of positional arguments is zero:  inps.latitude, inps.longitude = get_latitude_longitude(inps)
     # if len(inps.name) == 1:
 
@@ -431,8 +431,6 @@ def main(iargs=None, namespace=None):
     inps.dir = PRECIP_DIR
     os.makedirs(PRECIP_DIR, exist_ok=True)
 
-    if inps.outdir:
-       os.makedirs(inps.outdir, exist_ok=True)
 
     # FA: The prompt_subplot function needs to be separated into functions for download, data preparation (write data into inps.outdir) and plotting.
     fig, axes = prompt_subplots(inps)

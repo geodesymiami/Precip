@@ -9,6 +9,8 @@ from matplotlib.lines import Line2D
 import numpy as np
 from scipy.interpolate import interp2d
 import pygmt
+
+# KA: Don't use import *
 from precip.helper_functions import *
 from precip.download_functions import *
 from precip.config import JSON_DOWNLOAD_URL, JSON_VOLCANO, START_DATE, END_DATE, ELNINOS
@@ -32,10 +34,12 @@ def handle_data_functions(inps):
     if inps.check:
         check_nc4_files(inps.dir, ssh)
 
+    # KA: this is a useful function but should be moved to the command line script
     if inps.list:
         volcanoes_list(os.path.join(inps.dir, JSON_VOLCANO))
 
-    if inps.download: 
+    # KA: this is a useful function but should be moved to the command line script
+    if inps.download:
         date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
 
         if ssh:
@@ -44,12 +48,15 @@ def handle_data_functions(inps):
         else:
             dload_site_list_parallel(inps.dir, date_list, inps.parallel)
 
+# KA: This function should just handle plotting.
+# KA: Ideally it takes data and a single axes as the input and then sends this data to another function depending on style
 def prompt_subplots(inps):
     handle_data_functions(inps)
 
     gpm_dir = inps.dir
     volcano_json_dir = os.path.join(inps.dir, JSON_VOLCANO)
 
+    # KA: There is no else statement here and isn't there always a style if you want to plot something?
     if inps.style:
         eruption_dates = []
 
@@ -97,6 +104,7 @@ def prompt_subplots(inps):
             strEnd = str(inps.end_date).replace('-', '') if not isinstance(inps.end_date, str) else inps.end_date.replace('-', '')
             save_path = f'{inps.outdir}/{save_name}_{strStart}_{strEnd}_{inps.style}.png'
 
+        # KA: no need to set an extra bool
         if inps.style == 'strength':
             strength = True
 
@@ -109,6 +117,7 @@ def prompt_subplots(inps):
         # Extract precipitation data
         precipitation = sql_extract_precipitation(inps.latitude, inps.longitude, date_list, gpm_dir, ssh)
 
+        # KA: instead -> if inps.style in ['daily', 'bar', 'strength':
         if inps.style == 'daily' or inps.style == 'bar' or strength == True:
             ylabel = str(inps.roll) + " day precipitation (mm)"
 
@@ -127,6 +136,7 @@ def prompt_subplots(inps):
                 'ylabel': ylabel,
                 'y2label': 'Cumulative precipitation'}
 
+        # KA: This dataframe should be the input parameter to a plotting function so that it doesn't have to be read everytime
         # Average the precipitation data
         if inps.average in ['W', 'M', 'Y'] or inps.cumulate:
             precipitation = weekly_monthly_yearly_precipitation(precipitation, inps.average, inps.cumulate)
@@ -135,6 +145,7 @@ def prompt_subplots(inps):
         # Plot the map of precipitation data
         if inps.style == 'map':
 
+            # KA: This dataframe should be the input parameter to a plotting function so that it doesn't have to be read everytime
             if inps.interpolate:
                 precipitation = interpolate_map(precipitation, inps.interpolate)
 
@@ -154,6 +165,7 @@ def prompt_subplots(inps):
 
             return fig, axes
 
+        # KA: This dataframe should be the input parameter to a plotting function so that it doesn't have to be read everytime
         # Add cumulative, rolling precipitation, and Decimal dates columns
         precipitation = volcano_rain_frame(precipitation, inps.roll)
 
@@ -212,9 +224,9 @@ def prompt_subplots(inps):
 
             if strength:
 
-                precipitation = precipitation.sort_values(by='roll') 
+                precipitation = precipitation.sort_values(by='roll')
 
-                precipitation = precipitation.reset_index(drop=True) 
+                precipitation = precipitation.reset_index(drop=True)
 
             ########################################################
 
@@ -223,7 +235,7 @@ def prompt_subplots(inps):
         if inps.elnino and not strength:
             legend_handles = plot_elninos(precipitation, legend_handles, axs)
 
-        if inps.add_event or eruption_dates != []:            
+        if inps.add_event or eruption_dates != []:
             legend_handles = plot_eruptions(precipitation, legend_handles, strength, axs)
 
         plt.legend(handles=legend_handles, loc='upper left', fontsize='small')
@@ -373,7 +385,7 @@ def plot_eruptions(precipitation, legend_handles, strength = False, axs = None):
         legend_handles.append(eruption)
 
         return legend_handles
-    
+
     if strength:
         eruptions = precipitation[precipitation['Eruptions'].notna()].index
 
@@ -519,7 +531,7 @@ def bar_plotter (precipitation, strength, log, labels, legend_handles):
         width = 1.1
         x = range(len(precipitation))
 
-    else: 
+    else:
         width = 0.01
         x = precipitation['Decimal']
 
@@ -562,7 +574,7 @@ def annual_plotter(precipitation, legend_handles, labels):
     global ELNINOS
 
     first_date = precipitation['Decimal'].min()
-    last_date = precipitation['Decimal'].max() 
+    last_date = precipitation['Decimal'].max()
 
     start = int(first_date // 1)
     end = int(last_date // 1 + 1)
@@ -603,10 +615,10 @@ def annual_plotter(precipitation, legend_handles, labels):
     # Set plot properties
     ax0.set_yticks([start + (2*k) for k in range(((end + 2 - start) // 2))], [str(start + (2*k)) for k in range(((end + 2 - start) // 2))])
     ax0.set_xticks([(1/24 + (1/12)*k) for k in range(12)], ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'])
-    ax0.set_xlabel("Month") 
-    ax0.set_ylabel("Year") 
-    ax0.set_title(labels['title']) 
-    ax1.set_title('Total (mm)') 
+    ax0.set_xlabel("Month")
+    ax0.set_ylabel("Year")
+    ax0.set_title(labels['title'])
+    ax1.set_title('Total (mm)')
     ax1.set_yticks([start + (2*k) for k in range(((end + 1 - start) // 2))], [str(start + (2*k)) for k in range(((end + 1 - start) // 2))])
 
     return legend_handles, axes[0]
