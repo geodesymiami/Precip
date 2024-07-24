@@ -1,7 +1,6 @@
 import os
 import json
 from datetime import datetime
-import sys
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -25,14 +24,7 @@ if False:
     print(req.text)
 
 ###################################################
-
-# KA: This function should just handle plotting.
-# KA: Ideally it takes data and a single axes as the input and then sends this data to another function depending on style
-def prompt_subplots(inps):
-    gpm_dir = inps.dir
-    volcano_json_dir = inps.dir + '/' + JSON_VOLCANO
-    date_list = []
-
+def handle_data_functions(inps):
     if inps.use_ssh:
         ssh = connect_jetstream()
 
@@ -40,11 +32,11 @@ def prompt_subplots(inps):
         ssh = None
 
     if inps.check:
-        check_nc4_files(gpm_dir, ssh)
+        check_nc4_files(inps.dir, ssh)
 
     # KA: this is a useful function but should be moved to the command line script
     if inps.list:
-        volcanoes_list(volcano_json_dir)
+        volcanoes_list(os.path.join(inps.dir, JSON_VOLCANO))
 
     # KA: this is a useful function but should be moved to the command line script
     if inps.download:
@@ -54,14 +46,21 @@ def prompt_subplots(inps):
             download_jetstream_parallel(date_list, ssh, inps.parallel)
 
         else:
-            dload_site_list_parallel(gpm_dir, date_list, inps.parallel)
+            dload_site_list_parallel(inps.dir, date_list, inps.parallel)
+
+# KA: This function should just handle plotting.
+# KA: Ideally it takes data and a single axes as the input and then sends this data to another function depending on style
+def prompt_subplots(inps):
+    handle_data_functions(inps)
+
+    gpm_dir = inps.dir
+    volcano_json_dir = os.path.join(inps.dir, JSON_VOLCANO)
 
     # KA: There is no else statement here and isn't there always a style if you want to plot something?
     if inps.style:
         eruption_dates = []
 
-        if date_list == []:
-            date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
+        date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
 
         # FA: all this inps handling should be done in configure_inps function
         if len(date_list) <= inps.roll:
@@ -90,16 +89,20 @@ def prompt_subplots(inps):
             msg = 'Error: Please provide valid coordinates or volcano name.\n Try using --list to get a list of volcanoes.'
             raise ValueError(msg)
 
-        # FA: use save_name instead of saveName
-        if inps.volcano_name:
-                saveName = inps.volcano_name[0]
-        elif inps.latitude and inps.longitude:
-            saveName = f'{inps.latitude}_{inps.longitude}'
+        if inps.save:
+            if inps.volcano_name:
+                    if inps.save == 'volcano-name':
+                        save_name = inps.volcano_name[0]
 
-        # KA: lets keep saving outside of plotting functions for now
-        strStart = str(inps.start_date).replace('-', '') if not isinstance(inps.start_date, str) else inps.start_date.replace('-', '')
-        strEnd = str(inps.end_date).replace('-', '') if not isinstance(inps.end_date, str) else inps.end_date.replace('-', '')
-        save_path = f'{inps.outdir}/{saveName}_{strStart}_{strEnd}_{inps.style}.png'
+                    elif inps.save == 'volcano-id':
+                        save_name = id
+
+            elif inps.latitude and inps.longitude:
+                save_name = f'{inps.latitude}_{inps.longitude}'
+
+            strStart = str(inps.start_date).replace('-', '') if not isinstance(inps.start_date, str) else inps.start_date.replace('-', '')
+            strEnd = str(inps.end_date).replace('-', '') if not isinstance(inps.end_date, str) else inps.end_date.replace('-', '')
+            save_path = f'{inps.outdir}/{save_name}_{strStart}_{strEnd}_{inps.style}.png'
 
         # KA: no need to set an extra bool
         if inps.style == 'strength':
@@ -154,7 +157,7 @@ def prompt_subplots(inps):
             fig = plt.gcf()
             axes = plt.gca()
 
-            if inps.save_flag:
+            if inps.save:
                 plt.savefig(save_path)
 
             if inps.show_flag:
@@ -241,7 +244,7 @@ def prompt_subplots(inps):
         fig = plt.gcf()
         axes = plt.gca()
 
-        if inps.save_flag:
+        if inps.save:
            print("Saving:", save_path)
            plt.savefig(save_path)
 
@@ -286,13 +289,15 @@ def volcanoes_list(jsonfile):
     data = get_volcano_json(jsonfile, JSON_DOWNLOAD_URL)
 
     volcanoName = []
+    volcanoId = []
 
     for j in data['features']:
         if j['properties']['VolcanoName'] not in volcanoName:
             volcanoName.append(j['properties']['VolcanoName'])
+            volcanoId.append(j['properties']['VolcanoNumber'])
 
-    for volcano in volcanoName:
-        print(volcano)
+    for volcano, id in zip(volcanoName, volcanoId):
+        print(f'{volcano}, id: {id}')
 
     return volcanoName
 
@@ -333,7 +338,7 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
             except:
                 end = 'None'
 
-            print(f'{name}, id: {id} eruption started {start} and ended {end}')
+            print(f'{name} (id: {id}) eruption started {start} and ended {end}')
 
             # If the start date is within the date range
             if start >= first_day and start <= last_day:
