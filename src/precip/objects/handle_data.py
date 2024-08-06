@@ -9,11 +9,11 @@ import subprocess
 import concurrent
 import netCDF4 as nc
 from datetime import datetime
-from precip.download_functions import generealte_urls_list
 from precip.config import PATH_JETSTREAM
+from precip.download_functions import generate_urls_list
 
 
-class FileMethods(ABC):
+class AbstractFileManager(ABC):
     @abstractmethod
     def download(self, date_list, parallel=5):
         pass
@@ -23,9 +23,24 @@ class FileMethods(ABC):
         pass
 
 
-class ConnectionMethods(ABC):
+class AbstractCloudFileManager(AbstractFileManager):
+    @abstractmethod
+    def cloud_download(self):
+        pass
+
+    @abstractmethod
+    def create_temp_file(self):
+        pass
+
+
+class AbstractCloudManager(ABC):
     @abstractmethod
     def connect(self):
+        pass
+
+
+    @abstractmethod
+    def open_sftp(self):
         pass
 
 
@@ -39,7 +54,7 @@ class ConnectionMethods(ABC):
         pass
 
 
-class JetStream(ConnectionMethods):
+class JetStream(AbstractCloudManager):
     def __init__(self, hostname: str = '149.165.154.65', username: str = 'exouser', rsa_key: str = '.ssh/id_rsa', path: str = PATH_JETSTREAM) -> None:
         self.path = path
         self.hostname = hostname
@@ -69,6 +84,12 @@ class JetStream(ConnectionMethods):
                     self.ssh = None
 
 
+    def open_sftp(self):
+        self.connect()
+        self.sftp = self.ssh.open_sftp()
+        print('SFTP connection opened')
+
+
     def check_connected(self) -> bool:
         return self.ssh and self.ssh.get_transport() and self.ssh.get_transport().is_active()
 
@@ -78,8 +99,8 @@ class JetStream(ConnectionMethods):
         print('Connection closed')
 
 
-class CloudFileManager(FileMethods):
-    def __init__(self, provider: ConnectionMethods) -> None:
+class CloudFileManager(AbstractCloudFileManager):
+    def __init__(self, provider: AbstractCloudFileManager) -> None:
         self.provider = provider
 
 
@@ -88,60 +109,14 @@ class CloudFileManager(FileMethods):
         self.provider.connect()
 
         # Generate the URLs
-        urls = generealte_urls_list(date_list)
+        urls = generate_urls_list(date_list)
 
-        # Download the files
-        self.download_files(urls, parallel)
+        # Use a ThreadPoolExecutor to download the files in parallel
+        with concurrent.futures.ThreadPoolExecutor(max_workers=parallel) as executor:
+            futures = [executor.submit(self.cloud_download, url) for url in urls]
 
         # Close the SSH client
         self.provider.close()
-
-
-    def download_files(self, urls, parallel):
-        # Use a ThreadPoolExecutor to download the files in parallel
-        with concurrent.futures.ThreadPoolExecutor(max_workers=parallel) as executor:
-            futures = [executor.submit(self.download_jetstream, url) for url in urls]
-
-    # Download the file
-    def download_jetstream(self, url):
-        ssh = self.provider.ssh
-        pathJetstream = self.provider.path
-        filename = os.path.basename(url)
-        file_path = os.path.join(pathJetstream, filename)
-
-        # Check if the file already exists on the server
-        stdin, stdout, stderr = ssh.exec_command(f'ls {file_path}')
-
-        # Wait for the command to finish
-        stdout.channel.recv_exit_status()
-
-        if stdout.read().decode():
-            print(f"\rFile {filename} already exists, skipping download. ", end="")
-            return
-
-        print(f"Starting download of {url} ")
-        attempts = 0
-
-        while attempts < 3:
-            try:
-                stdin, stdout, stderr = ssh.exec_command(f'wget -O {file_path} {url}')
-                exit_status = stdout.channel.recv_exit_status()  # Wait for the command to finish
-
-                if exit_status == 0:
-                    print(f"Finished download of {url} ")
-                else:
-                    raise Exception(stderr.read().decode())
-
-                break
-
-            except Exception as e:
-                attempts += 1
-                print(f"Download attempt {attempts} failed for {url}. Retrying... Error: {str(e)}")
-                time.sleep(1)
-
-        else:
-            msg = f"Failed to download {url} after {attempts} attempts. Exiting..."
-            raise ValueError(msg)
 
 
     def check_files(self):
@@ -183,7 +158,7 @@ class CloudFileManager(FileMethods):
                 d = re.search('\d{8}', f)
                 date_list.append(datetime.strptime(d.group(0), "%Y%m%d").date())
 
-                self.download(date_list, self.provider.ssh, self.provider.parallel)
+            self.download(date_list)
 
         else:
             print('')
@@ -196,14 +171,60 @@ class CloudFileManager(FileMethods):
         self.provider.close()
 
 
-class LocalFileManager(FileMethods):
+    def cloud_download(self, url):
+        ssh = self.provider.ssh
+        pathJetstream = self.provider.path
+        filename = os.path.basename(url)
+        file_path = os.path.join(pathJetstream, filename)
+
+        # Check if the file already exists on the server
+        stdin, stdout, stderr = ssh.exec_command(f'ls {file_path}')
+
+        # Wait for the command to finish
+        stdout.channel.recv_exit_status()
+
+        if stdout.read().decode():
+            print(f"\rFile {filename} already exists, skipping download. ", end="")
+            return
+
+        print(f"Starting download of {url} ")
+        attempts = 0
+
+        while attempts < 3:
+            try:
+                stdin, stdout, stderr = ssh.exec_command(f'wget -O {file_path} {url}')
+                exit_status = stdout.channel.recv_exit_status()  # Wait for the command to finish
+
+                if exit_status == 0:
+                    print(f"Finished download of {url} ")
+                else:
+                    raise Exception(stderr.read().decode())
+
+                break
+
+            except Exception as e:
+                attempts += 1
+                print(f"Download attempt {attempts} failed for {url}. Retrying... Error: {str(e)}")
+                time.sleep(1)
+
+        else:
+            msg = f"Failed to download {url} after {attempts} attempts. Exiting..."
+            raise ValueError(msg)
+
+
+    def create_temp_file(self, path: str, filename: str):
+        self.temp_file = tempfile.NamedTemporaryFile(delete=False)
+        self.full_file_path = os.path.join(path, filename)
+
+
+class LocalFileManager(AbstractFileManager):
     def __init__(self, folder: str):
         self.folder = folder
 
 
     def download(self, date_list: list, parallel: int = 5):
         os.makedirs(self.folder, exist_ok=True)
-        urls = generealte_urls_list(date_list)
+        urls = generate_urls_list(date_list)
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=parallel) as executor:
             for url in urls:
@@ -265,14 +286,16 @@ class LocalFileManager(FileMethods):
                 d = re.search('\d{8}', f)
                 date_list.append(datetime.strptime(d.group(0), "%Y%m%d").date())
 
-                self.download(self.folder, date_list, self.parallel)
+            self.download(self.folder, date_list, self.parallel)
 
 
-from precip.helper_functions import generate_date_list
-date_list = generate_date_list('20000601', '20000605')
+if False:
+    from precip.helper_functions import generate_date_list
+    date_list = generate_date_list('20000601', '20000605')
 
-jtstream = JetStream()
-CloudFileManager(jtstream).download(date_list)
+    jtstream = JetStream()
+    CloudFileManager(jtstream).download(date_list)
 
-local = LocalFileManager(os.getenv('PRECIP_DIR'))
-local.download(date_list)
+    local = LocalFileManager(os.getenv('PRECIP_DIR'))
+    local.download(date_list)
+    local.check_files()
