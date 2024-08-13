@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from .abstract_file_manager import AbstractFileManager
 
 class AbstractCloudFileManager(AbstractFileManager):

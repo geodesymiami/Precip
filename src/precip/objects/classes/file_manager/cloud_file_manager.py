@@ -1,5 +1,5 @@
 from precip.objects.interfaces.abstract_cloud_manager import AbstractCloudManager
-from precip.objects.interfaces.abstract_cloud_file_manager import AbstractCloudFileManager
+from precip.objects.interfaces.file_manager.abstract_cloud_file_manager import AbstractCloudFileManager
 from src.precip.download_functions import generate_urls_list
 import concurrent.futures
 import tempfile
