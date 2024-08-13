@@ -16,7 +16,7 @@ class Queries:
         return f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}'"""
 
     @staticmethod
-    def extract_position(lat, lon, date_list):
+    def extract_precipitation(lat, lon, date_list):
         return f"SELECT Date, Precipitation FROM volcanoes WHERE Latitude = '{lat}' AND Longitude = '{lon}' and DATE between '{date_list[0]}' and '{date_list[-1]}'"
 
     @staticmethod
