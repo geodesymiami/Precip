@@ -291,6 +291,20 @@ def generate_date_list(start, end=None, average='M'):
     return date_list
 
 
+def check_missing_dates(date_list, column):
+    column = pd.to_datetime(column).dt.date
+
+    # Check if all dates in the date_list are in the DataFrame
+    missing_dates = [date for date in date_list if date not in column.tolist()]
+
+    return missing_dates
+
+
+def str_to_masked_array(column):
+    column = column.apply(lambda x: np.ma.array(json.loads(x)))
+    return column
+
+
 def process_file(file, date_list, lon, lat, longitude, latitude, client):
     """
     Process a file and extract a subset of precipitation data based on given coordinates.
