@@ -23,5 +23,8 @@ class Queries:
         return f"SELECT Date, Precipitation FROM volcanoes WHERE Latitude = '{lat}' AND Longitude = '{lon}' and DATE between '{date_list[0]}' and '{date_list[-1]}'"
 
     @staticmethod
-    def insert_precipitation(date, precipitation, lat, lon):
-        return "INSERT INTO volcanoes (Date, Precipitation, Latitude, Longitude) VALUES (?, ?, ?, ?)", date, precipitation, lat, lon
+    def insert_precipitation(latitude, longitude, date, precipitation, table='volcanoes'):
+        lat = f"{latitude[0]}:{latitude[1]}"
+        lon = f"{longitude[0]}:{longitude[1]}"
+
+        return f"INSERT INTO {table} (Date, Precipitation, Latitude, Longitude) VALUES ('{date}', '{precipitation}', '{lat}', '{lon}')"
