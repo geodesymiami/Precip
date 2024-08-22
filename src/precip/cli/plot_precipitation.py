@@ -3,7 +3,7 @@
 import os
 from datetime import datetime
 import argparse
-from precip.plotter_functions import prompt_subplots
+from precip.plotter_functions import prompt_subplots, handle_data_functions
 from precip.config import START_DATE, END_DATE
 from pathlib import Path
 
@@ -35,11 +35,6 @@ Example:
 
 def create_parser(iargs=None, namespace=None):
     """ Creates command line argument parser object. """
-
-    # parser = argparse.ArgumentParser(
-    #     description='Plot precipitation data from GPM dataset for a specific location at a given date range',
-    #     formatter_class=argparse.RawTextHelpFormatter,
-    #     epilog=EXAMPLE)
     parser = argparse.ArgumentParser(
         description='Plot precipitation data from GPM dataset for a specific location at a given date range',
         formatter_class=argparse.RawTextHelpFormatter,
@@ -49,16 +44,11 @@ def create_parser(iargs=None, namespace=None):
                         nargs='?',
                         type=str,
                         help='Volcano name')
-    # parser.add_argument('coordinates', 
-    #                     nargs='1',
-    #                     help='Volcano name')
-
     parser.add_argument('--volcano-name',
                         nargs=1,
                         type=str,
                         metavar=('NAME'),
                         help='Name of the volcano')
-
     parser.add_argument('--style',
                         choices=['daily','weekly','monthly','yearly','map','bar','annual','strength'],
                         help='Choose plot type')
@@ -225,15 +215,15 @@ def add_location_arguments(parser):
     location = parser.add_argument_group('Location of the volcano or area of interest')
     location.add_argument('--latitude',
                         nargs='?',
-                        metavar=('LATITUDE', 'LATITUDE:LATITUDE'),
+                        metavar=('LATITUDE or LATITUDE:LATITUDE'),
                         help='Latitude')
     location.add_argument('--longitude',
                         nargs='?',
-                        metavar=('LONGITUDE', 'LONGITUDE:LONGITUDE'),
+                        metavar=('LONGITUDE or LONGITUDE:LONGITUDE'),
                         help='Longitude')
     location.add_argument('--lalo',
                         nargs='?',
-                        metavar=('LATITUDE,LONGITUDE', 'LATITUDE:LATITUDE, LONGITUDE:LONGITUDE'),
+                        metavar=('LATITUDE,LONGITUDE or LATITUDE:LATITUDE,LONGITUDE:LONGITUDE'),
                         help='Latitude and longitude')
     location.add_argument('--polygon',
                         metavar='POLYGON',
@@ -287,9 +277,11 @@ def add_map_parameters_arguments(parser):
                         type=int,
                         help='Interpolate data')
     map_parameters.add_argument('--isolines',
-                        nargs=1,
+                        nargs='?',
+                        default=0,
+                        type=int,
                         metavar='LEVELS',
-                        help='Number of isolines to be plotted on the map')
+                        help='Number of isolines to be plotted on the map, default is %(default)s')
     map_parameters.add_argument('--cumulate',
                         action='store_true',
                         help='Cumulate data')
@@ -407,7 +399,6 @@ def parse_coordinates(coordinates):
 # from precip.helper_functions import sql_extract_precipitation
 # import os
 # # from precip.plotter_functions import bar_plotter_2, plot_elninos
-# # from matplotlib import pyplot as plt
 
 # date_list = generate_date_list('20000601', '20010603')
 
@@ -417,6 +408,33 @@ def parse_coordinates(coordinates):
 # precipitation = sql_extract_precipitation(latitude, longitude, date_list, gpm_dir)
 
 # precipitation = from_nested_to_float(precipitation)
+# from matplotlib import pyplot as plt
+# import sys
+# from precip.plotter_functions import get_precipitation_data
+# from precip.helper_functions import generate_date_list, adapt_coordinates
+# from precip.objects.configuration import Configuration
+# from precip.objects.plotters import MapPlotter
+
+# def main(iargs=None, namespace=None):
+#     inps = create_parser(iargs, namespace)
+#     inps.dir = PRECIP_DIR
+#     os.makedirs(PRECIP_DIR, exist_ok=True)
+
+#     input_config = Configuration(inps)
+#     input_config.configure_arguments(inps)
+#     precipitation = get_precipitation_data(input_config)
+#     if not input_config.show_flag:
+#         plt.switch_backend('Agg')
+
+#     fig = plt.figure(constrained_layout=True)
+#     ax = fig.add_subplot(1, 1, 1)
+
+#     map = MapPlotter(ax, input_config)
+#     map.plot(precipitation)
+
+
+# if __name__ == "__main__":
+#     main()
 
 # sys.exit(0)
 
@@ -431,6 +449,7 @@ def main(iargs=None, namespace=None):
     inps.dir = PRECIP_DIR
     os.makedirs(PRECIP_DIR, exist_ok=True)
 
+    handle_data_functions(inps)
 
     # FA: The prompt_subplot function needs to be separated into functions for download, data preparation (write data into inps.outdir) and plotting.
     fig, axes = prompt_subplots(inps)
