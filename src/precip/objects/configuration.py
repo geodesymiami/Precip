@@ -19,6 +19,7 @@ class Configuration:
         self.gpm_dir = inps.dir
         self.volcano_json_dir = os.path.join(inps.dir, JSON_VOLCANO)
         self.date_list =  generate_date_list(inps.start_date, inps.end_date, inps.average)
+        self.eruption_dates = []
 
         if len(self.date_list) <= inps.roll:
             msg = 'Error: The number of dates is less than the rolling window.'
@@ -38,7 +39,7 @@ class Configuration:
                 self.longitude = [round(min(self.longitude) - 2, 2), round(max(self.longitude) + 2, 2)]
 
         if inps.add_event:
-            self.eruption_dates.extend(inps.add_event if isinstance(inps.add_event, list) else [inps.add_event])
+            self.eruption_dates.extend(inps.add_event if isinstance(inps.add_event, list) else list(inps.add_event))
 
         self.plot_labels()
 
