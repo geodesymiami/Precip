@@ -23,5 +23,7 @@ class Database(AbstractDataLoader):
         dataframe['Precipitation'] = dataframe['Precipitation'].apply(lambda x: json.dumps(x.tolist()))
 
         for index, row in dataframe.iterrows():
-            self.operator.insert_data(latitude, longitude, row['Date'], row['Precipitation'])
+            if not self.operator.record_exists(latitude, longitude, row['Date']):
+                self.operator.insert_data(latitude, longitude, row['Date'], row['Precipitation'])
+
         print('Values Inserted in Database')

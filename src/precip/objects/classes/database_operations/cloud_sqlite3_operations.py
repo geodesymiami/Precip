@@ -3,7 +3,6 @@ from precip.objects.interfaces.database.abstract_cloud_database_connection impor
 from precip.objects.classes.Queries.queries import Queries
 
 
-
 class CloudSQLite3Operations(AbstractDatabaseOperations):
     def __init__(self, database: AbstractCloudDatabaseConnection) -> None:
         self.database = database
@@ -27,3 +26,8 @@ class CloudSQLite3Operations(AbstractDatabaseOperations):
     def insert_data(self, latitude: str, longitude: str, date: str, precipitation: str):
         self.database.cursor.execute(Queries.insert_precipitation(latitude, longitude, date, precipitation))
         self.database.connection.commit()
+
+
+    def record_exists(self, latitude: str, longitude: str, date: str):
+        self.database.cursor.execute(Queries.select_row(latitude, longitude, date))
+        return self.database.cursor.fetchone() is not None

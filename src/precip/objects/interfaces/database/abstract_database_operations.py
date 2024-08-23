@@ -15,3 +15,8 @@ class AbstractDatabaseOperations(ABC):
     @abstractmethod
     def insert_data(self):
         pass
+
+
+    @abstractmethod
+    def record_exists(self):
+        pass

@@ -33,4 +33,8 @@ class SQLite3Operations(AbstractDatabaseOperations):
     def insert_data(self, latitude: str, longitude: str, date: str, precipitation: str):
         self.database.cursor.execute(Queries.insert_precipitation(latitude, longitude, date, precipitation))
         self.database.connection.commit()
-        print('Values Inserted in Database')
+
+
+    def record_exists(self, latitude: str, longitude: str, date: str):
+        self.database.cursor.execute(Queries.select_row(latitude, longitude, date))
+        return self.database.cursor.fetchone() is not None
