@@ -488,6 +488,31 @@ def volcano_rain_frame(rainfall, roll_count, lon=None, lat=None, centered=False,
     return volc_rain
 
 
+def map_eruption_colors(data, roll, eruption_dates, bins, colors):
+        data = volcano_rain_frame(data, roll)
+
+        if eruption_dates != []:
+            # Adapt the eruption dates to the averaged precipitation data
+            eruption_dates = adapt_events(eruption_dates, data['Date'])
+
+            # Create a dictionary where the keys are the eruption dates and the values are the same
+            eruption_dict = {date: date for date in eruption_dates}
+
+            # Map the 'Date' column to the eruption dates
+            data['Eruptions'] = data['Date'].map(eruption_dict)
+
+            # Convert to decimal year for plotting purposes
+            data['Eruptions'] = data.Eruptions.apply(date_to_decimal_year)
+
+        # Calculate 'color' based on ranks of the 'roll' column
+        data['color'] = ((data['roll'].rank(method='first') * bins) / len(data)).astype(int).clip(upper=bins-1)
+
+        # Map the 'color' column to the `colors` list
+        data['color'] = data['color'].map(lambda x: colors[x])
+
+        return data
+
+
 def from_nested_to_float(dataframe):
     """ Converts a nested list of floats to a flat list of floats.
 
@@ -536,7 +561,7 @@ def adapt_events(eruption_dates, date_list):
 
     return valid_eruption_dates
 
-
+# TODO check to remove
 def extract_precipitation(latitude, longitude, date_list, folder, ssh=None):
     """
     Creates a map of precipitation data for a given latitude, longitude, and date range.
@@ -603,7 +628,7 @@ def extract_precipitation(latitude, longitude, date_list, folder, ssh=None):
 
     return finaldf
 
-
+# TODO to remove
 def sql_extract_precipitation(latitude, longitude, date_list, folder, ssh = None):
     # Case for Jetstream
     if ssh:
