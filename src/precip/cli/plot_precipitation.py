@@ -49,7 +49,7 @@ def create_parser(iargs=None, namespace=None):
                         nargs='?',
                         type=str,
                         help='Volcano name')
-    # parser.add_argument('coordinates', 
+    # parser.add_argument('coordinates',
     #                     nargs='1',
     #                     help='Volcano name')
 
@@ -89,7 +89,7 @@ def create_parser(iargs=None, namespace=None):
     inps = parser.parse_args(iargs, namespace)
 
     #exit()
-    # FA: create_parser has much too much. 
+    # FA: create_parser has much too much.
     ############################ POSITIONAL ARGUMENTS ############################
 
     # FA: using len(inps.positional) looks strange. I would expect this is handled better by argparse?
@@ -249,7 +249,7 @@ def add_plot_parameters_arguments(parser):
                         nargs='*',
                         metavar=('YYYYMMDD, YYYY-MM-DD'),
                         help='Add event to the time series')
-    plot_parameters.add_argument('--log', 
+    plot_parameters.add_argument('--log',
                         action='store_true',
                         help='Enable logaritmic scale')
     plot_parameters.add_argument('--bins',
