@@ -35,11 +35,6 @@ Example:
 
 def create_parser(iargs=None, namespace=None):
     """ Creates command line argument parser object. """
-
-    # parser = argparse.ArgumentParser(
-    #     description='Plot precipitation data from GPM dataset for a specific location at a given date range',
-    #     formatter_class=argparse.RawTextHelpFormatter,
-    #     epilog=EXAMPLE)
     parser = argparse.ArgumentParser(
         description='Plot precipitation data from GPM dataset for a specific location at a given date range',
         formatter_class=argparse.RawTextHelpFormatter,
@@ -49,16 +44,11 @@ def create_parser(iargs=None, namespace=None):
                         nargs='?',
                         type=str,
                         help='Volcano name')
-    # parser.add_argument('coordinates',
-    #                     nargs='1',
-    #                     help='Volcano name')
-
     parser.add_argument('--volcano-name',
                         nargs=1,
                         type=str,
                         metavar=('NAME'),
                         help='Name of the volcano')
-
     parser.add_argument('--style',
                         choices=['daily','weekly','monthly','yearly','map','bar','annual','strength'],
                         help='Choose plot type')
