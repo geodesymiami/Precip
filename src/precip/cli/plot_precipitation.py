@@ -418,11 +418,11 @@ def parse_coordinates(coordinates):
 
 # precipitation = from_nested_to_float(precipitation)
 
-# sys.exit(0)
+#sys.exit(0)
 
 #################### END TEST AREA ########################
 
-def main(iargs=None, namespace=None):
+def main(iargs=None, namespace=None, ax=None):
 
     inps = create_parser(iargs, namespace)
     # FA: suggest function inps = configure_inps(inps)
