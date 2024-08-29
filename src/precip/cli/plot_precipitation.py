@@ -293,7 +293,6 @@ def add_map_parameters_arguments(parser):
                         metavar='TIME_PERIOD',
                         help='Average data, default is daily')
     map_parameters.add_argument('--colorbar',
-                        nargs=1,
                         default='viridis',
                         metavar='COLORBAR',
                         help='Colorbar, default is %(default)s')
