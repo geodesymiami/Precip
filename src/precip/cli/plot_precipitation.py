@@ -105,7 +105,8 @@ def create_parser(iargs=None, namespace=None):
     #     inps.longitude = parse_coordinates(inps.positional[1])
 
     ###############################################################################
-    inps.volcano_name = [inps.name]
+    if inps.name:
+        inps.volcano_name = [inps.name]
 
     # FA: Assuming that inps.start_date and inps.end_date will be later consider function: inps.start_date, inps.end_date=get_processing_dates(inps)
     if not inps.period:
@@ -147,9 +148,10 @@ def create_parser(iargs=None, namespace=None):
                 parser.error("--longitude requires 1 or 2 arguments")
 
         if inps.lalo:
-            coordinates = parse_coordinates(inps.lalo[0])
+            coordinates = parse_coordinates(inps.lalo)
             inps.latitude = parse_coordinates(coordinates[0])
             inps.longitude = parse_coordinates(coordinates[1])
+            inps.latitude, inps.longitude = [min(inps.latitude), max(inps.latitude)], [min(inps.longitude), max(inps.longitude)]
 
     else:
             inps.latitude, inps.longitude = parse_polygon(inps.polygon)
@@ -294,6 +296,12 @@ def add_map_parameters_arguments(parser):
                         default='viridis',
                         metavar='COLORBAR',
                         help='Colorbar, default is %(default)s')
+    map_parameters.add_argument('--isolines-color',
+                        dest='iso_color',
+                        type=str,
+                        default='white',
+                        metavar='COLOR',
+                        help='Color of contour lines, default is %(default)s')
 
     return parser
 
