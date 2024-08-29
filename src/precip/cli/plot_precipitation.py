@@ -215,15 +215,15 @@ def add_location_arguments(parser):
     location = parser.add_argument_group('Location of the volcano or area of interest')
     location.add_argument('--latitude',
                         nargs='?',
-                        metavar=('LATITUDE', 'LATITUDE:LATITUDE'),
+                        metavar=('LATITUDE or LATITUDE:LATITUDE'),
                         help='Latitude')
     location.add_argument('--longitude',
                         nargs='?',
-                        metavar=('LONGITUDE', 'LONGITUDE:LONGITUDE'),
+                        metavar=('LONGITUDE or LONGITUDE:LONGITUDE'),
                         help='Longitude')
     location.add_argument('--lalo',
                         nargs='?',
-                        metavar=('LATITUDE,LONGITUDE', 'LATITUDE:LATITUDE, LONGITUDE:LONGITUDE'),
+                        metavar=('LATITUDE,LONGITUDE or LATITUDE:LATITUDE,LONGITUDE:LONGITUDE'),
                         help='Latitude and longitude')
     location.add_argument('--polygon',
                         metavar='POLYGON',
