@@ -48,10 +48,19 @@ def handle_data_functions(inps):
         else:
             dload_site_list_parallel(inps.dir, date_list, inps.parallel)
 
+    if inps.use_ssh and ssh:
+        ssh.close()
+
 # KA: This function should just handle plotting.
 # KA: Ideally it takes data and a single axes as the input and then sends this data to another function depending on style
 def prompt_subplots(inps):
     handle_data_functions(inps)
+
+    if inps.use_ssh:
+        ssh = connect_jetstream()
+
+    else:
+        ssh = None
 
     gpm_dir = inps.dir
     volcano_json_dir = os.path.join(inps.dir, JSON_VOLCANO)
