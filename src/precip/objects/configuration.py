@@ -1,8 +1,8 @@
 import os
 from datetime import datetime
-from precip.config import JSON_VOLCANO, JSON_DOWNLOAD_URL, START_DATE, END_DATE
-from precip.helper_functions import generate_date_list, adapt_coordinates
-from precip.plotter_functions import extract_volcanoes_info, get_volcano_json
+from precip.config import JSON_VOLCANO
+from precip.helper_functions import generate_date_list, adapt_coordinates, color_scheme, quantile_name
+from precip.plotter_functions import extract_volcanoes_info
 
 # copy inps to self object
 # for key, value in inps.__dict__.items():
@@ -40,6 +40,10 @@ class Configuration:
 
         if inps.add_event:
             self.eruption_dates.extend(inps.add_event if isinstance(inps.add_event, list) else list(inps.add_event))
+
+        if inps.bins:
+            self.colors = color_scheme(self.bins)
+            self.quantile = quantile_name(self.bins)
 
         self.plot_labels()
 

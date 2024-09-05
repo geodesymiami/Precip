@@ -1,17 +1,33 @@
 from matplotlib import pyplot as plt
 from matplotlib import patches as mpatches
+from matplotlib import gridspec
 import pygmt
 import pandas as pd
 import numpy as np
 from abc import ABC, abstractmethod
 from precip.objects.configuration import Configuration
 from precip.plotter_functions import interpolate_map
-from precip.helper_functions import volcano_rain_frame, color_scheme, quantile_name, weekly_monthly_yearly_precipitation, adapt_events, date_to_decimal_year, from_nested_to_float
+from precip.helper_functions import  weekly_monthly_yearly_precipitation, from_nested_to_float, map_eruption_colors
 from precip.config import ELNINOS
 
 class Plotter(ABC):
     @abstractmethod
     def plot(self):
+        pass
+
+
+    def modify_dataframe(self):
+        pass
+
+
+class EventsPlotter(Plotter):
+    @abstractmethod
+    def plot_elninos(self):
+        pass
+
+
+    @abstractmethod
+    def plot_eruptions(self):
         pass
 
 
@@ -44,9 +60,10 @@ class MapPlotter(Plotter):
 
         # Add contour lines
         inline = True if self.config.isolines and self.config.isolines != 0 else False
-        self.ax = self.add_isolines(region, self.config.isolines, inline=inline)
+        self.ax = self.add_isolines(region, self.config.isolines, self.config.iso_color,inline=inline)
 
         im = self.ax.imshow(data, vmin=vmin, vmax=vmax, extent=region, cmap=self.config.colorbar)
+        self.ax.set_aspect('auto')
         self.ax.set_ylim(self.config.latitude[0], self.config.latitude[1])
         self.ax.set_xlim(self.config.longitude[0], self.config.longitude[1])
 
@@ -67,7 +84,7 @@ class MapPlotter(Plotter):
             plt.show()
 
 
-    def add_isolines(self, region, levels=0, inline=False):
+    def add_isolines(self, region, levels=0, colors='white',inline=False):
         grid = pygmt.datasets.load_earth_relief(resolution="01m", region=region)
 
         if not isinstance(levels, int):
@@ -83,7 +100,7 @@ class MapPlotter(Plotter):
         grid[:] = grid_np
 
         # Plot the data
-        cont = self.ax.contour(grid, levels=levels, colors='white', extent=region, linewidths=0.5)
+        cont = self.ax.contour(grid, levels=levels, colors=colors, extent=region, linewidths=0.5)
 
         if levels !=0:
             self.ax.clabel(cont, inline=inline, fontsize=8)
@@ -92,8 +109,7 @@ class MapPlotter(Plotter):
 
 
     def modify_dataframe(self, data):
-        if  self.config.average in ['W', 'M', 'Y'] or  self.config.cumulate:
-            df = weekly_monthly_yearly_precipitation(data,  self.config.average,  self.config.cumulate)
+        df = weekly_monthly_yearly_precipitation(data,  self.config.average,  self.config.cumulate)
 
         if  self.config.interpolate:
             df = interpolate_map(data, self.config.interpolate)
@@ -101,7 +117,7 @@ class MapPlotter(Plotter):
         return df
 
 
-class BarPlotter(Plotter):
+class BarPlotter(EventsPlotter):
     def __init__(self, ax, config: Configuration):
         self.ax = ax
         self.config = config
@@ -149,7 +165,7 @@ class BarPlotter(Plotter):
         if self.config.elnino and not self.config.style == 'strength':
             self.plot_elninos(data)
 
-        if self.config.add_event or self.config.eruption_dates != []:
+        if 'Eruptions' in data and len(data[data['Eruptions'].notna()]) >= 1:
             self.plot_eruptions(data)
 
         self.ax.legend(handles=self.legend_handles, loc='upper left', fontsize='small')
@@ -160,6 +176,29 @@ class BarPlotter(Plotter):
 
         if self.config.show_flag:
             plt.show()
+
+
+    def modify_dataframe(self, data):
+            if self.config.bins > 1:
+                self.legend_handles = [mpatches.Patch(color=self.config.colors[i], label=self.config.quantile + str(i+1)) for i in range(self.config.bins)]
+
+            else:
+                self.legend_handles = []
+
+            if  self.config.average in ['W', 'M', 'Y'] or  self.config.cumulate:
+                data = weekly_monthly_yearly_precipitation(data,  self.config.average,  self.config.cumulate)
+
+            data = map_eruption_colors(data, self.config.roll, self.config.eruption_dates, self.config.bins, self.config.colors)
+
+            if self.config.style == 'strength':
+                # Sort the data by 'roll' column
+                data = data.sort_values(by='roll')
+                # Reset the index of the DataFrame
+                data = data.reset_index(drop=True)
+
+            data = from_nested_to_float(data)
+
+            return data
 
 
     def plot_elninos(self, data):
@@ -178,18 +217,8 @@ class BarPlotter(Plotter):
                     continue
 
                 x2 = min(x2, end)
-                # TODO This is for annual
-                if self.ax and False:
-                    y1, x1 = divmod(x1, 1)  # Split 2000.25 into 2000 and 0.25
-                    y2, x2 = divmod(x2, 1)
 
-                    if y1 == y2:
-                        self.ax.plot([x1, x2], [y1 - .17, y1 - .17], color=colors[j][0], alpha=1.0, linewidth=linewidth)
-                    else:
-                        self.ax.plot([x1, 1.0022], [y1 - .17, y1 - .17], color=colors[j][0], alpha=1.0, linewidth=linewidth)
-                        self.ax.plot([-.0022, x2], [y2 - .17, y2 - .17], color=colors[j][0], alpha=1.0, linewidth=linewidth)
-                else:
-                    self.ax.plot([x1, x2], [ticks - .125, ticks - .125], color=colors[j][0], alpha=1.0, linewidth=6)
+                self.ax.plot([x1, x2], [ticks - .125, ticks - .125], color=colors[j][0], alpha=1.0, linewidth=6)
 
                 if colors[j][1] not in [i.get_label() for i in self.legend_handles]:
                     self.legend_handles.append(mpatches.Patch(color=colors[j][0], label=colors[j][1]))
@@ -217,54 +246,130 @@ class BarPlotter(Plotter):
         self.legend_handles += [Line2D([0], [0], color='black', linestyle='dashed', dashes= (3,2), label='Volcanic event', linewidth= 1)]
 
 
-    def modify_dataframe(self, data):
-        colors = color_scheme(self.config.bins)
-        quantile = quantile_name(self.config.bins)
+class AnnualPlotter(EventsPlotter):
+    def __init__(self, fig, grid, config: Configuration):
+        self.grid = grid
+        self.fig = fig
+        self.config = config
 
+
+    def plot(self, data):
+        data = self.modify_dataframe(data)
+
+        first_date = data['Decimal'].min()
+        last_date = data['Decimal'].max()
+
+        start = int(first_date // 1)
+        end = int(last_date // 1 + 1)
+
+        # Create a GridSpec for the subplot within the third slot of the main layout
+        sub_gs = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec=self.grid, width_ratios=[4, 1])
+
+        # Create two sub-axes within the third slot of the main layout
+        self.ax0 = self.fig.add_subplot(sub_gs[0])
+        self.ax1 = self.fig.add_subplot(sub_gs[1])
+
+        # TODO by_season
+        # Plots rain by quantile, and if by_season is True, then also by year.
+        if False:
+            for i in range(color_count):
+                if by_season == True:
+                    for j in range(start, end + 1):
+                        rain_by_year = volc_rain[volc_rain['Decimal'] // 1 == j].copy()
+                        rain_j = rain_by_year.sort_values(by=['roll'])
+                        dates_j = np.array([rain_j['Decimal']])
+                        bin_size = len(dates_j) // color_count
+                        x = dates_j % 1
+                        y = dates_j // 1
+                        self.ax0.scatter(x[i*bin_size:(i+1)*bin_size], y[i*bin_size:(i+1)*bin_size], color=colors[i], marker='s', s=(219000 // len(rainfall['Date'].unique())))
+
+        x = data['Decimal'] % 1
+        y = data['Decimal'] // 1
+        self.ax0.scatter(x, y, color=data['color'], marker='s', s=(219000 // len(data['Date'].unique())))
+
+        ################### SIDEPLOT OF CUMULATIVE PER YEAR ###################
+
+        totals = []
+        for year in range(start, end+1):
+            totals.append(data['Precipitation'][data['Decimal'] // 1 == year].sum())
+
+        self.ax1.barh(range(start, end+1), totals, height=.5, color='purple')
+
+        ########################################################################
+
+        # Set plot properties
+        self.ax0.set_yticks([start + (2*k) for k in range(((end + 2 - start) // 2))], [str(start + (2*k)) for k in range(((end + 2 - start) // 2))])
+        self.ax0.set_xticks([(1/24 + (1/12)*k) for k in range(12)], ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'])
+        self.ax0.set_xlabel("Month")
+        self.ax0.set_ylabel("Year")
+        self.ax0.set_title(self.config.labels['title'])
+        self.ax1.set_title('Total (mm)')
+        self.ax1.set_yticks([start + (2*k) for k in range(((end + 1 - start) // 2))], [str(start + (2*k)) for k in range(((end + 1 - start) // 2))])
+
+        if self.config.elnino:
+            self.plot_elninos(data)
+
+        if 'Eruptions' in data.columns and len(data[data['Eruptions'].notna()]) >= 1:
+            self.plot_eruptions(data)
+
+        self.ax0.legend(handles=self.legend_handles, loc='upper right', fontsize='x-small')
+        plt.tight_layout()
+
+        if self.config.save:
+            self.ax.savefig(self.config.save_path)
+
+        if self.config.show_flag:
+            plt.show()
+
+
+    def modify_dataframe(self, data):
         if self.config.bins > 1:
-            self.legend_handles = [mpatches.Patch(color=colors[i], label=quantile + str(i+1)) for i in range(self.config.bins)]
+            self.legend_handles = [mpatches.Patch(color=self.config.colors[i], label=self.config.quantile + str(i+1)) for i in range(self.config.bins)]
 
         else:
             self.legend_handles = []
 
-        if  self.config.average in ['W', 'M', 'Y'] or  self.config.cumulate:
-            data = weekly_monthly_yearly_precipitation(data,  self.config.average,  self.config.cumulate)
-
-        data = volcano_rain_frame(data, self.config.roll)
-
-        if self.config.eruption_dates != []:
-            # Adapt the eruption dates to the averaged precipitation data
-            self.config.eruption_dates = adapt_events(self.config.eruption_dates, data['Date'])
-
-            # Create a dictionary where the keys are the eruption dates and the values are the same
-            eruption_dict = {date: date for date in self.config.eruption_dates}
-
-            # Map the 'Date' column to the eruption dates
-            data['Eruptions'] = data['Date'].map(eruption_dict)
-
-            # Convert to decimal year for plotting purposes
-            data['Eruptions'] = data.Eruptions.apply(date_to_decimal_year)
-
-        # Calculate 'color' based on ranks of the 'roll' column
-        data['color'] = ((data['roll'].rank(method='first') * self.config.bins) / len(data)).astype(int).clip(upper=self.config.bins-1)
-
-        # Map the 'color' column to the `colors` list
-        data['color'] = data['color'].map(lambda x: colors[x])
-
-        if self.config.style == 'strength':
-
-            # Sort the data by 'roll' column
-            data = data.sort_values(by='roll')
-            # Reset the index of the DataFrame
-            data = data.reset_index(drop=True)
+        data = map_eruption_colors(data, self.config.roll, self.config.eruption_dates, self.config.bins, self.config.colors)
 
         data = from_nested_to_float(data)
 
         return data
-    
 
 
-class AnnualPlotter(Plotter):
-    def __init__(self, ax, config: Configuration):
-        self.ax = ax
-        self.config = config
+    def plot_elninos(self, data):
+        global ELNINOS
+
+        cmap = plt.cm.bwr
+        colors = {'strong nino': [cmap(253), 'Strong El Niño'], 'strong nina': [cmap(3), 'Strong La Niña']}
+
+        end = data['Decimal'].max()
+        linewidth = 20000 // len(data['Date'].unique())
+
+        for j in ['strong nino', 'strong nina']:
+            for x1, x2 in ELNINOS[j]:
+                if x1 > end:
+                    continue
+
+                x2 = min(x2, end)
+
+                y1, x1 = divmod(x1, 1)  # Split 2000.25 into 2000 and 0.25
+                y2, x2 = divmod(x2, 1)
+
+                # if y1 == y2:
+                #     self.ax0.plot([x1, x2], [y1 - .17, y1 - .17], color=colors[j][0], alpha=1.0, linewidth=linewidth)
+                # else:
+                self.ax0.plot([x1, 1.001], [y1 - .25, y1 - .25], color=colors[j][0], alpha=1.0, linewidth=linewidth)
+                self.ax0.plot([-.0022, x2], [y2 - .25, y2 - .25], color=colors[j][0], alpha=1.0, linewidth=linewidth)
+
+                if colors[j][1] not in [i.get_label() for i in self.legend_handles]:
+                    self.legend_handles.append(mpatches.Patch(color=colors[j][0], label=colors[j][1]))
+
+
+    def plot_eruptions(self, data):
+        from matplotlib.lines import Line2D
+
+        x = [i % 1 for i in data['Eruptions']]  # Take the decimal part of the date i.e. 0.25
+        y = [(i // 1) + .5 for i in data['Eruptions']]  # Take the integer part of the date i.e. 2020
+        scatter_size = 219000 // len(data['Date'].unique())
+        eruption = self.ax0.scatter(x, y, color='black', marker='v', s=scatter_size, label='Volcanic Events')
+        self.legend_handles.append(eruption)
