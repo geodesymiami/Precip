@@ -148,7 +148,7 @@ def create_parser(iargs=None, namespace=None):
                 parser.error("--longitude requires 1 or 2 arguments")
 
         if inps.lalo:
-            coordinates = parse_coordinates(inps.lalo[0])
+            coordinates = parse_coordinates(inps.lalo)
             inps.latitude = parse_coordinates(coordinates[0])
             inps.longitude = parse_coordinates(coordinates[1])
             inps.latitude, inps.longitude = [min(inps.latitude), max(inps.latitude)], [min(inps.longitude), max(inps.longitude)]
