@@ -8,7 +8,7 @@ from precip.plotter_functions import extract_volcanoes_info
 # for key, value in inps.__dict__.items():
 #     setattr(self, key, value)
 
-class Configuration:
+class PlotConfiguration:
     def __init__(self, inps):
         # copy inps to self object
         for key, value in inps.__dict__.items():
