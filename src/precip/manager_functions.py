@@ -143,7 +143,7 @@ def handle_plotters(inps, main_gs=None, fig=None):
     if inps.style == 'map':
         graph = MapPlotter(fig, main_gs, input_config)
 
-    if inps.style == 'bar':
+    if inps.style == 'bar' or inps.style == 'strength':
         graph = BarPlotter(fig, main_gs, input_config)
 
     if inps.style == 'annual':
