@@ -35,11 +35,6 @@ Example:
 
 def create_parser(iargs=None, namespace=None):
     """ Creates command line argument parser object. """
-
-    # parser = argparse.ArgumentParser(
-    #     description='Plot precipitation data from GPM dataset for a specific location at a given date range',
-    #     formatter_class=argparse.RawTextHelpFormatter,
-    #     epilog=EXAMPLE)
     parser = argparse.ArgumentParser(
         description='Plot precipitation data from GPM dataset for a specific location at a given date range',
         formatter_class=argparse.RawTextHelpFormatter,
@@ -49,16 +44,11 @@ def create_parser(iargs=None, namespace=None):
                         nargs='?',
                         type=str,
                         help='Volcano name')
-    # parser.add_argument('coordinates', 
-    #                     nargs='1',
-    #                     help='Volcano name')
-
     parser.add_argument('--volcano-name',
                         nargs=1,
                         type=str,
                         metavar=('NAME'),
                         help='Name of the volcano')
-
     parser.add_argument('--style',
                         choices=['daily','weekly','monthly','yearly','map','bar','annual','strength'],
                         help='Choose plot type')
@@ -89,7 +79,7 @@ def create_parser(iargs=None, namespace=None):
     inps = parser.parse_args(iargs, namespace)
 
     #exit()
-    # FA: create_parser has much too much. 
+    # FA: create_parser has much too much.
     ############################ POSITIONAL ARGUMENTS ############################
 
     # FA: using len(inps.positional) looks strange. I would expect this is handled better by argparse?
@@ -115,7 +105,8 @@ def create_parser(iargs=None, namespace=None):
     #     inps.longitude = parse_coordinates(inps.positional[1])
 
     ###############################################################################
-    inps.volcano_name = [inps.name]
+    if inps.name:
+        inps.volcano_name = [inps.name]
 
     # FA: Assuming that inps.start_date and inps.end_date will be later consider function: inps.start_date, inps.end_date=get_processing_dates(inps)
     if not inps.period:
@@ -157,9 +148,10 @@ def create_parser(iargs=None, namespace=None):
                 parser.error("--longitude requires 1 or 2 arguments")
 
         if inps.lalo:
-            coordinates = parse_coordinates(inps.lalo[0])
+            coordinates = parse_coordinates(inps.lalo)
             inps.latitude = parse_coordinates(coordinates[0])
             inps.longitude = parse_coordinates(coordinates[1])
+            inps.latitude, inps.longitude = [min(inps.latitude), max(inps.latitude)], [min(inps.longitude), max(inps.longitude)]
 
     else:
             inps.latitude, inps.longitude = parse_polygon(inps.polygon)
@@ -225,15 +217,15 @@ def add_location_arguments(parser):
     location = parser.add_argument_group('Location of the volcano or area of interest')
     location.add_argument('--latitude',
                         nargs='?',
-                        metavar=('LATITUDE', 'LATITUDE:LATITUDE'),
+                        metavar=('LATITUDE or LATITUDE:LATITUDE'),
                         help='Latitude')
     location.add_argument('--longitude',
                         nargs='?',
-                        metavar=('LONGITUDE', 'LONGITUDE:LONGITUDE'),
+                        metavar=('LONGITUDE or LONGITUDE:LONGITUDE'),
                         help='Longitude')
     location.add_argument('--lalo',
                         nargs='?',
-                        metavar=('LATITUDE,LONGITUDE', 'LATITUDE:LATITUDE, LONGITUDE:LONGITUDE'),
+                        metavar=('LATITUDE,LONGITUDE or LATITUDE:LATITUDE,LONGITUDE:LONGITUDE'),
                         help='Latitude and longitude')
     location.add_argument('--polygon',
                         metavar='POLYGON',
@@ -249,7 +241,7 @@ def add_plot_parameters_arguments(parser):
                         nargs='*',
                         metavar=('YYYYMMDD, YYYY-MM-DD'),
                         help='Add event to the time series')
-    plot_parameters.add_argument('--log', 
+    plot_parameters.add_argument('--log',
                         action='store_true',
                         help='Enable logaritmic scale')
     plot_parameters.add_argument('--bins',
@@ -301,10 +293,15 @@ def add_map_parameters_arguments(parser):
                         metavar='TIME_PERIOD',
                         help='Average data, default is daily')
     map_parameters.add_argument('--colorbar',
-                        nargs=1,
                         default='viridis',
                         metavar='COLORBAR',
                         help='Colorbar, default is %(default)s')
+    map_parameters.add_argument('--isolines-color',
+                        dest='iso_color',
+                        type=str,
+                        default='white',
+                        metavar='COLOR',
+                        help='Color of contour lines, default is %(default)s')
 
     return parser
 
@@ -418,11 +415,11 @@ def parse_coordinates(coordinates):
 
 # precipitation = from_nested_to_float(precipitation)
 
-# sys.exit(0)
+#sys.exit(0)
 
 #################### END TEST AREA ########################
 
-def main(iargs=None, namespace=None):
+def main(iargs=None, namespace=None, ax=None):
 
     inps = create_parser(iargs, namespace)
     # FA: suggest function inps = configure_inps(inps)
