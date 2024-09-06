@@ -5,7 +5,7 @@ import pygmt
 import pandas as pd
 import numpy as np
 from abc import ABC, abstractmethod
-from precip.objects.configuration import Configuration
+from precip.objects.configuration import PlotConfiguration
 from precip.plotter_functions import interpolate_map
 from precip.helper_functions import  weekly_monthly_yearly_precipitation, from_nested_to_float, map_eruption_colors
 from precip.config import ELNINOS
@@ -32,8 +32,9 @@ class EventsPlotter(Plotter):
 
 
 class MapPlotter(Plotter):
-    def __init__(self, ax, config: Configuration):
-        self.ax = ax
+    def __init__(self, fig, grid, config: PlotConfiguration):
+        self.grid = grid
+        self.fig = fig
         self.config = config
 
 
@@ -60,6 +61,8 @@ class MapPlotter(Plotter):
 
         # Add contour lines
         inline = True if self.config.isolines and self.config.isolines != 0 else False
+
+        self.ax = self.fig.add_subplot(self.grid)
         self.ax = self.add_isolines(region, self.config.isolines, self.config.iso_color,inline=inline)
 
         im = self.ax.imshow(data, vmin=vmin, vmax=vmax, extent=region, cmap=self.config.colorbar)
@@ -82,6 +85,8 @@ class MapPlotter(Plotter):
 
         if self.config.show_flag:
             plt.show()
+        else:
+            return self.ax
 
 
     def add_isolines(self, region, levels=0, colors='white',inline=False):
@@ -118,13 +123,15 @@ class MapPlotter(Plotter):
 
 
 class BarPlotter(EventsPlotter):
-    def __init__(self, ax, config: Configuration):
-        self.ax = ax
+    def __init__(self, fig, grid, config: PlotConfiguration):
+        self.grid = grid
+        self.fig = fig
         self.config = config
 
 
     def plot(self, data):
         data = self.modify_dataframe(data)
+        self.ax = self.fig.add_subplot(self.grid)
 
         if self.config.style == 'strength':
             width = 1.1
@@ -169,13 +176,15 @@ class BarPlotter(EventsPlotter):
             self.plot_eruptions(data)
 
         self.ax.legend(handles=self.legend_handles, loc='upper left', fontsize='small')
-        plt.tight_layout()
+        # plt.tight_layout()
 
         if self.config.save:
             self.ax.savefig(self.config.save_path)
 
         if self.config.show_flag:
             plt.show()
+        else:
+            return self.ax
 
 
     def modify_dataframe(self, data):
@@ -247,7 +256,7 @@ class BarPlotter(EventsPlotter):
 
 
 class AnnualPlotter(EventsPlotter):
-    def __init__(self, fig, grid, config: Configuration):
+    def __init__(self, fig, grid, config: PlotConfiguration):
         self.grid = grid
         self.fig = fig
         self.config = config
@@ -313,7 +322,7 @@ class AnnualPlotter(EventsPlotter):
             self.plot_eruptions(data)
 
         self.ax0.legend(handles=self.legend_handles, loc='upper right', fontsize='x-small')
-        plt.tight_layout()
+        # plt.tight_layout()
 
         if self.config.save:
             self.ax.savefig(self.config.save_path)
