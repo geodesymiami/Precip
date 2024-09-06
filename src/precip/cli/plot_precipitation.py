@@ -3,9 +3,9 @@
 import os
 from datetime import datetime
 import argparse
-from precip.plotter_functions import prompt_subplots, handle_data_functions
+from precip.plotter_functions import handle_data_functions
 from precip.config import START_DATE, END_DATE
-from pathlib import Path
+from precip.manager_functions import handle_data_functions, handle_plotters
 
 # TODO Add proper CITATION for GPM data and Volcano data
 PRECIP_DIR = os.getenv('PRECIP_DIR')
@@ -401,43 +401,35 @@ def parse_coordinates(coordinates):
 
 
 ###################### TEST AREA ##########################
-
-# from precip.plotter_functions import *
-# from precip.helper_functions import sql_extract_precipitation
-# import os
-# # from precip.plotter_functions import bar_plotter_2, plot_elninos
-
-# date_list = generate_date_list('20000601', '20010603')
-
-# eruption_dates, lalo = extract_volcanoes_info(None, 'Merapi')
-# latitude, longitude = adapt_coordinates(lalo[0], lalo[1])
-
-# precipitation = sql_extract_precipitation(latitude, longitude, date_list, gpm_dir)
-
-# precipitation = from_nested_to_float(precipitation)
 # from matplotlib import pyplot as plt
+# from matplotlib import gridspec
 # import sys
 # from precip.plotter_functions import get_precipitation_data
 # from precip.helper_functions import generate_date_list, adapt_coordinates
-# from precip.objects.configuration import Configuration
-# from precip.objects.plotters import MapPlotter
+# from precip.objects.configuration import PlotConfiguration
+# from precip.objects.plotters import MapPlotter, BarPlotter, AnnualPlotter
+# from precip.manager_functions import handle_plotters
 
-# def main(iargs=None, namespace=None):
+# def main(iargs=None, namespace=None, ax=None):
 #     inps = create_parser(iargs, namespace)
 #     inps.dir = PRECIP_DIR
 #     os.makedirs(PRECIP_DIR, exist_ok=True)
 
-#     input_config = Configuration(inps)
-#     input_config.configure_arguments(inps)
-#     precipitation = get_precipitation_data(input_config)
-#     if not input_config.show_flag:
-#         plt.switch_backend('Agg')
+#     if not inps.show_flag:
+#         # plt.switch_backend('Agg')
+#         pass
+
 
 #     fig = plt.figure(constrained_layout=True)
-#     ax = fig.add_subplot(1, 1, 1)
+#     main_gs = gridspec.GridSpec(2, 1, figure=fig)
 
-#     map = MapPlotter(ax, input_config)
-#     map.plot(precipitation)
+#     fig = handle_plotters(inps, main_gs[0], fig)
+
+#     inps.style = 'annual'
+
+#     fig = handle_plotters(inps, main_gs[1], fig)
+
+#     plt.show()
 
 
 # if __name__ == "__main__":
@@ -447,21 +439,21 @@ def parse_coordinates(coordinates):
 
 #################### END TEST AREA ########################
 
-def main(iargs=None, namespace=None):
+def main(iargs=None, namespace=None, main_gs=None, fig=None):
 
     inps = create_parser(iargs, namespace)
-    # FA: suggest function inps = configure_inps(inps)
-    # FA: suggest function inps = configure_plot_settings(inps)
 
     inps.dir = PRECIP_DIR
     os.makedirs(PRECIP_DIR, exist_ok=True)
 
+    # TODO to add to _all script
+    # main_gs = gridspec.GridSpec(2, 1, figure=fig)
+
     handle_data_functions(inps)
 
-    # FA: The prompt_subplot function needs to be separated into functions for download, data preparation (write data into inps.outdir) and plotting.
-    fig, axes = prompt_subplots(inps)
+    fig = handle_plotters(inps, main_gs, fig)
 
-    return fig, axes
+    return fig
 
 if __name__ == "__main__":
     main()
