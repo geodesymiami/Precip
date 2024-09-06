@@ -126,7 +126,7 @@ def get_precipitation_data(inps):
 
 def handle_plotters(inps, main_gs=None, fig=None):
     from precip.objects.configuration import PlotConfiguration
-    from precip.objects.plotters import MapPlotter, BarPlotter, AnnualPlotter
+    from precip.objects.classes.plotters.plotters import MapPlotter, BarPlotter, AnnualPlotter
     from matplotlib import pyplot as plt
 
     input_config = PlotConfiguration(inps)

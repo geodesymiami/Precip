@@ -1,34 +1,19 @@
 from matplotlib import pyplot as plt
 from matplotlib import patches as mpatches
 from matplotlib import gridspec
+from matplotlib.lines import Line2D
+
 import pygmt
 import pandas as pd
 import numpy as np
-from abc import ABC, abstractmethod
+
 from precip.objects.configuration import PlotConfiguration
+from precip.objects.interfaces.plotter.plotter import Plotter
+from precip.objects.interfaces.plotter.event_plotter import EventsPlotter
+
 from precip.plotter_functions import interpolate_map
 from precip.helper_functions import  weekly_monthly_yearly_precipitation, from_nested_to_float, map_eruption_colors
 from precip.config import ELNINOS
-
-class Plotter(ABC):
-    @abstractmethod
-    def plot(self):
-        pass
-
-
-    def modify_dataframe(self):
-        pass
-
-
-class EventsPlotter(Plotter):
-    @abstractmethod
-    def plot_elninos(self):
-        pass
-
-
-    @abstractmethod
-    def plot_eruptions(self):
-        pass
 
 
 class MapPlotter(Plotter):
@@ -234,15 +219,6 @@ class BarPlotter(EventsPlotter):
 
 
     def plot_eruptions(self, data):
-        from matplotlib.lines import Line2D
-        # TODO This is for annual
-        # if self.ax:
-        #     x = [i % 1 for i in data['Eruptions']]  # Take the decimal part of the date i.e. 0.25
-        #     y = [(i // 1) + .5 for i in data['Eruptions']]  # Take the integer part of the date i.e. 2020
-        #     scatter_size = 219000 // len(data['Date'].unique())
-        #     eruption = self.ax.scatter(x, y, color='black', marker='v', s=scatter_size, label='Volcanic Events')
-        #     self.legend_handles.append(eruption)
-
         if self.config.style == 'strength':
             eruptions = data[data['Eruptions'].notna()].index
 
@@ -375,8 +351,6 @@ class AnnualPlotter(EventsPlotter):
 
 
     def plot_eruptions(self, data):
-        from matplotlib.lines import Line2D
-
         x = [i % 1 for i in data['Eruptions']]  # Take the decimal part of the date i.e. 0.25
         y = [(i // 1) + .5 for i in data['Eruptions']]  # Take the integer part of the date i.e. 2020
         scatter_size = 219000 // len(data['Date'].unique())
