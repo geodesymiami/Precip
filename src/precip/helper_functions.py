@@ -175,7 +175,7 @@ def weekly_monthly_yearly_precipitation(dictionary, time_period=None, cumulate=F
     else:
         df = dictionary
 
-    if df['Date'].dtype == str:
+    if type(df['Date'][0]) == str:
         df['Date'] = pd.to_datetime(df['Date'])
 
     df.set_index('Date', inplace=True)
