@@ -85,7 +85,7 @@ def generate_url_download(date, final06=FINAL06, final07=FINAL07):
     return url
 
 
-def generealte_urls_list(date_list):
+def generate_urls_list(date_list):
     """
     Generate a list of URLs for downloading precipitation data.
 
@@ -119,7 +119,7 @@ def dload_site_list_parallel(folder, date_list, parallel=5):
 
     os.makedirs(folder, exist_ok=True)
 
-    urls = generealte_urls_list(date_list)
+    urls = generate_urls_list(date_list)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=parallel) as executor:
         for url in urls:
@@ -298,7 +298,7 @@ def download_jetstream(ssh, url, pathJetstream):
 
 def download_jetstream_parallel(date_list, ssh, parallel=5):
     # Generate the URLs
-    urls = generealte_urls_list(date_list)
+    urls = generate_urls_list(date_list)
 
     # Use a ThreadPoolExecutor to download the files in parallel
     with concurrent.futures.ThreadPoolExecutor(max_workers=parallel) as executor:
