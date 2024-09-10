@@ -3,7 +3,6 @@
 import os
 from datetime import datetime
 import argparse
-from precip.plotter_functions import handle_data_functions
 from precip.config import START_DATE, END_DATE
 from precip.manager_functions import handle_data_functions, handle_plotters
 

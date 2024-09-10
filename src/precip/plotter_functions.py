@@ -1,7 +1,6 @@
 import os
 import json
 from datetime import datetime
-from dateutil.relativedelta import relativedelta
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -13,8 +12,11 @@ import pygmt
 # KA: Don't use import *
 from precip.helper_functions import *
 from precip.download_functions import *
-from precip.config import JSON_DOWNLOAD_URL, JSON_VOLCANO, START_DATE, END_DATE, ELNINOS
+from precip.config import JSON_DOWNLOAD_URL, START_DATE, END_DATE, ELNINOS
 import requests
+
+
+VOLCANO_FILE = os.environ.get('PRECIP_HOME') + '/src/precip/Holocene_Volcanoes_precip_cfg.xlsx'
 
 # TODO to replace elninos with the following API #
 # TODO eventually move to helper_functions.py
@@ -24,340 +26,6 @@ if False:
     print(req.text)
 
 ###################################################
-def get_precipitation_data(inps):
-    from precip.objects.classes.database.database import Database
-    from precip.objects.classes.Queries.queries import Queries
-
-    if inps.use_ssh:
-        from precip.objects.classes.providers.jetstream import JetStream
-        from precip.objects.classes.file_manager.cloud_file_manager import CloudFileManager
-        from precip.objects.classes.database.cloud_sqlite3_database import CloudSQLite3Database
-        from precip.objects.classes.database_operations.cloud_sqlite3_operations import CloudSQLite3Operations
-
-        #inps.latitude, inps.longitude, date_list, gpm_dir
-
-        #Create and connect to JetStream
-        jtstream = JetStream()
-        jtstream.connect()
-        jtstream.open_sftp()
-
-        #Create CloudFileManager object
-        jetstream_filemanager = CloudFileManager(jtstream)
-
-        #Create CloudSQLite3Database object
-        jetstream_database = CloudSQLite3Database(jetstream_filemanager)
-
-        #Connect to the database
-        jetstream_database.connect()
-
-        # Check table
-        CloudSQLite3Operations(jetstream_database).check_table()
-
-        # Get data
-        precipitation = Database(CloudSQLite3Operations(jetstream_database)).get_data(Queries.extract_precipitation(inps.latitude, inps.longitude, date_list))
-
-        #Check missing dates
-        missing_dates = check_missing_dates(inps.date_list, precipitation['Date'])
-
-        if missing_dates:
-            from precip.objects.classes.data_extractor.cloud_nc4_data import CloudNC4Data
-            from precip.objects.classes.data_extractor.nc4_datasource import NC4DataSource
-
-            #Get missing data from files
-            data = NC4DataSource(CloudNC4Data(jtstream)).get_data(inps.latitude, inps.longitude, missing_dates)
-
-            #Load data into the database
-            Database(CloudSQLite3Operations(jetstream_database)).load_data(inps.latitude, inps.longitude, data)
-
-            #Get data
-            precipitation = Database(CloudSQLite3Operations(jetstream_database)).get_data(Queries.extract_precipitation(inps.latitude, inps.longitude, date_list))
-
-        #Close the database
-        jetstream_database.close()
-
-    else:
-        from precip.objects.classes.database.sqlite3_database import SQLite3Database
-        from precip.objects.classes.database_operations.sqlite3_operations import SQLite3Operations
-
-        #Create and connect to Database
-        database = SQLite3Database()
-        database.connect()
-
-        #Check table
-        SQLite3Operations(database).check_table()
-
-        #Get data
-        precipitation = Database(SQLite3Operations(database)).get_data(Queries.extract_precipitation(inps.latitude, inps.longitude, inps.date_list))
-
-        #Check missing dates
-        missing_dates = check_missing_dates(inps.date_list, precipitation['Date'])
-
-        if missing_dates:
-            from precip.objects.classes.data_extractor.local_nc4_data import LocalNC4Data
-            from precip.objects.classes.data_extractor.nc4_datasource import NC4DataSource
-
-            #Get missing data from files
-            data = NC4DataSource(LocalNC4Data(inps.gpm_dir)).get_data(inps.latitude, inps.longitude, missing_dates)
-
-            #Load data into the database
-            Database(SQLite3Operations(database)).load_data(inps.latitude, inps.longitude, data)
-
-            #Get data
-            precipitation = Database(SQLite3Operations(database)).get_data(Queries.extract_precipitation(inps.latitude, inps.longitude, inps.date_list))
-
-        #Close the database
-        database.close()
-
-    precipitation['Precipitation'] = str_to_masked_array(precipitation['Precipitation'])
-    return precipitation
-
-
-def handle_data_functions(inps):
-    from precip.objects.classes.providers.jetstream import JetStream
-    from precip.objects.classes.file_manager.cloud_file_manager import CloudFileManager
-    from precip.objects.classes.file_manager.local_file_manager import LocalFileManager
-
-
-    if inps.download:
-        date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
-
-        if inps.use_ssh:
-            jtstream = JetStream()
-            CloudFileManager(jtstream).download(date_list)
-
-        else:
-            local = LocalFileManager(inps.dir)
-            local.download(date_list)
-
-    if inps.check:
-        if inps.use_ssh:
-            jtstream = JetStream()
-            CloudFileManager(jtstream).check_files()
-
-        else:
-            local = LocalFileManager(inps.dir)
-            local.check_files()
-
-    # KA: this is a useful function but should be moved to the command line script
-    if inps.list:
-        volcanoes_list(os.path.join(inps.dir, JSON_VOLCANO))
-
-
-    if inps.use_ssh and ssh:
-        ssh.close()
-
-# KA: This function should just handle plotting.
-# KA: Ideally it takes data and a single axes as the input and then sends this data to another function depending on style
-def prompt_subplots(inps, ax = None):
-    # handle_data_functions(inps)
-
-    if inps.use_ssh:
-        ssh = connect_jetstream()
-
-    else:
-        ssh = None
-
-    gpm_dir = inps.dir
-    volcano_json_dir = os.path.join(inps.dir, JSON_VOLCANO)
-
-    # KA: There is no else statement here and isn't there always a style if you want to plot something?
-    if inps.style:
-        eruption_dates = []
-
-        date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
-
-        # FA: all this inps handling should be done in configure_inps function
-        if len(date_list) <= inps.roll:
-            msg = 'Error: The number of dates is less than the rolling window.'
-            raise ValueError(msg)
-
-        if inps.latitude and inps.longitude:
-            inps.latitude, inps.longitude = adapt_coordinates(inps.latitude, inps.longitude)
-
-            title = f'Latitude: {inps.latitude}, Longitude: {inps.longitude}'
-
-        elif inps.volcano_name:
-            eruption_dates, lalo, id = extract_volcanoes_info(volcano_json_dir, inps.volcano_name[0])
-            inps.latitude, inps.longitude = adapt_coordinates(lalo[0], lalo[1])
-
-            if inps.style == 'map':
-                volcano_position = [inps.latitude[0], inps.longitude[0]]
-
-                inps.latitude = [round(min(inps.latitude) - 2, 2), round(max(inps.latitude) + 2, 2)]
-                inps.longitude = [round(min(inps.longitude) - 2, 2), round(max(inps.longitude) + 2, 2)]
-
-
-            title = f'{inps.volcano_name[0]} - Latitude: {inps.latitude}, Longitude: {inps.longitude}'
-
-        else:
-            msg = 'Error: Please provide valid coordinates or volcano name.\n Try using --list to get a list of volcanoes.'
-            raise ValueError(msg)
-
-        if inps.save:
-            if inps.volcano_name:
-                    if inps.save == 'volcano-name':
-                        save_name = inps.volcano_name[0]
-
-                    elif inps.save == 'volcano-id':
-                        save_name = id
-
-            elif inps.latitude and inps.longitude:
-                save_name = f'{inps.latitude}_{inps.longitude}'
-
-            strStart = str(inps.start_date).replace('-', '') if not isinstance(inps.start_date, str) else inps.start_date.replace('-', '')
-            strEnd = str(inps.end_date).replace('-', '') if not isinstance(inps.end_date, str) else inps.end_date.replace('-', '')
-            save_path = f'{inps.outdir}/{save_name}_{strStart}_{strEnd}_{inps.style}.png'
-
-        # KA: no need to set an extra bool
-        if inps.style == 'strength':
-            strength = True
-
-        else:
-            strength = False
-
-        if inps.use_ssh and not (ssh.get_transport() and ssh.get_transport().is_active()):
-            ssh = connect_jetstream()
-
-        # Extract precipitation data
-        precipitation = sql_extract_precipitation(inps.latitude, inps.longitude, date_list, gpm_dir, ssh)
-
-        # KA: instead -> if inps.style in ['daily', 'bar', 'strength':
-        if inps.style == 'daily' or inps.style == 'bar' or strength == True:
-            ylabel = str(inps.roll) + " day precipitation (mm)"
-
-        elif inps.style == 'map':
-            if inps.cumulate:
-                ylabel = f"Cumulative precipitation over {len(date_list)} days (mm)"
-
-            else:
-                ylabel = f"Daily precipitation over {len(date_list)} days (mm/day)"
-
-        else:
-            ylabel = f" {inps.style} precipitation (mm)"
-
-
-        labels = {'title': title,
-                'ylabel': ylabel,
-                'y2label': 'Cumulative precipitation'}
-
-        # KA: This dataframe should be the input parameter to a plotting function so that it doesn't have to be read everytime
-        # Average the precipitation data
-        if inps.average in ['W', 'M', 'Y'] or inps.cumulate:
-            precipitation = weekly_monthly_yearly_precipitation(precipitation, inps.average, inps.cumulate)
-
-
-        # Plot the map of precipitation data
-        if inps.style == 'map':
-
-            # KA: This dataframe should be the input parameter to a plotting function so that it doesn't have to be read everytime
-            if inps.interpolate:
-                precipitation = interpolate_map(precipitation, inps.interpolate)
-
-            map_precipitation(precipitation, inps.longitude, inps.latitude, date_list, inps.colorbar, inps.isolines, labels, inps.vlim)
-            if inps.volcano_name:
-                plt.scatter(volcano_position[1], volcano_position[0], color='red', marker='^', s=50, label=inps.volcano_name[0], zorder=3)
-                plt.legend(fontsize='small', frameon=True, framealpha=0.3)
-
-            fig = plt.gcf()
-            axes = plt.gca()
-
-            if inps.save:
-                plt.savefig(save_path)
-
-            if inps.show_flag:
-                plt.show()
-
-            return fig, axes
-
-        # KA: This dataframe should be the input parameter to a plotting function so that it doesn't have to be read everytime
-        # Add cumulative, rolling precipitation, and Decimal dates columns
-        precipitation = volcano_rain_frame(precipitation, inps.roll)
-
-        colors = color_scheme(inps.bins)
-
-        quantile = quantile_name(inps.bins)
-
-        ############################################### ERUPTIONS ##############################################
-
-        # Create list of eruption dates and adapt to the averaged precipitation data
-        if inps.add_event:
-            eruption_dates = list(inps.add_event) if not isinstance(inps.add_event, list) else eruption_dates
-
-        if eruption_dates != []:
-            # eruption_dates = [datetime.strptime(date_string, '%Y-%m-%d').date() for date_string in eruption_dates]
-
-            # Adapt the eruption dates to the averaged precipitation data
-            eruption_dates = adapt_events(eruption_dates, precipitation['Date'])
-
-            # Create a dictionary where the keys are the eruption dates and the values are the same
-            eruption_dict = {date: date for date in eruption_dates}
-
-            # Map the 'Date' column to the eruption dates
-            precipitation['Eruptions'] = precipitation['Date'].map(eruption_dict)
-
-            # Convert to decimal year for plotting purposes
-            precipitation['Eruptions'] = precipitation.Eruptions.apply(date_to_decimal_year)
-
-        #########################################################################################################
-
-        ######################################### COLORS ##############################################
-
-        if inps.bins > 1:
-            legend_handles = [mpatches.Patch(color=colors[i], label=quantile + str(i+1)) for i in range(inps.bins)]
-
-        else:
-            legend_handles = []
-
-        # Calculate 'color' based on ranks of the 'roll' column
-        precipitation['color'] = ((precipitation['roll'].rank(method='first') * inps.bins) / len(precipitation)).astype(int).clip(upper=inps.bins-1)
-
-        # Map the 'color' column to the `colors` list
-        precipitation['color'] = precipitation['color'].map(lambda x: colors[x])
-
-        ################################################################################################
-
-        precipitation = from_nested_to_float(precipitation)
-
-        if inps.style == 'annual':
-            legend_handles, axs = annual_plotter(precipitation, legend_handles, labels)
-
-        else:
-            axs = None
-
-            ######################## STRENGTH ######################
-
-            if strength:
-
-                precipitation = precipitation.sort_values(by='roll')
-
-                precipitation = precipitation.reset_index(drop=True)
-
-            ########################################################
-
-            legend_handles = bar_plotter(precipitation, strength, inps.log, labels, legend_handles)
-
-        if inps.elnino and not strength:
-            legend_handles = plot_elninos(precipitation, legend_handles, axs)
-
-        if inps.add_event or eruption_dates != []:
-            legend_handles = plot_eruptions(precipitation, legend_handles, strength, axs)
-
-        plt.legend(handles=legend_handles, loc='upper left', fontsize='small')
-        plt.tight_layout()
-
-        fig = plt.gcf()
-        axes = plt.gca()
-
-        if inps.save:
-           print("Saving:", save_path)
-           plt.savefig(save_path)
-
-        if inps.show_flag:
-            plt.show()
-
-        return fig, axes
-
-    return None, None
 
 
 def get_volcano_json(jsonfile, url):
@@ -423,6 +91,7 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
 
     start_dates = []
     frame_data = []
+    name = ''
 
     first_day = datetime.strptime(START_DATE, '%Y%m%d').date()
     last_day = datetime.strptime(END_DATE, '%Y%m%d').date()
@@ -452,6 +121,13 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
                 stren = j['properties']['ExplosivityIndexMax']
                 frame_data.append([name, start, end, stren])
 
+            break
+
+    if name == '':
+        volc_dict = get_volcanoes()
+        coordinates = [volc_dict[volcanoName]['latitude'], volc_dict[volcanoName]['longitude']]
+        id = volc_dict[volcanoName]['id']
+
     if strength:
     # If no start dates were found within the date range
         df = pd.DataFrame(frame_data, columns=column_names)
@@ -478,6 +154,20 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
     print('')
 
     return start_dates, coordinates, id
+
+
+def get_volcanoes():
+    df = pd.read_excel(VOLCANO_FILE, skiprows=1)
+    df = df[df['Precip'] != False]
+
+    volcano_dict = {
+        r['Volcano Name'] : {
+            'id': r['Volcano Number'],
+            'latitude': r['Latitude'],
+            'longitude': r['Longitude']
+        } for _, r in df.iterrows()}
+
+    return volcano_dict
 
 
 def plot_eruptions(precipitation, legend_handles, strength = False, axs = None):

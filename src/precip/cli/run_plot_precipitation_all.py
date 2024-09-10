@@ -12,7 +12,7 @@ import matplotlib
 matplotlib.use('Agg')
 
 SCRATCH_DIR = os.environ.get('SCRATCHDIR')
-VOLCANO_FILE = os.environ.get('PRECIP_HOME') + '/src/precip/Holocene_Volcanoes_precip_cfg..xlsx'
+VOLCANO_FILE = os.environ.get('PRECIP_HOME') + '/src/precip/Holocene_Volcanoes_precip_cfg.xlsx'
 DEFAULT_STYLES = ['map', 'bar', 'annual', 'strength']
 # DEFAULT_STYLES = ['bar', 'annual', 'strength']        # FA 7/2025  map gives problems woth GMT
 BINS = [2, 3, 4]
