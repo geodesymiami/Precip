@@ -1,5 +1,5 @@
 from precip.objects.interfaces.abstract_cloud_manager import AbstractCloudManager
-from src.precip.config import PATH_JETSTREAM
+from precip.config import PATH_JETSTREAM
 import paramiko
 import os
 
