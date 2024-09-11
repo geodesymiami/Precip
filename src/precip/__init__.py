@@ -1,7 +1,6 @@
 from .objects.classes.providers.jetstream import JetStream
 from .objects.classes.file_manager.cloud_file_manager import CloudFileManager
 from .objects.classes.database.cloud_sqlite3_database import CloudSQLite3Database
-from .objects.classes.database_operations.cloud_sqlite3_operations import CloudSQLite3Operations
 from .objects.classes.file_manager.local_file_manager import LocalFileManager
 from .objects.classes.database.database import Database
 from .objects.classes.Queries.queries import Queries
