@@ -128,7 +128,7 @@ def get_precipitation_data(inps):
 # TODO move this directly into main
 def handle_plotters(inps, main_gs=None, fig=None):
     # TODO move the import in the __init__.py of each folder
-    from precip.objects.configuration import PlotConfiguration
+    from precip.objects.classes.configuration import PlotConfiguration
     from precip.objects.classes.plotters.plotters import MapPlotter, BarPlotter, AnnualPlotter
     from matplotlib import pyplot as plt
 

@@ -7,11 +7,10 @@ import pygmt
 import pandas as pd
 import numpy as np
 
-from precip.objects.configuration import PlotConfiguration
+from precip.objects.classes.configuration import PlotConfiguration
 from precip.objects.interfaces.plotter.plotter import Plotter
 from precip.objects.interfaces.plotter.event_plotter import EventsPlotter
 
-from precip.volcano_functions import interpolate_map
 from precip.helper_functions import  weekly_monthly_yearly_precipitation, from_nested_to_float, map_eruption_colors
 from precip.config import ELNINOS
 
