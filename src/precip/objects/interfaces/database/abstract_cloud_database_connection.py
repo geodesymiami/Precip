@@ -1,4 +1,4 @@
-from precip.objects.interfaces.database.abstract_database_connection import AbstractDatabaseConnection
+from interfaces import AbstractDatabaseConnection
 
 
 class AbstractCloudDatabaseConnection(AbstractDatabaseConnection):

@@ -1,6 +1,6 @@
-from precip.objects.interfaces.database.abstract_database_operations import AbstractDatabaseOperations
-from precip.objects.interfaces.database.abstract_database_connection import AbstractDatabaseConnection
-from precip.objects.classes.Queries.queries import Queries
+from interfaces import AbstractDatabaseOperations
+from interfaces import AbstractDatabaseConnection
+from classes import Queries
 
 
 class SQLite3Operations(AbstractDatabaseOperations):

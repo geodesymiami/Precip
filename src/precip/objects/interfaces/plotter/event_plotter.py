@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from precip.objects.interfaces.plotter.plotter import Plotter
+from interfaces import Plotter
 
 
 class EventsPlotter(Plotter):

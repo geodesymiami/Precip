@@ -1,5 +1,5 @@
-from precip.objects.interfaces.data_managers.abstract_data_from_file import AbstractDataFromFile
-from precip.objects.interfaces.abstract_cloud_manager import AbstractCloudManager
+from interfaces import AbstractDataFromFile
+from interfaces import AbstractCloudManager
 from precip.config import PATH_JETSTREAM
 import re
 import os

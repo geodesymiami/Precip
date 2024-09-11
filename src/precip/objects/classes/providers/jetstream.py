@@ -1,4 +1,4 @@
-from precip.objects.interfaces.abstract_cloud_manager import AbstractCloudManager
+from interfaces import AbstractCloudManager
 from precip.config import PATH_JETSTREAM
 import paramiko
 import os

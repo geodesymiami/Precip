@@ -1,5 +1,5 @@
-from precip.objects.interfaces.data_managers.abstract_datasource import AbstractDataSource
-from precip.objects.interfaces.data_managers.abstract_data_from_file import AbstractDataFromFile
+from interfaces import AbstractDataSource
+from interfaces import AbstractDataFromFile
 from precip.helper_functions import generate_coordinate_array
 import pandas as pd
 

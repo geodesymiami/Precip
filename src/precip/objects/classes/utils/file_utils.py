@@ -1,6 +1,6 @@
 import netCDF4
 from datetime import datetime
-from precip.objects.interfaces.file_utils import AbstractFileUtils
+from interfaces import AbstractFileUtils
 
 
 class ReadNC4Properties(AbstractFileUtils):
