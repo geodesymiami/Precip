@@ -3,9 +3,8 @@
 import os
 from datetime import datetime
 import argparse
-from precip.plotter_functions import prompt_subplots
 from precip.config import START_DATE, END_DATE
-from pathlib import Path
+from precip.manager_functions import handle_data_functions, handle_plotters
 
 # TODO Add proper CITATION for GPM data and Volcano data
 PRECIP_DIR = os.getenv('PRECIP_DIR')
@@ -159,12 +158,15 @@ def create_parser(iargs=None, namespace=None):
     # FA: Not sure why to introduce inps.average = 'W'. You can use use 'if inps.style == 'weekly'' later in the code?
     if inps.style == 'weekly':
         inps.average = 'W'
+        inps.roll = 1
 
     elif inps.style == 'monthly':
         inps.average = 'M'
+        inps.roll = 1
 
     elif inps.style == 'yearly':
         inps.average = 'Y'
+        inps.roll = 1
 
     elif inps.style == 'annual':
         inps.average = 'D'
@@ -279,9 +281,11 @@ def add_map_parameters_arguments(parser):
                         type=int,
                         help='Interpolate data')
     map_parameters.add_argument('--isolines',
-                        nargs=1,
+                        nargs='?',
+                        default=0,
+                        type=int,
                         metavar='LEVELS',
-                        help='Number of isolines to be plotted on the map')
+                        help='Number of isolines to be plotted on the map, default is %(default)s')
     map_parameters.add_argument('--cumulate',
                         action='store_true',
                         help='Cumulate data')
@@ -399,40 +403,59 @@ def parse_coordinates(coordinates):
 
 
 ###################### TEST AREA ##########################
+# from matplotlib import pyplot as plt
+# from matplotlib import gridspec
+# import sys
+# from precip.plotter_functions import get_precipitation_data
+# from precip.helper_functions import generate_date_list, adapt_coordinates
+# from precip.objects.configuration import PlotConfiguration
+# from precip.objects.plotters import MapPlotter, BarPlotter, AnnualPlotter
+# from precip.manager_functions import handle_plotters
 
-# from precip.plotter_functions import *
-# from precip.helper_functions import sql_extract_precipitation
-# import os
-# # from precip.plotter_functions import bar_plotter_2, plot_elninos
-# # from matplotlib import pyplot as plt
+# def main(iargs=None, namespace=None, ax=None):
+#     inps = create_parser(iargs, namespace)
+#     inps.dir = PRECIP_DIR
+#     os.makedirs(PRECIP_DIR, exist_ok=True)
 
-# date_list = generate_date_list('20000601', '20010603')
+#     if not inps.show_flag:
+#         # plt.switch_backend('Agg')
+#         pass
 
-# eruption_dates, lalo = extract_volcanoes_info(None, 'Merapi')
-# latitude, longitude = adapt_coordinates(lalo[0], lalo[1])
 
-# precipitation = sql_extract_precipitation(latitude, longitude, date_list, gpm_dir)
+#     fig = plt.figure(constrained_layout=True)
+#     main_gs = gridspec.GridSpec(2, 1, figure=fig)
 
-# precipitation = from_nested_to_float(precipitation)
+#     fig = handle_plotters(inps, main_gs[0], fig)
+
+#     inps.style = 'annual'
+
+#     fig = handle_plotters(inps, main_gs[1], fig)
+
+#     plt.show()
+
+
+# if __name__ == "__main__":
+#     main()
 
 #sys.exit(0)
 
 #################### END TEST AREA ########################
 
-def main(iargs=None, namespace=None, ax=None):
+def main(iargs=None, namespace=None, main_gs=None, fig=None):
 
     inps = create_parser(iargs, namespace)
-    # FA: suggest function inps = configure_inps(inps)
-    # FA: suggest function inps = configure_plot_settings(inps)
 
     inps.dir = PRECIP_DIR
     os.makedirs(PRECIP_DIR, exist_ok=True)
 
+    # TODO to add to _all script
+    # main_gs = gridspec.GridSpec(2, 1, figure=fig)
 
-    # FA: The prompt_subplot function needs to be separated into functions for download, data preparation (write data into inps.outdir) and plotting.
-    fig, axes = prompt_subplots(inps)
+    handle_data_functions(inps)
 
-    return fig, axes
+    fig = handle_plotters(inps, main_gs, fig)
+
+    return fig
 
 if __name__ == "__main__":
     main()
