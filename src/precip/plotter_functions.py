@@ -169,7 +169,7 @@ def get_volcanoes():
 
     return volcano_dict
 
-
+# TODO remove from here
 def plot_eruptions(precipitation, legend_handles, strength = False, axs = None):
     if axs:
         x = [i % 1 for i in precipitation['Eruptions']]  # Take the decimal part of the date i.e. 0.25

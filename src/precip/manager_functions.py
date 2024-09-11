@@ -123,13 +123,17 @@ def get_precipitation_data(inps):
 
     return precipitation
 
-
+# TODO add examples notebook
+# TODO remove DS_STORE
+# TODO move this directly into main
 def handle_plotters(inps, main_gs=None, fig=None):
+    # TODO move the import in the __init__.py of each folder
     from precip.objects.configuration import PlotConfiguration
     from precip.objects.classes.plotters.plotters import MapPlotter, BarPlotter, AnnualPlotter
     from matplotlib import pyplot as plt
 
     input_config = PlotConfiguration(inps)
+    # TODO add this method to the __init__
     input_config.configure_arguments(inps)
     precipitation = get_precipitation_data(input_config)
 
