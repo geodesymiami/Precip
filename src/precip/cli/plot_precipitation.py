@@ -158,22 +158,18 @@ def create_parser(iargs=None, namespace=None):
     # FA: Not sure why to introduce inps.average = 'W'. You can use use 'if inps.style == 'weekly'' later in the code?
     if inps.style == 'weekly':
         inps.average = 'W'
-        inps.roll = 1
 
     elif inps.style == 'monthly':
         inps.average = 'M'
-        inps.roll = 1
 
     elif inps.style == 'yearly':
         inps.average = 'Y'
-        inps.roll = 1
 
     elif inps.style == 'annual':
         inps.average = 'D'
 
     elif inps.style == 'map':
         inps.add_event = None
-        inps.roll = 1
 
     if inps.add_event:
         try:
