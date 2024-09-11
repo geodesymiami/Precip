@@ -98,11 +98,44 @@ class MapPlotter(Plotter):
         return self.ax
 
 
+    def interpolate_map(dataframe, resolution=5):
+        """
+        Interpolates a precipitation map using scipy.interpolate.interp2d.
+
+        Parameters:
+        dataframe (pandas.DataFrame): The input dataframe containing the precipitation data.
+        resolution (int): The resolution factor for the interpolated map. Default is 5.
+
+        Returns:
+        numpy.ndarray: The interpolated precipitation map.
+        """
+
+        try:
+            values = dataframe.get('Precipitation')[0][0]
+
+        except:
+            values = dataframe[0]
+
+        x = np.arange(values.shape[1])
+        y = np.arange(values.shape[0])
+        # Create the interpolator function
+        interpolator = interp2d(x, y, values)
+
+        # Define the new x and y values with double the resolution
+        new_x = np.linspace(x.min(), x.max(), values.shape[1]*resolution)
+        new_y = np.linspace(y.min(), y.max(), values.shape[0]*resolution)
+
+        # Perform the interpolation
+        new_values = interpolator(new_x, new_y)
+
+        return new_values
+
+
     def modify_dataframe(self, data):
         df = weekly_monthly_yearly_precipitation(data,  self.config.average,  self.config.cumulate)
 
         if  self.config.interpolate:
-            df = interpolate_map(data, self.config.interpolate)
+            df = self.interpolate_map(data, self.config.interpolate)
 
         return df
 
