@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from interfaces import AbstractFileHandler
+from precip.objects.interfaces.data_managers.abstract_file_handler import AbstractFileHandler
 
 
 class AbstractDataFromFile(AbstractFileHandler):

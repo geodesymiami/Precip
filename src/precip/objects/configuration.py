@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from precip.config import JSON_VOLCANO
 from precip.helper_functions import generate_date_list, adapt_coordinates, color_scheme, quantile_name
 from precip.volcano_functions import extract_volcanoes_info

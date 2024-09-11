@@ -1,5 +1,5 @@
-from interfaces import AbstractCloudDatabaseConnection
-from interfaces import AbstractCloudFileManager
+from precip.objects.interfaces.database.abstract_cloud_database_connection import AbstractCloudDatabaseConnection
+from precip.objects.interfaces.file_manager.abstract_cloud_file_manager import AbstractCloudFileManager
 import sqlite3
 import os
 from precip.config import DATABASE, PATH_JETSTREAM

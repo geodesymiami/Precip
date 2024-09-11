@@ -1,4 +1,4 @@
-from interfaces import AbstractFileManager
+from precip.objects.interfaces.file_manager.abstract_file_manager import AbstractFileManager
 from precip.download_functions import generate_urls_list
 import concurrent.futures
 import time

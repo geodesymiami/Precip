@@ -5,9 +5,9 @@ from precip.config import JSON_VOLCANO
 
 
 def handle_data_functions(inps):
-    from objects.classes import JetStream
-    from objects.classes import CloudFileManager
-    from objects.classes import LocalFileManager
+    from precip import JetStream
+    from precip import CloudFileManager
+    from precip import LocalFileManager
 
 
     if inps.download:
@@ -36,14 +36,14 @@ def handle_data_functions(inps):
 
 
 def get_precipitation_data(inps):
-    from objects.classes import Database
-    from objects.classes import Queries
+    from precip import Database
+    from precip import Queries
 
     if inps.use_ssh:
-        from objects.classes import JetStream
-        from objects.classes import CloudFileManager
-        from objects.classes import CloudSQLite3Database
-        from objects.classes import CloudSQLite3Operations
+        from precip import JetStream
+        from precip import CloudFileManager
+        from precip import CloudSQLite3Database
+        from precip import CloudSQLite3Operations
 
         #inps.latitude, inps.longitude, date_list, gpm_dir
 
@@ -71,8 +71,8 @@ def get_precipitation_data(inps):
         missing_dates = check_missing_dates(inps.date_list, precipitation['Date'])
 
         if missing_dates:
-            from objects.classes import CloudNC4Data
-            from objects.classes import NC4DataSource
+            from precip.objects.classes.data_extractor.cloud_nc4_data import CloudNC4Data
+            from precip.objects.classes.data_extractor.nc4_datasource import NC4DataSource
 
             #Get missing data from files
             data = NC4DataSource(CloudNC4Data(jtstream)).get_data(inps.latitude, inps.longitude, missing_dates)
@@ -87,8 +87,8 @@ def get_precipitation_data(inps):
         jetstream_database.close()
 
     else:
-        from objects.classes import SQLite3Database
-        from objects.classes import SQLite3Operations
+        from precip import SQLite3Database
+        from precip import SQLite3Operations
 
         #Create and connect to Database
         database = SQLite3Database()
@@ -104,8 +104,8 @@ def get_precipitation_data(inps):
         missing_dates = check_missing_dates(inps.date_list, precipitation['Date'])
 
         if missing_dates:
-            from objects.classes import LocalNC4Data
-            from objects.classes import NC4DataSource
+            from precip import LocalNC4Data
+            from precip import NC4DataSource
 
             #Get missing data from files
             data = NC4DataSource(LocalNC4Data(inps.gpm_dir)).get_data(inps.latitude, inps.longitude, missing_dates)
@@ -128,8 +128,8 @@ def get_precipitation_data(inps):
 # TODO move this directly into main
 def handle_plotters(inps, main_gs=None, fig=None):
     # TODO move the import in the __init__.py of each folder
-    from objects.classes import PlotConfiguration
-    from objects.classes import MapPlotter, BarPlotter, AnnualPlotter
+    from precip import PlotConfiguration
+    from precip import MapPlotter, BarPlotter, AnnualPlotter
     from matplotlib import pyplot as plt
 
     input_config = PlotConfiguration(inps)

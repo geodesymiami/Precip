@@ -1,6 +1,6 @@
-from interfaces import AbstractDatabaseOperations
-from interfaces import AbstractCloudDatabaseConnection
-from classes import Queries
+from precip.objects.interfaces.database.abstract_database_operations import AbstractDatabaseOperations
+from precip.objects.interfaces.database.abstract_cloud_database_connection import AbstractCloudDatabaseConnection
+from precip.objects.classes.Queries.queries import Queries
 
 
 class CloudSQLite3Operations(AbstractDatabaseOperations):

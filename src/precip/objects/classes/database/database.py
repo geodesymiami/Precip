@@ -1,7 +1,8 @@
-from interfaces import AbstractDataLoader
-from interfaces import AbstractDatabaseOperations
+from precip.objects.interfaces.data_managers.abstract_dataloader import AbstractDataLoader
+from precip.objects.interfaces.database.abstract_database_operations import AbstractDatabaseOperations
 import pandas as pd
 import json
+
 
 
 class Database(AbstractDataLoader):

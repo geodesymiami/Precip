@@ -2,16 +2,16 @@ from matplotlib import pyplot as plt
 from matplotlib import patches as mpatches
 from matplotlib import gridspec
 from matplotlib.lines import Line2D
-from scipy.interpolate import interp2d
 
 import pygmt
 import pandas as pd
 import numpy as np
 
-from classes import PlotConfiguration
-from classes import Plotter
-from classes import EventsPlotter
+from precip import PlotConfiguration
+from precip import Plotter
+from precip import EventsPlotter
 
+from precip.volcano_functions import interpolate_map
 from precip.helper_functions import  weekly_monthly_yearly_precipitation, from_nested_to_float, map_eruption_colors
 from precip.config import ELNINOS
 

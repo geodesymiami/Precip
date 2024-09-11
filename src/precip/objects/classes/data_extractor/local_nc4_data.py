@@ -1,5 +1,5 @@
-from interfaces import AbstractDataFromFile
-from classes import ReadNC4Properties
+from precip.objects.interfaces.data_managers.abstract_data_from_file import AbstractDataFromFile
+from precip.objects.classes.utils.file_utils import ReadNC4Properties
 import os
 import netCDF4 as nc
 import numpy as np

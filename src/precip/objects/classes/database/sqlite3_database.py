@@ -1,4 +1,4 @@
-from interfaces import AbstractDatabaseConnection
+from precip.objects.interfaces.database.abstract_database_connection import AbstractDatabaseConnection
 import sqlite3
 import os
 from precip.config import DATABASE
