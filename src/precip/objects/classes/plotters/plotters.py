@@ -2,6 +2,7 @@ from matplotlib import pyplot as plt
 from matplotlib import patches as mpatches
 from matplotlib import gridspec
 from matplotlib.lines import Line2D
+from scipy.interpolate import interp2d
 
 import pygmt
 import pandas as pd
