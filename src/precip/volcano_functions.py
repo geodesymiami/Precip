@@ -151,7 +151,8 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
         for d in start_dates:
             print('Extracted eruption in date: ', d)
 
-    print('---------------------------------')
+        print('-'*50)
+
     print('')
 
     return start_dates, coordinates, id
