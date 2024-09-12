@@ -23,6 +23,8 @@ def handle_data_functions(inps):
             local = LocalFileManager(inps.dir)
             local.download(date_list)
 
+        sys.exit()
+
     if inps.check:
         if inps.use_ssh:
             jtstream = JetStream(PrecipVMCredentials())
@@ -32,10 +34,11 @@ def handle_data_functions(inps):
             local = LocalFileManager(inps.dir)
             local.check_files()
 
+        sys.exit()
+
     if inps.list:
         volcanoes_list(os.path.join(inps.dir, JSON_VOLCANO))
-
-    sys.exit()
+        sys.exit()
 
 
 def get_precipitation_data(inps):
