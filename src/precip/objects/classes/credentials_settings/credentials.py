@@ -1,5 +1,4 @@
 import os
-from precip.config import PATH_PRECIPVM
 from precip.objects.interfaces.credentials.abstract_credentials import AbstractCredentials
 
 
@@ -13,4 +12,4 @@ class PrecipVMCredentials(AbstractCredentials):
         self.user = os.getenv('REMOTEUSER')
         #Tailored to my (disilvestro) environment
         self.rsa_key = '.ssh/id_rsa'
-        self.path = PATH_PRECIPVM
+        self.path = os.getenv('PRECIP_DIR')

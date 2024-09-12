@@ -4,9 +4,6 @@ This file contains the configuration for the precip package.
 
 # Path to the JetStream gpm data folder
 PATH_JETSTREAM = '/var/www/html/data/HDF5EOS/gpm_data/'
-
-# Path to the Precipitation Virtual Machine gpm data folder
-PATH_PRECIPVM = '/home/exouser/insarlab/scratch/gpm_data/'
 JSON_DOWNLOAD_URL = 'https://webservices.volcano.si.edu/geoserver/GVP-VOTW/wms?service=WFS&version=1.0.0&request=GetFeature&typeName=GVP-VOTW:E3WebApp_Eruptions1960&outputFormat=application%2Fjson'
 JSON_VOLCANO = 'volcanoes.json'
 DATABASE = 'volcanoes.db'
