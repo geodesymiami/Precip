@@ -2,6 +2,7 @@ import os
 from precip.helper_functions import generate_date_list, check_missing_dates, str_to_masked_array
 from precip.volcano_functions import volcanoes_list
 from precip.config import JSON_VOLCANO
+from precip.objects.classes.credentials_settings.credentials import PrecipVMCredentials
 
 
 def handle_data_functions(inps):
@@ -14,7 +15,7 @@ def handle_data_functions(inps):
         date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
 
         if inps.use_ssh:
-            jtstream = JetStream()
+            jtstream = JetStream(PrecipVMCredentials())
             CloudFileManager(jtstream).download(date_list)
 
         else:
@@ -23,7 +24,7 @@ def handle_data_functions(inps):
 
     if inps.check:
         if inps.use_ssh:
-            jtstream = JetStream()
+            jtstream = JetStream(PrecipVMCredentials())
             CloudFileManager(jtstream).check_files()
 
         else:
@@ -48,7 +49,7 @@ def get_precipitation_data(inps):
         #inps.latitude, inps.longitude, date_list, gpm_dir
 
         #Create and connect to JetStream
-        jtstream = JetStream()
+        jtstream = JetStream(PrecipVMCredentials())
         jtstream.connect()
         jtstream.open_sftp()
 

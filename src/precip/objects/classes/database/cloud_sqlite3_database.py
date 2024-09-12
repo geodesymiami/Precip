@@ -7,10 +7,10 @@ from precip.config import DATABASE, PATH_JETSTREAM
 
 
 class CloudSQLite3Database(AbstractCloudDatabaseConnection):
-    def __init__(self, file_manager: AbstractCloudFileManager, path: str = PATH_JETSTREAM, database_name: str = DATABASE) -> None:
+    def __init__(self, file_manager: AbstractCloudFileManager, database_name: str = DATABASE) -> None:
         self.file_manager = file_manager
         self.provider = file_manager.provider
-        self.db_full_path = os.path.join(path, database_name)
+        self.db_full_path = os.path.join(self.file_manager.provider.path, database_name)
         self.connection = None
 
 
