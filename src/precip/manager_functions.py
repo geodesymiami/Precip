@@ -1,7 +1,9 @@
 import os
+import sys
 from precip.helper_functions import generate_date_list, check_missing_dates, str_to_masked_array
-from precip.plotter_functions import volcanoes_list
+from precip.volcano_functions import volcanoes_list
 from precip.config import JSON_VOLCANO
+from precip.objects.classes.credentials_settings.credentials import PrecipVMCredentials
 
 
 def handle_data_functions(inps):
@@ -14,25 +16,29 @@ def handle_data_functions(inps):
         date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
 
         if inps.use_ssh:
-            jtstream = JetStream()
+            jtstream = JetStream(PrecipVMCredentials())
             CloudFileManager(jtstream).download(date_list)
 
         else:
             local = LocalFileManager(inps.dir)
             local.download(date_list)
 
+        sys.exit()
+
     if inps.check:
         if inps.use_ssh:
-            jtstream = JetStream()
+            jtstream = JetStream(PrecipVMCredentials())
             CloudFileManager(jtstream).check_files()
 
         else:
             local = LocalFileManager(inps.dir)
             local.check_files()
 
-    # KA: this is a useful function but should be moved to the command line script
+        sys.exit()
+
     if inps.list:
         volcanoes_list(os.path.join(inps.dir, JSON_VOLCANO))
+        sys.exit()
 
 
 def get_precipitation_data(inps):
@@ -48,7 +54,7 @@ def get_precipitation_data(inps):
         #inps.latitude, inps.longitude, date_list, gpm_dir
 
         #Create and connect to JetStream
-        jtstream = JetStream()
+        jtstream = JetStream(PrecipVMCredentials())
         jtstream.connect()
         jtstream.open_sftp()
 
@@ -128,7 +134,7 @@ def get_precipitation_data(inps):
 # TODO move this directly into main
 def handle_plotters(inps, main_gs=None, fig=None):
     # TODO move the import in the __init__.py of each folder
-    from precip.objects.configuration import PlotConfiguration
+    from precip.objects.classes.configuration import PlotConfiguration
     from precip.objects.classes.plotters.plotters import MapPlotter, BarPlotter, AnnualPlotter
     from matplotlib import pyplot as plt
 

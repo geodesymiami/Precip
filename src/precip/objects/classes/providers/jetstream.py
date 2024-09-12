@@ -1,17 +1,18 @@
 from precip.objects.interfaces.abstract_cloud_manager import AbstractCloudManager
-from precip.config import PATH_JETSTREAM
+from precip.objects.interfaces.credentials.abstract_credentials import AbstractCredentials
 import paramiko
 import os
 
+
 class JetStream(AbstractCloudManager):
-    def __init__(self, hostname: str = '149.165.154.65', username: str = 'exouser', rsa_key: str = '.ssh/id_rsa', path: str = PATH_JETSTREAM) -> None:
-        self.path = path
-        self.hostname = hostname
-        self.username = username
+    def __init__(self, credential: AbstractCredentials) -> None:
+        self.path = credential.path
+        self.hostname = credential.hostname
+        self.username = credential.user
         self.ssh = None
 
         # TODO Tailored to my(disilvestro) environment
-        self.path_id_rsa = os.path.join(os.getenv('HOME'), rsa_key)
+        self.path_id_rsa = os.path.join(os.getenv('HOME'), credential.rsa_key)
         self.ssh_key = self.path_id_rsa + '_jetstream' if os.path.exists(self.path_id_rsa + '_jetstream') else self.path_id_rsa
 
 
