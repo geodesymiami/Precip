@@ -286,7 +286,7 @@ def generate_date_list(start, end=None, average='M'):
     date_list = pd.date_range(start=sdate, end=edate).date
 
     print('Generated date list ranging from', sdate, 'to', edate, 'containing', len(date_list), 'days')
-    print('-------------------------------------------------------')
+    print('-'*40)
 
     return date_list
 
