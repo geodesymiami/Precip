@@ -311,6 +311,7 @@ def download_jetstream(ssh, url, pathJetstream):
         raise ValueError(msg)
 
 
+# TODO Can be removed
 def download_jetstream_parallel(date_list, ssh, parallel=5):
     # Generate the URLs
     urls = generate_urls_list(date_list)
