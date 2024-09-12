@@ -17,12 +17,11 @@ class PlotConfiguration:
 
     def configure_arguments(self, inps):
         self.gpm_dir = inps.dir
-        inps.roll = 1
         self.volcano_json_dir = os.path.join(inps.dir, JSON_VOLCANO)
         self.date_list =  generate_date_list(inps.start_date, inps.end_date, inps.average)
         self.eruption_dates = []
 
-        if len(self.date_list) <= inps.roll:
+        if len(self.date_list) <= self.roll:
             msg = 'Error: The number of dates is less than the rolling window.'
             raise ValueError(msg)
 
@@ -34,6 +33,7 @@ class PlotConfiguration:
             self.latitude, self.longitude = adapt_coordinates(lalo[0], lalo[1])
 
             if inps.style == 'map':
+                self.roll = 1
                 self.volcano_position = [self.latitude[0], self.longitude[0]]
 
                 self.latitude = [round(min(self.latitude) - 2, 2), round(max(self.latitude) + 2, 2)]
@@ -242,6 +242,7 @@ class MapConfiguration:
         self.gpm_dir = inps.dir
         self.volcano_json_dir = os.path.join(inps.dir, JSON_VOLCANO)
         self.date_list =  generate_date_list(inps.start_date, inps.end_date, inps.average)
+        self.roll = 1
         self.eruption_dates = []
 
         if len(self.date_list) <= inps.roll:
