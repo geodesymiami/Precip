@@ -53,28 +53,43 @@ def download_volcano_json(json_path, json_download_url=JSON_DOWNLOAD_URL):
 
 
 def generate_url_download(date, final06=FINAL06, final07=FINAL07):
+    """
+    Generates the URL for downloading precipitation data based on the given date.
+
+    Args:
+        date (datetime.date): The date for which the precipitation data is needed.
+        final06 (str): The date in the format 'YYYY-MM-DD' for the Final06 interval.
+        final07 (str): The date in the format 'YYYY-MM-DD' for the Final07 interval.
+
+    Returns:
+        str: The URL for downloading the precipitation data.
+
+    Raises:
+        None
+    """
     # Creates gpm_data folder if it doesn't exist
     intervals = {"Final06": datetime.strptime(final06, '%Y-%m-%d').date(),
                  "Final07": datetime.strptime(final07, '%Y-%m-%d').date(),
                  "Late06": datetime.today().date() - relativedelta(days=1)}
-    # For research purpose is better to use Late run data, possibly v06
-    # Final Run 06
-    if date <= intervals["Final06"]:    
-        head = 'https://data.gesdisc.earthdata.nasa.gov/data/GPM_L3/GPM_3IMERGDF.06/'
-        body = '/3B-DAY.MS.MRG.3IMERG.'
-        tail = '-S000000-E235959.V06.nc4'
-
-    # Late Run 06
-    elif date > intervals["Final07"]:
-        head = 'https://gpm1.gesdisc.eosdis.nasa.gov/data/GPM_L3/GPM_3IMERGDL.06/'
-        body = '/3B-DAY-L.MS.MRG.3IMERG.'
-        tail = '-S000000-E235959.V06.nc4'
-
+    # For research purpose is better to use Final run data, possibly v07
+    # No Final run 06 anymore available on GES DISC
     # Final Run 07
-    else:
-        head = 'https://data.gesdisc.earthdata.nasa.gov/data/GPM_L3/GPM_3IMERGDF.07/'
+    if date <= intervals["Final07"]:
+        head = 'https://gpm1.gesdisc.eosdis.nasa.gov/data/GPM_L3/GPM_3IMERGDF.07/'
         body = '/3B-DAY.MS.MRG.3IMERG.'
         tail = '-S000000-E235959.V07B.nc4'
+
+    # Late Run 07
+    elif date > intervals["Final07"]:
+        head = 'https://gpm1.gesdisc.eosdis.nasa.gov/data/GPM_L3/GPM_3IMERGDL.07/'
+        body = '/3B-DAY-L.MS.MRG.3IMERG.'
+        tail = '-S000000-E235959.V07B.nc4'
+
+    # Late Run 07
+    # else:
+    #     head = 'https://data.gesdisc.earthdata.nasa.gov/data/GPM_L3/GPM_3IMERGDF.07/'
+    #     body = '/3B-DAY.MS.MRG.3IMERG.'
+    #     tail = '-S000000-E235959.V07B.nc4'
 
     year = str(date.year)
     day = str(date.strftime('%d'))

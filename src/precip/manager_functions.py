@@ -1,4 +1,5 @@
 import os
+import sys
 from precip.helper_functions import generate_date_list, check_missing_dates, str_to_masked_array
 from precip.volcano_functions import volcanoes_list
 from precip.config import JSON_VOLCANO
@@ -31,9 +32,10 @@ def handle_data_functions(inps):
             local = LocalFileManager(inps.dir)
             local.check_files()
 
-    # KA: this is a useful function but should be moved to the command line script
     if inps.list:
         volcanoes_list(os.path.join(inps.dir, JSON_VOLCANO))
+
+    sys.exit()
 
 
 def get_precipitation_data(inps):
