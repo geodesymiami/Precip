@@ -66,7 +66,7 @@ class MapPlotter(Plotter):
             self.ax.legend(fontsize='small', frameon=True, framealpha=0.3)
 
         if self.config.save:
-            self.ax.savefig(self.config.save_path)
+            self.fig.savefig(self.config.save_path)
 
         if self.config.show_flag:
             plt.show()
@@ -197,7 +197,7 @@ class BarPlotter(EventsPlotter):
         # plt.tight_layout()
 
         if self.config.save:
-            self.ax.savefig(self.config.save_path)
+            self.fig.savefig(self.config.save_path)
 
         if self.config.show_flag:
             plt.show()
@@ -334,7 +334,7 @@ class AnnualPlotter(EventsPlotter):
         # plt.tight_layout()
 
         if self.config.save:
-            self.ax.savefig(self.config.save_path)
+            self.fig.savefig(self.config.save_path)
 
         if self.config.show_flag:
             plt.show()
