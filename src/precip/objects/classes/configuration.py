@@ -21,7 +21,9 @@ class PlotConfiguration:
         self.date_list =  generate_date_list(inps.start_date, inps.end_date, inps.average)
         self.eruption_dates = []
 
-        if len(self.date_list) <= self.roll:
+        inps.roll = 1 if inps.style == 'map' else inps.roll
+
+        if len(self.date_list) <= self.roll and not inps.style == 'map':
             msg = 'Error: The number of dates is less than the rolling window.'
             raise ValueError(msg)
 
