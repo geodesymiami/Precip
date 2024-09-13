@@ -23,7 +23,7 @@ class PlotConfiguration:
 
         inps.roll = 1 if inps.style == 'map' else inps.roll
 
-        if len(self.date_list) <= self.roll:
+        if len(self.date_list) <= self.roll and not inps.style == 'map':
             msg = 'Error: The number of dates is less than the rolling window.'
             raise ValueError(msg)
 
