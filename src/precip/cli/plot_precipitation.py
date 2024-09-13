@@ -4,7 +4,7 @@ import os
 import argparse
 from datetime import datetime
 from precip.manager_functions import handle_data_functions, handle_plotters
-from .utils.argument_parsers import add_plot_parameters_arguments, add_date_arguments, add_location_arguments, add_save_arguments, add_map_parameters_arguments
+from precip.cli.utils.argument_parsers import add_plot_parameters_arguments, add_date_arguments, add_location_arguments, add_save_arguments, add_map_parameters_arguments
 
 # TODO Add proper CITATION for GPM data and Volcano data
 PRECIP_DIR = os.getenv('PRECIP_DIR')
