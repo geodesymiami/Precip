@@ -80,4 +80,7 @@ class LocalFileManager(AbstractFileManager):
                 date_list.append(datetime.strptime(d.group(0), "%Y%m%d").date())
 
             self.download(self.folder, date_list, self.parallel)
-        else:            print()            print('No corrupted files found')
+
+        else:
+            print()
+            print('No corrupted files found')
