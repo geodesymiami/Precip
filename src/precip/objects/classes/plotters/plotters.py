@@ -98,7 +98,7 @@ class MapPlotter(Plotter):
         return self.ax
 
 
-    def interpolate_map(dataframe, resolution=5):
+    def interpolate_map(self, dataframe):
         """
         Interpolates a precipitation map using scipy.interpolate.interp2d.
 
@@ -122,8 +122,8 @@ class MapPlotter(Plotter):
         interpolator = interp2d(x, y, values)
 
         # Define the new x and y values with double the resolution
-        new_x = np.linspace(x.min(), x.max(), values.shape[1]*resolution)
-        new_y = np.linspace(y.min(), y.max(), values.shape[0]*resolution)
+        new_x = np.linspace(x.min(), x.max(), values.shape[1]*self.config.interpolate)
+        new_y = np.linspace(y.min(), y.max(), values.shape[0]*self.config.interpolate)
 
         # Perform the interpolation
         new_values = interpolator(new_x, new_y)
@@ -135,7 +135,7 @@ class MapPlotter(Plotter):
         df = weekly_monthly_yearly_precipitation(data,  self.config.average,  self.config.cumulate)
 
         if  self.config.interpolate:
-            df = self.interpolate_map(data, self.config.interpolate)
+            df = self.interpolate_map(data)
 
         return df
 
