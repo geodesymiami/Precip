@@ -3,7 +3,10 @@
 import os
 import argparse
 from datetime import datetime
-from precip.manager_functions import handle_data_functions, handle_plotters
+from precip.objects.classes.configuration import PlotConfiguration
+from precip.objects.classes.plotters.plotters import MapPlotter, BarPlotter, AnnualPlotter
+from matplotlib import pyplot as plt
+from precip.manager_functions import handle_data_functions, get_precipitation_data
 from precip.cli.utils.argument_parsers import add_plot_parameters_arguments, add_date_arguments, add_location_arguments, add_save_arguments, add_map_parameters_arguments
 
 # TODO Add proper CITATION for GPM data and Volcano data
@@ -313,7 +316,26 @@ def main(iargs=None, namespace=None, main_gs=None, fig=None):
 
     handle_data_functions(inps)
 
-    fig = handle_plotters(inps, main_gs, fig)
+    input_config = PlotConfiguration(inps)
+    precipitation = get_precipitation_data(input_config)
+
+    # TODO this has to be added to the 'all' script
+    # main_gs = gridspec.GridSpec(1, 1, figure=fig)
+
+    if main_gs is None:
+        fig = plt.figure(constrained_layout=True)
+        main_gs = 111
+
+    if inps.style == 'map':
+        graph = MapPlotter(fig, main_gs, input_config)
+
+    if inps.style in ['daily', 'weekly', 'monthly','bar', 'strength']:
+        graph = BarPlotter(fig, main_gs, input_config)
+
+    if inps.style == 'annual':
+        graph = AnnualPlotter(fig, main_gs, input_config)
+
+    graph.plot(precipitation)
 
     return fig
 
