@@ -332,7 +332,8 @@ class AnnualPlotter(EventsPlotter):
         if 'Eruptions' in data.columns and len(data[data['Eruptions'].notna()]) >= 1:
             self.plot_eruptions(data)
 
-        self.ax0.legend(handles=self.legend_handles, loc='upper right', fontsize='xx-small')
+        if self.legend_handles:
+            self.ax0.legend(handles=self.legend_handles, loc='upper right', fontsize='xx-small')
         # plt.tight_layout()
 
         if self.config.save:

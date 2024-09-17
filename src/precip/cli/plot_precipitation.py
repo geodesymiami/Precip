@@ -130,6 +130,8 @@ def create_parser(iargs=None, namespace=None):
     if inps.name:
         inps.volcano_name = [inps.name]
 
+    inps.dir = PRECIP_DIR
+
     # FA: Assuming that inps.start_date and inps.end_date will be later consider function: inps.start_date, inps.end_date=get_processing_dates(inps)
     if not inps.period:
         inps.start_date = datetime.strptime(inps.start_date, '%Y%m%d').date()
@@ -328,7 +330,6 @@ def main(iargs=None, namespace=None, main_gs=None, fig=None):
 
     inps = create_parser(iargs, namespace)
 
-    inps.dir = PRECIP_DIR
     os.makedirs(PRECIP_DIR, exist_ok=True)
 
     handle_data_functions(inps)
