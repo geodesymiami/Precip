@@ -6,6 +6,7 @@ from datetime import datetime
 from precip.objects.classes.configuration import PlotConfiguration
 from precip.objects.classes.plotters.plotters import MapPlotter, BarPlotter, AnnualPlotter
 from matplotlib import pyplot as plt
+from matplotlib import gridspec
 from precip.manager_functions import handle_data_functions, get_precipitation_data
 from precip.cli.utils.argument_parsers import add_plot_parameters_arguments, add_date_arguments, add_location_arguments, add_save_arguments, add_map_parameters_arguments
 
@@ -321,7 +322,8 @@ def main(iargs=None, namespace=None, main_gs=None, fig=None):
 
     if main_gs is None:
         fig = plt.figure(constrained_layout=True)
-        main_gs = 111
+        main_gs = gridspec.GridSpec(1, 1, figure=fig)
+        main_gs = main_gs[0]
 
     if inps.style == 'map':
         graph = MapPlotter(fig, main_gs, input_config)
