@@ -122,8 +122,6 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
                 stren = j['properties']['ExplosivityIndexMax']
                 frame_data.append([name, start, end, stren])
 
-            break
-
     if name == '':
         volc_dict = get_volcanoes()
         coordinates = [volc_dict[volcanoName]['latitude'], volc_dict[volcanoName]['longitude']]
@@ -144,10 +142,9 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
 
         start_dates = sorted(start_dates)
 
-        print('---------------------------------')
+        print('-'*50)
         print('Sorting eruptions by date...')
-        print('---------------------------------')
-
+        print('-'*50)
         for d in start_dates:
             print('Extracted eruption in date: ', d)
 
