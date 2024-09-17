@@ -12,7 +12,7 @@ from precip.objects.classes.configuration import PlotConfiguration
 from precip.objects.interfaces.plotter.plotter import Plotter
 from precip.objects.interfaces.plotter.event_plotter import EventsPlotter
 
-from precip.helper_functions import  weekly_monthly_yearly_precipitation, from_nested_to_float, map_eruption_colors
+from precip.helper_functions import  weekly_monthly_yearly_precipitation, from_nested_to_float, map_eruption_colors, days_in_month
 from precip.config import ELNINOS
 
 
@@ -269,11 +269,7 @@ class BarPlotter(EventsPlotter):
 class AnnualPlotter(EventsPlotter):
     def __init__(self, fig, grid, config: PlotConfiguration):
         self.fig = fig
-
-        nrows, ncols, index = map(int, str(grid))
-        gs = gridspec.GridSpec(nrows, ncols, figure=self.fig)
-        self.grid = gs[index - 1]
-
+        self.grid = grid
         self.config = config
 
 
@@ -390,8 +386,14 @@ class AnnualPlotter(EventsPlotter):
 
 
     def plot_eruptions(self, data):
-        x = [i % 1 for i in data['Eruptions']]  # Take the decimal part of the date i.e. 0.25
+        x = []
+        for _, row in data.iterrows():
+            if pd.notna(row['Eruptions']):
+                x.append((row['Date'].month / 13) + (row['Date'].day / (days_in_month(row['Date']) * 10)))
+            else:
+                x.append(row['Eruptions'] % 1)        
+
         y = [(i // 1) + .5 for i in data['Eruptions']]  # Take the integer part of the date i.e. 2020
-        scatter_size = 219000 // len(data['Date'].unique())
-        eruption = self.ax0.scatter(x, y, color='black', marker='v', s=scatter_size, label='Volcanic Events')
+
+        eruption = self.ax0.scatter(x, y, color='black', marker='v', label='Volcanic Events')
         self.legend_handles.append(eruption)
