@@ -12,14 +12,14 @@ from precip.objects.classes.configuration import PlotConfiguration
 from precip.objects.interfaces.plotter.plotter import Plotter
 from precip.objects.interfaces.plotter.event_plotter import EventsPlotter
 
-from precip.helper_functions import  weekly_monthly_yearly_precipitation, from_nested_to_float, map_eruption_colors
+from precip.helper_functions import  weekly_monthly_yearly_precipitation, from_nested_to_float, map_eruption_colors, days_in_month
 from precip.config import ELNINOS
 
 
 class MapPlotter(Plotter):
     def __init__(self, fig, grid, config: PlotConfiguration):
-        self.grid = grid
         self.fig = fig
+        self.ax = self.fig.add_subplot(grid)
         self.config = config
 
 
@@ -47,7 +47,6 @@ class MapPlotter(Plotter):
         # Add contour lines
         inline = True if self.config.isolines and self.config.isolines != 0 else False
 
-        self.ax = self.fig.add_subplot(self.grid)
         self.ax = self.add_isolines(region, self.config.isolines, self.config.iso_color,inline=inline)
 
         im = self.ax.imshow(data, vmin=vmin, vmax=vmax, extent=region, cmap=self.config.colorbar)
@@ -63,7 +62,7 @@ class MapPlotter(Plotter):
 
         if self.config.volcano_name:
             self.ax.scatter(self.config.volcano_position[1], self.config.volcano_position[0], color='red', marker='^', s=50, label=self.config.volcano_name[0], zorder=3)
-            self.ax.legend(fontsize='small', frameon=True, framealpha=0.3)
+            self.ax.legend(fontsize='xx-small', frameon=True, framealpha=0.3)
 
         if self.config.save:
             self.fig.savefig(self.config.save_path)
@@ -142,14 +141,13 @@ class MapPlotter(Plotter):
 
 class BarPlotter(EventsPlotter):
     def __init__(self, fig, grid, config: PlotConfiguration):
-        self.grid = grid
         self.fig = fig
+        self.ax = self.fig.add_subplot(grid)
         self.config = config
 
 
     def plot(self, data):
         data = self.modify_dataframe(data)
-        self.ax = self.fig.add_subplot(self.grid)
 
         if self.config.style == 'strength':
             width = 1.1
@@ -184,7 +182,11 @@ class BarPlotter(EventsPlotter):
             plot2 = self.ax.twinx()
             plot2.bar(data['Decimal'], data['cumsum'], color ='gray', width = width, alpha = .05)
 
-            plot2.set_ylabel("Cumulative precipitation (mm)", rotation=270, labelpad= 10)
+            y2_label = ("Cumulative\n"
+                        "precipitation\n"
+                        "(mm)")
+
+            plot2.set_ylabel(y2_label, rotation=90, labelpad= 10)
             self.legend_handles += [mpatches.Patch(color='gray', label=self.config.labels['y2label'])]
 
         if self.config.elnino and not self.config.style == 'strength':
@@ -193,7 +195,7 @@ class BarPlotter(EventsPlotter):
         if 'Eruptions' in data and len(data[data['Eruptions'].notna()]) >= 1:
             self.plot_eruptions(data)
 
-        self.ax.legend(handles=self.legend_handles, loc='upper left', fontsize='small')
+        self.ax.legend(handles=self.legend_handles, loc='upper left', fontsize='xx-small')
         # plt.tight_layout()
 
         if self.config.save:
@@ -266,8 +268,8 @@ class BarPlotter(EventsPlotter):
 
 class AnnualPlotter(EventsPlotter):
     def __init__(self, fig, grid, config: PlotConfiguration):
-        self.grid = grid
         self.fig = fig
+        self.grid = grid
         self.config = config
 
 
@@ -330,7 +332,7 @@ class AnnualPlotter(EventsPlotter):
         if 'Eruptions' in data.columns and len(data[data['Eruptions'].notna()]) >= 1:
             self.plot_eruptions(data)
 
-        self.ax0.legend(handles=self.legend_handles, loc='upper right', fontsize='x-small')
+        self.ax0.legend(handles=self.legend_handles, loc='upper right', fontsize='xx-small')
         # plt.tight_layout()
 
         if self.config.save:
@@ -384,8 +386,14 @@ class AnnualPlotter(EventsPlotter):
 
 
     def plot_eruptions(self, data):
-        x = [i % 1 for i in data['Eruptions']]  # Take the decimal part of the date i.e. 0.25
+        x = []
+        for _, row in data.iterrows():
+            if pd.notna(row['Eruptions']):
+                x.append((row['Date'].month / 13) + (row['Date'].day / (days_in_month(row['Date']) * 10)))
+            else:
+                x.append(row['Eruptions'] % 1)        
+
         y = [(i // 1) + .5 for i in data['Eruptions']]  # Take the integer part of the date i.e. 2020
-        scatter_size = 219000 // len(data['Date'].unique())
-        eruption = self.ax0.scatter(x, y, color='black', marker='v', s=scatter_size, label='Volcanic Events')
+
+        eruption = self.ax0.scatter(x, y, color='black', marker='v', label='Volcanic Events')
         self.legend_handles.append(eruption)
