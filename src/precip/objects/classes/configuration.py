@@ -56,17 +56,31 @@ class PlotConfiguration:
 
     def plot_labels(self):
         if self.style in ['daily', 'bar', 'strength']:
-            ylabel = str(self.roll) + " day precipitation (mm)"
+            ylabel = (
+                f"{str(self.roll)} day\n"
+                "precipitation\n"
+                "(mm)"
+            )
 
         elif self.style == 'map':
             if self.cumulate:
-                ylabel = f"Cumulative precipitation over {len(self.date_list)} days (mm)"
-
+                ylabel = (
+                    f"Cumulative precipitation\n"
+                    f"over {len(self.date_list)} days\n"
+                    "(mm)"
+                )
             else:
-                ylabel = f"Daily precipitation over {len(self.date_list)} days (mm/day)"
+                ylabel = (
+                    f"Daily precipitation\n"
+                    f"over {len(self.date_list)} days\n"
+                    "(mm/day)"
+                )
 
         else:
-            ylabel = f" {self.style} precipitation (mm)"
+            ylabel = (
+                f"{self.style}\n"
+                "precipitation (mm)"
+            )
 
         if self.volcano_name:
             title = f'{self.volcano_name[0]} - Latitude: {self.latitude}, Longitude: {self.longitude}'

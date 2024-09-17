@@ -326,7 +326,7 @@ def main(iargs=None, namespace=None, main_gs=None, fig=None):
     if inps.style == 'map':
         graph = MapPlotter(fig, main_gs, input_config)
 
-    if inps.style in ['daily', 'weekly', 'monthly','bar', 'strength']:
+    if inps.style in ['daily', 'weekly', 'monthly', 'bar', 'strength']:
         graph = BarPlotter(fig, main_gs, input_config)
 
     if inps.style == 'annual':
