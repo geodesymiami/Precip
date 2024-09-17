@@ -311,9 +311,6 @@ def main(iargs=None, namespace=None, main_gs=None, fig=None):
     inps.dir = PRECIP_DIR
     os.makedirs(PRECIP_DIR, exist_ok=True)
 
-    # TODO to add to _all script
-    # main_gs = gridspec.GridSpec(2, 1, figure=fig)
-
     handle_data_functions(inps)
 
     input_config = PlotConfiguration(inps)

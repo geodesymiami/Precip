@@ -18,8 +18,8 @@ from precip.config import ELNINOS
 
 class MapPlotter(Plotter):
     def __init__(self, fig, grid, config: PlotConfiguration):
-        self.grid = grid
         self.fig = fig
+        self.ax = self.fig.add_subplot(grid)
         self.config = config
 
 
@@ -47,7 +47,6 @@ class MapPlotter(Plotter):
         # Add contour lines
         inline = True if self.config.isolines and self.config.isolines != 0 else False
 
-        self.ax = self.fig.add_subplot(self.grid)
         self.ax = self.add_isolines(region, self.config.isolines, self.config.iso_color,inline=inline)
 
         im = self.ax.imshow(data, vmin=vmin, vmax=vmax, extent=region, cmap=self.config.colorbar)
@@ -142,14 +141,13 @@ class MapPlotter(Plotter):
 
 class BarPlotter(EventsPlotter):
     def __init__(self, fig, grid, config: PlotConfiguration):
-        self.grid = grid
         self.fig = fig
+        self.ax = self.fig.add_subplot(grid)
         self.config = config
 
 
     def plot(self, data):
         data = self.modify_dataframe(data)
-        self.ax = self.fig.add_subplot(self.grid)
 
         if self.config.style == 'strength':
             width = 1.1
@@ -266,8 +264,12 @@ class BarPlotter(EventsPlotter):
 
 class AnnualPlotter(EventsPlotter):
     def __init__(self, fig, grid, config: PlotConfiguration):
-        self.grid = grid
         self.fig = fig
+
+        nrows, ncols, index = map(int, str(grid))
+        gs = gridspec.GridSpec(nrows, ncols, figure=self.fig)
+        self.grid = gs[index - 1]
+
         self.config = config
 
 
