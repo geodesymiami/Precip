@@ -19,16 +19,16 @@ Date format: YYYYMMDD
 
 Example:
 
-Plot bar style for Merapi volcano from {START_DATE} to {END_DATE} (change values in config.py) with 3 tertiles and 30 days (default is 90) rolling window:
+Plot bar style for Merapi volcano from {START_DATE} to {END_DATE} (change values in config.py) with 3 color/s and 30 days (default is 90) rolling window:
     plot_precipitation.py Merapi --style bar --roll 30 --bins 3 --log
 
-Plot bar style at specific location from 2019-01-01 to 2021-09-29 with 1 tertiles (default) and 90 days (default) rolling window, add El Nino/La Nina event, save it in specific folder:
+Plot bar style at specific location from 2019-01-01 to 2021-09-29 with 1 color/s (default) and 90 days (default) rolling window, add El Nino/La Nina event, save it in specific folder:
     plot_precipitation.py --style bar --lalo 19.5,-156.5 --period 20190101:20210929 --elnino --outdir path/to/dir
 
-Plot strength style for Merapi volcano with 1 tertiles (default) and 90 days (default) rolling window; don't show plot and save it in current folder:
+Plot strength style for Merapi volcano with 1 color/s (default) and 90 days (default) rolling window; don't show plot and save it in current folder:
     plot_precipitation.py Merapi --style strength --period 20190101:20210929 --no-show --save
 
-Plot annual style at specific location from 2019-01-01 to 2021-09-29 with 2 tertiles and 10 days rolling window; add events on 2020-09-29 and 2021-09-29:
+Plot annual style at specific location from 2019-01-01 to 2021-09-29 with 2 color/s and 10 days rolling window; add events on 2020-09-29 and 2021-09-29:
     plot_precipitation.py --style annual --start-date 20190101 --end-date 20210929 --latitude 19.5 --longitude -156.5 --roll 10 --bins 2 --add-event 20200929 20210929
 
 Plot msp style at specific location from {START_DATE} (default) to 2021-09-29:
