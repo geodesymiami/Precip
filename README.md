@@ -95,16 +95,16 @@ plot_precipitation.py --h
 
 If You want to show (almost) all the available types of plot in one single command, run:
 ```bash
-plot_precipitation_all.py Merapi --period=20060101:20070101
+run_plot_precipitation_all.py Merapi --period=20060101:20070101
 ```
-You can add some of the arguments from `get_precipitation_lalo.py`, like:
+You can add some of the arguments from `gplot_precipitation.py`, like:
 - `--roll`
 - `--bins`
 - `--log`
 - `--save`
 
-For visual examples, refer to the following [Jupyter Notebook](Examples.ipynb).
+For visual examples, refer to the following [Jupyter Notebook](Notebooks/Examples.ipynb).
 
 # JetStream
 
-If you have special access to `149.165.154.65`, you can try to connect to JetStream and use the data uploaded there instead of downloading them locally with `--use-ssh` argument.
+If you have special access to our Cloud Service, you can try to connect to JetStream and use the data uploaded there instead of downloading them locally with `--use-ssh` argument.
