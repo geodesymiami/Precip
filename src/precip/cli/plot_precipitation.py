@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 from matplotlib import gridspec
 from precip.manager_functions import handle_data_functions, get_precipitation_data
 from precip.cli.utils.argument_parsers import add_plot_parameters_arguments, add_date_arguments, add_location_arguments, add_save_arguments, add_map_parameters_arguments
+from precip.config import END_DATE,START_DATE
 
 # TODO Add proper CITATION for GPM data and Volcano data
 PRECIP_DIR = os.getenv('PRECIP_DIR')
@@ -18,20 +19,38 @@ Date format: YYYYMMDD
 
 Example:
 
+Plot bar style for Merapi volcano from {START_DATE} to {END_DATE} (change values in config.py) with 3 tertiles and 30 days (default is 90) rolling window:
     plot_precipitation.py Merapi --style bar --roll 30 --bins 3 --log
-    plot_precipitation.py Merapi --style strength --period 20190101:20210929
-    plot_precipitation.py Merapi --style strength --period 20190101:20210929 --no-show
-    plot_precipitation.py Merapi --style strength --period 20190101:20210929 --no-save
-    plot_precipitation.py Merapi --style strength --period 20190101:20210929 --outdir test_dir --no-show
-    plot_precipitation.py --style strength --lalo 19.5,-156.5 --period 20190101:20210929 --outdir test_dir
+
+Plot bar style at specific location from 2019-01-01 to 2021-09-29 with 1 tertiles (default) and 90 days (default) rolling window, add El Nino/La Nina event, save it in specific folder:
+    plot_precipitation.py --style bar --lalo 19.5,-156.5 --period 20190101:20210929 --elnino --outdir path/to/dir
+
+Plot strength style for Merapi volcano with 1 tertiles (default) and 90 days (default) rolling window; don't show plot and save it in current folder:
+    plot_precipitation.py Merapi --style strength --period 20190101:20210929 --no-show --save
+
+Plot annual style at specific location from 2019-01-01 to 2021-09-29 with 2 tertiles and 10 days rolling window; add events on 2020-09-29 and 2021-09-29:
     plot_precipitation.py --style annual --start-date 20190101 --end-date 20210929 --latitude 19.5 --longitude -156.5 --roll 10 --bins 2 --add-event 20200929 20210929
-    plot_precipitation.py --style strength --lalo 19.5,-156.5 --period 20190101:20210929 --add-event 20200929 20210929 --elnino
+
+Plot msp style at specific location from {START_DATE} (default) to 2021-09-29:
     plot_precipitation.py --style map --end-date 20210929 --polygon 'POLYGON((113.4496 -8.0893,113.7452 -8.0893,113.7452 -7.817,113.4496 -7.817,113.4496 -8.0893))'
-    plot_precipitation.py --style map --end-date 20210929 --lalo 19.5:20.5,-155.5:-156.5 --vlim -3 3 --colorbar 'RdBu'
+
+Plot map style of Merapi with 3 levels (default is 1) of BLACK isolines (default is white), colorbar 'RdBu' (default is 'viridis'):
+    plot_precipitation.py Merapi --style map --isolines 3 --isolines-color black --colorbar 'RdBu'
+
+Plot map style of Merapi with precipitation values between -3 and 3, and interpolate:
+    plot_precipitation.py Merapi --style map --vlim -3 3 --interpolate 3
+
+Download whole dataset in the default directory $PRECIP_DIR ({os.getenv('PRECIP_DIR')}):
     plot_precipitation.py --download
-    plot_precipitation.py --download 20190101 20210929 --dir $PRECIP_DIR
-    plot_precipitation.py --list
+
+Download dataset from 2019-01-01 to 2021-09-29 in the specific directory on cloud:
+    plot_precipitation.py --download --period 20190101:20210929 --use-ssh
+
+Check if the downloaded files are corrupted:
     plot_precipitation.py --check
+
+List all volcanoes from the json file/API:
+    plot_precipitation.py --list
 
 """
 
