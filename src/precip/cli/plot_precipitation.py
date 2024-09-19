@@ -3,12 +3,12 @@
 import os
 import argparse
 from datetime import datetime
-from precip.objects.classes.configuration import PlotConfiguration
-from precip.objects.classes.plotters.plotters import MapPlotter, BarPlotter, AnnualPlotter
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
+
+from precip import PlotConfiguration, MapPlotter, BarPlotter, AnnualPlotter
 from precip.manager_functions import handle_data_functions, get_precipitation_data
-from precip.cli.utils.argument_parsers import add_plot_parameters_arguments, add_date_arguments, add_location_arguments, add_save_arguments, add_map_parameters_arguments
+from precip.cli.utils import argument_parsers
 from precip.config import END_DATE,START_DATE
 
 # TODO Add proper CITATION for GPM data and Volcano data
@@ -19,7 +19,7 @@ Date format: YYYYMMDD
 
 Example:
 
-Plot bar style for Merapi volcano from {START_DATE} to {END_DATE} (change values in config.py) with 3 color/s and 30 days (default is 90) rolling window:
+Plot bar style for Merapi volcano from {START_DATE} to {END_DATE} (default values in config.py) with 3 color/s and 30 days (default is 90) rolling window:
     plot_precipitation.py Merapi --style bar --roll 30 --bins 3 --log
 
 Plot bar style at specific location from 2019-01-01 to 2021-09-29 with 1 color/s (default) and 90 days (default) rolling window, add El Nino/La Nina event, save it in specific folder:
@@ -40,7 +40,7 @@ Plot map style of Merapi with 3 levels (default is 1) of BLACK isolines (default
 Plot map style of Merapi with precipitation values between -3 and 3, and interpolate:
     plot_precipitation.py Merapi --style map --vlim -3 3 --interpolate 3
 
-Download whole dataset in the default directory $PRECIP_DIR ({os.getenv('PRECIP_DIR')}):
+Download whole dataset in the default directory $PRECIP_DIR ({PRECIP_DIR}):
     plot_precipitation.py --download
 
 Download dataset from 2019-01-01 to 2021-09-29 in the specific directory on cloud:
@@ -92,11 +92,11 @@ def create_parser(iargs=None, namespace=None):
                         default=5,
                         help='Number of parallel downloads')
 
-    parser = add_location_arguments(parser)
-    parser = add_date_arguments(parser)
-    parser = add_plot_parameters_arguments(parser)
-    parser = add_map_parameters_arguments(parser)
-    parser = add_save_arguments(parser)
+    parser = argument_parsers.add_location_arguments(parser)
+    parser = argument_parsers.add_date_arguments(parser)
+    parser = argument_parsers.add_plot_parameters_arguments(parser)
+    parser = argument_parsers.add_map_parameters_arguments(parser)
+    parser = argument_parsers.add_save_arguments(parser)
 
     inps = parser.parse_args(iargs, namespace)
 
