@@ -12,4 +12,4 @@ class PrecipVMCredentials(AbstractCredentials):
         self.user = os.getenv('REMOTEUSER')
         #Tailored to my (disilvestro) environment
         self.rsa_key = '.ssh/id_rsa'
-        self.path = os.getenv('PRECIP_DIR')
+        self.path = '/data//gpm_data/'
