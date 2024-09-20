@@ -128,5 +128,3 @@ def get_precipitation_data(inps):
     precipitation['Precipitation'] = str_to_masked_array(precipitation['Precipitation'])
 
     return precipitation
-
-# TODO add examples notebook

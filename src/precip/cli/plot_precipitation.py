@@ -7,7 +7,7 @@ from precip.objects.classes.configuration import PlotConfiguration
 from precip.objects.classes.plotters.plotters import MapPlotter, BarPlotter, AnnualPlotter
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
-from precip.manager_functions import handle_data_functions, get_precipitation_data
+from precip.data_extraction_functions import handle_data_functions, get_precipitation_data
 from precip.cli.utils.argument_parsers import add_plot_parameters_arguments, add_date_arguments, add_location_arguments, add_save_arguments, add_map_parameters_arguments
 from precip.config import END_DATE,START_DATE
 
@@ -332,13 +332,11 @@ def main(iargs=None, namespace=None, main_gs=None, fig=None):
 
     os.makedirs(PRECIP_DIR, exist_ok=True)
 
+    # TODO move all the functions in cli
     handle_data_functions(inps)
 
     input_config = PlotConfiguration(inps)
     precipitation = get_precipitation_data(input_config)
-
-    # TODO this has to be added to the 'all' script
-    # main_gs = gridspec.GridSpec(1, 1, figure=fig)
 
     if main_gs is None:
         fig = plt.figure(constrained_layout=True)
