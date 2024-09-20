@@ -37,7 +37,7 @@ class CloudFileManager(AbstractCloudFileManager):
         files = stdout.read().decode().splitlines()
         client = self.provider.ssh.open_sftp()
         corrupted_files = []
-        print('Checking for corrupted files...')
+        print(f'Checking for corrupted files in {self.provider.path} ...')
         for file in files:
             try:
                 # Try to open the file with netCDF4
