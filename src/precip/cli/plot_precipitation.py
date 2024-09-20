@@ -332,13 +332,11 @@ def main(iargs=None, namespace=None, main_gs=None, fig=None):
 
     os.makedirs(PRECIP_DIR, exist_ok=True)
 
+    # TODO move all the functions in cli
     handle_data_functions(inps)
 
     input_config = PlotConfiguration(inps)
     precipitation = get_precipitation_data(input_config)
-
-    # TODO this has to be added to the 'all' script
-    # main_gs = gridspec.GridSpec(1, 1, figure=fig)
 
     if main_gs is None:
         fig = plt.figure(constrained_layout=True)
