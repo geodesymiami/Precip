@@ -6,7 +6,7 @@ from precip.objects.classes.file_manager.cloud_file_manager import CloudFileMana
 from precip.objects.classes.file_manager.local_file_manager import LocalFileManager
 from precip.objects.classes.credentials_settings.credentials import PrecipVMCredentials
 from precip.helper_functions import generate_date_list
-from .utils.argument_parsers import add_date_arguments
+from precip.utils.argument_parsers import add_date_arguments
 
 # TODO Add proper CITATION for GPM data and Volcano data
 PRECIP_DIR = os.getenv('PRECIP_DIR')

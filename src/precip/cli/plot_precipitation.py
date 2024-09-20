@@ -8,7 +8,7 @@ from precip.objects.classes.plotters.plotters import MapPlotter, BarPlotter, Ann
 from matplotlib import pyplot as plt
 from matplotlib import gridspec
 from precip.data_extraction_functions import handle_data_functions, get_precipitation_data
-from precip.cli.utils.argument_parsers import add_plot_parameters_arguments, add_date_arguments, add_location_arguments, add_save_arguments, add_map_parameters_arguments
+from precip.utils.argument_parsers import add_plot_parameters_arguments, add_date_arguments, add_location_arguments, add_save_arguments, add_map_parameters_arguments
 from precip.config import END_DATE,START_DATE
 
 # TODO Add proper CITATION for GPM data and Volcano data
