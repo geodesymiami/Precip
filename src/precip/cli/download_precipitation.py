@@ -1,3 +1,15 @@
+#!/usr/bin/env python3
+
+#############################################################################
+# Data from:                                                                #
+# Huffman, G.J., E.F. Stocker, D.T. Bolvin, E.J. Nelkin, Jackson Tan (2023),#
+# GPM IMERG Final Precipitation L3 1 day 0.1 degree x 0.1 degree V07,       #
+# GPM IMERG Late Precipitation L3 1 day 0.1 degree x 0.1 degree V06,        #
+# Edited by Andrey Savtchenko, Greenbelt, MD,                               #
+# Goddard Earth Sciences Data and Information Services Center (GES DISC),   #
+# Accessed: [Data Access Date], 10.5067/GPM/IMERGDF/DAY/07                  #
+#############################################################################
+
 import os
 import argparse
 from datetime import datetime
@@ -14,42 +26,50 @@ EXAMPLE = f"""
 Date format: YYYYMMDD
 
 Download whole dataset in the default directory $PRECIP_DIR ({os.getenv('PRECIP_DIR')}):
-    plot_precipitation.py --download
+    download_precipitation.py
+
+Download whole dataset in the specified directory:
+    download_precipitation.py --dir /path/to/directory
 
 Download dataset from 2019-01-01 to 2021-09-29 in the specific directory on cloud:
-    plot_precipitation.py --download --period 20190101:20210929 --use-ssh
+    download_precipitation.py --period 20190101:20210929 --use-ssh
 
 """
 
 
 def create_parser(iargs=None, namespace=None):
-    """ Creates command line argument parser object. """
+    """Creates command line argument parser object.
+
+    Args:
+        iargs (list): List of command line arguments (default: None).
+        namespace (argparse.Namespace): Namespace object to store parsed arguments (default: None).
+
+    Returns:
+        argparse.Namespace: Parsed command line arguments.
+    """
     parser = argparse.ArgumentParser(
-        description='Plot precipitation data from GPM dataset for a specific location at a given date range',
+        description='Download precipitation data from GPM dataset',
         formatter_class=argparse.RawTextHelpFormatter,
         epilog=EXAMPLE)
 
-    parser.add_argument('--download',
-                        action='store_true',
-                        help='Use ssh')
-
-    parser.add_argument('--use-ssh',
+    parser.add_argument('-ssh', '--use-ssh',
                         action='store_true',
                         dest='use_ssh',
                         help='Use ssh')
-    parser.add_argument('--parallel',
+    parser.add_argument('-p', '--parallel',
                         type=int,
                         default=5,
                         help='Number of parallel downloads')
+    parser.add_argument('-d', '--dir',
+                        type=str,
+                        default=PRECIP_DIR,
+                        help='Specify path to download the data, default is %(default)s')
 
 
     parser = add_date_arguments(parser)
 
     inps = parser.parse_args(iargs, namespace)
 
-    inps.dir = PRECIP_DIR
-
-    # FA: Assuming that inps.start_date and inps.end_date will be later consider function: inps.start_date, inps.end_date=get_processing_dates(inps)
     if not inps.period:
         inps.start_date = datetime.strptime(inps.start_date, '%Y%m%d').date()
 
@@ -66,22 +86,34 @@ def create_parser(iargs=None, namespace=None):
         inps.start_date = datetime.strptime(dates[0], '%Y%m%d').date()
         inps.end_date = datetime.strptime(dates[1], '%Y%m%d').date()
 
+    return inps
+
 
 def download_precipitation(inps):
-    date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
+    """Downloads precipitation data based on the provided command line arguments.
+
+    Args:
+        inps (argparse.Namespace): Parsed command line arguments.
+    """
+    date_list = generate_date_list(inps.start_date, inps.end_date)
 
     if inps.use_ssh:
         jtstream = JetStream(PrecipVMCredentials())
-        CloudFileManager(jtstream).download(date_list)
+        CloudFileManager(jtstream).download(date_list, inps.parallel)
 
     else:
         local = LocalFileManager(inps.dir)
-        local.download(date_list)
+        local.download(date_list, inps.parallel)
 
 
 
-def main(iargs=None, namespace=None, main_gs=None, fig=None):
+def main(iargs=None, namespace=None):
+    """Main function to execute the script.
 
+    Args:
+        iargs (list): List of command line arguments (default: None).
+        namespace (argparse.Namespace): Namespace object to store parsed arguments (default: None).
+    """
     inps = create_parser(iargs, namespace)
 
     download_precipitation(inps)
