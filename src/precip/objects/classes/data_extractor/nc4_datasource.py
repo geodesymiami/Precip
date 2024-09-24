@@ -1,6 +1,6 @@
 from precip.objects.interfaces.data_managers.abstract_datasource import AbstractDataSource
 from precip.objects.interfaces.data_managers.abstract_data_from_file import AbstractDataFromFile
-from precip.helper_functions import generate_coordinate_array
+from precip.helper_functions import generate_coordinate_array, check_dates_downloaded
 import pandas as pd
 
 
@@ -13,6 +13,7 @@ class NC4DataSource(AbstractDataSource):
         lon, lat = generate_coordinate_array()
         self.data_extracted.list_files()
         self.data_extracted.check_duplicates()
+        self.data_extracted.files = check_dates_downloaded(date_list, self.data_extracted.files)
 
         finaldf = pd.DataFrame()
         results = []
