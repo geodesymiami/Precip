@@ -1,12 +1,9 @@
-import os
 import re
-import io
 import math
 import json
 from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
 import calendar
-import sqlite3
 import threading
 import tempfile
 import numpy as np
@@ -560,3 +557,38 @@ def adapt_events(eruption_dates, date_list):
                     print(f'Removing {str(eruption_date.date())} from the list of eruptions. Out of range')
 
     return valid_eruption_dates
+
+
+def check_dates_downloaded(date_list, files):
+    """
+    Check if all dates in the given date_list have corresponding files in the files list.
+    
+    Args:
+        date_list (list): A list of dates to check.
+        files (list): A list of file names.
+        
+    Returns:
+        list: A list of file names that correspond to the dates in date_list.
+        
+    Raises:
+        ValueError: If any dates in date_list are missing files.
+    """
+    file_to_use = []
+    missing = []
+    stop = False
+
+    file_dates = [datetime.strptime(re.search('\d{8}', file).group(0), "%Y%m%d").date() for file in files]
+
+    for file, date in zip(files, file_dates):
+        if date in date_list:
+            file_to_use.append(file)
+
+    for date in date_list:
+        if date not in file_dates:
+            missing.append(date)
+            print(f"Missing date: {date}")
+
+    if missing != []:
+        raise ValueError('Some dates are missing. Starting download of the missing files.', missing)
+    else:
+        return file_to_use
