@@ -106,4 +106,4 @@ class PlotConfiguration:
 
         strStart = str(self.start_date).replace('-', '') if not isinstance(self.start_date, str) else self.start_date.replace('-', '')
         strEnd = str(self.end_date).replace('-', '') if not isinstance(self.end_date, str) else self.end_date.replace('-', '')
-        self.save_path = f'{self.outdir}/{save_name}_{strStart}_{strEnd}_{self.style}.png'
+        self.save_path = f'{self.outdir}/{save_name}_{strStart}_{strEnd}_{self.style}_{self.bins}.png'
