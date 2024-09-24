@@ -10,7 +10,7 @@ DATABASE = 'volcanoes.db'
 
 #End Date may vary, check on https://disc.gsfc.nasa.gov/datasets?keywords=%22IMERG%20Late%22&page=1
 if True:
-    END_DATE ='20240601' 
+    END_DATE ='20240430' 
 else:
     END_DATE = str(datetime.today().date() - relativedelta(days=1)).replace('-', '')
 
