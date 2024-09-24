@@ -95,26 +95,33 @@ def download_precipitation(inps):
     Args:
         inps (argparse.Namespace): Parsed command line arguments.
     """
-    date_list = generate_date_list(inps.start_date, inps.end_date)
 
     if inps.use_ssh:
         jtstream = JetStream(PrecipVMCredentials())
-        CloudFileManager(jtstream).download(date_list, inps.parallel)
+        CloudFileManager(jtstream).download(inps.date_list, inps.parallel)
 
     else:
         local = LocalFileManager(inps.dir)
-        local.download(date_list, inps.parallel)
+        local.download(inps.date_list, inps.parallel)
 
 
 
-def main(iargs=None, namespace=None):
+def main(iargs=None, namespace=None, date_list=None):
     """Main function to execute the script.
 
     Args:
         iargs (list): List of command line arguments (default: None).
         namespace (argparse.Namespace): Namespace object to store parsed arguments (default: None).
+        date_list (list): List of dates to process (default: None).
     """
+
     inps = create_parser(iargs, namespace)
+
+    if date_list is None:
+        inps.date_list = generate_date_list(inps.start_date, inps.end_date)
+
+    else:
+        inps.date_list = date_list
 
     download_precipitation(inps)
 
