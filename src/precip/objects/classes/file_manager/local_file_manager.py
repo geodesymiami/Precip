@@ -55,7 +55,7 @@ class LocalFileManager(AbstractFileManager):
         # Get a list of all .nc4 files in the directory
         files = [self.folder + '/' + f for f in os.listdir(self.folder) if f.endswith('.nc4')]
         corrupted_files = []
-        print('Checking for corrupted files...')
+        print(f'Checking for corrupted files in {self.folder}...')
         for file in files:
             try:
                 # Try to open the file with netCDF4

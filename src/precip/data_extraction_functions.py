@@ -1,44 +1,6 @@
-import os
-import sys
-from precip.helper_functions import generate_date_list, check_missing_dates, str_to_masked_array
-from precip.volcano_functions import volcanoes_list
-from precip.config import JSON_VOLCANO
+from precip.helper_functions import check_missing_dates, str_to_masked_array
 from precip.objects.classes.credentials_settings.credentials import PrecipVMCredentials
-
-
-def handle_data_functions(inps):
-    from precip.objects.classes.providers.jetstream import JetStream
-    from precip.objects.classes.file_manager.cloud_file_manager import CloudFileManager
-    from precip.objects.classes.file_manager.local_file_manager import LocalFileManager
-
-
-    if inps.download:
-        date_list = generate_date_list(inps.start_date, inps.end_date, inps.average)
-
-        if inps.use_ssh:
-            jtstream = JetStream(PrecipVMCredentials())
-            CloudFileManager(jtstream).download(date_list)
-
-        else:
-            local = LocalFileManager(inps.dir)
-            local.download(date_list)
-
-        sys.exit()
-
-    if inps.check:
-        if inps.use_ssh:
-            jtstream = JetStream(PrecipVMCredentials())
-            CloudFileManager(jtstream).check_files()
-
-        else:
-            local = LocalFileManager(inps.dir)
-            local.check_files()
-
-        sys.exit()
-
-    if inps.list:
-        volcanoes_list(os.path.join(inps.dir, JSON_VOLCANO))
-        sys.exit()
+from precip.cli.download_precipitation import download_precipitation
 
 
 def get_precipitation_data(inps):
@@ -80,8 +42,17 @@ def get_precipitation_data(inps):
             from precip.objects.classes.data_extractor.cloud_nc4_data import CloudNC4Data
             from precip.objects.classes.data_extractor.nc4_datasource import NC4DataSource
 
-            #Get missing data from files
-            data = NC4DataSource(CloudNC4Data(jtstream)).get_data(inps.latitude, inps.longitude, missing_dates)
+            try:
+                #Get missing data from files
+                data = NC4DataSource(CloudNC4Data(jtstream)).get_data(inps.latitude, inps.longitude, missing_dates)
+
+            except ValueError as e:
+                print(e.args[0])
+                missing_files = e.args[1]  # Dates to be downloaded
+                download_precipitation(inps.use_ssh, missing_files, inps.gpm_dir)
+
+                # Retry to get the data
+                data = NC4DataSource(CloudNC4Data(jtstream)).get_data(inps.latitude, inps.longitude, missing_dates)
 
             #Load data into the database
             Database(CloudSQLite3Operations(jetstream_database)).load_data(inps.latitude, inps.longitude, data)
@@ -113,8 +84,17 @@ def get_precipitation_data(inps):
             from precip.objects.classes.data_extractor.local_nc4_data import LocalNC4Data
             from precip.objects.classes.data_extractor.nc4_datasource import NC4DataSource
 
-            #Get missing data from files
-            data = NC4DataSource(LocalNC4Data(inps.gpm_dir)).get_data(inps.latitude, inps.longitude, missing_dates)
+            try:
+                #Get missing data from files
+                data = NC4DataSource(LocalNC4Data(inps.gpm_dir)).get_data(inps.latitude, inps.longitude, missing_dates)
+
+            except ValueError as e:
+                print(e.args[0])
+                missing_files = e.args[1]  # Dates to be downloaded
+                download_precipitation(inps.use_ssh, missing_files, inps.gpm_dir)
+                
+                # Retry to get the data
+                data = NC4DataSource(LocalNC4Data(inps.gpm_dir)).get_data(inps.latitude, inps.longitude, missing_dates)
 
             #Load data into the database
             Database(SQLite3Operations(database)).load_data(inps.latitude, inps.longitude, data)
