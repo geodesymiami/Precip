@@ -15,7 +15,7 @@ SCRATCH_DIR = os.environ.get('SCRATCHDIR')
 VOLCANO_FILE = os.environ.get('PRECIP_HOME') + '/src/precip/Holocene_Volcanoes_precip_cfg.xlsx'
 DEFAULT_STYLES = ['map', 'bar', 'annual', 'strength']
 # DEFAULT_STYLES = ['bar', 'annual', 'strength']        # FA 7/2025  map gives problems woth GMT
-BINS = [2, 3, 4]
+BINS = [1, 2, 3, 4]
 
 def get_volcanoes():
     df = pd.read_excel(VOLCANO_FILE, skiprows=1)
@@ -47,7 +47,7 @@ def main(iargs=None, namespace=None):
 
         for bins in BINS:
             os.makedirs(volcano_dir, exist_ok=True)
-            iargs = ['--volcano-name', volcano, '--bins', str(bins), "--no-show", "--save","--outdir", volcano_dir]
+            iargs = ['--volcano-name', volcano, '--bins', str(bins), "--no-show", "--save", "volcano-id","--outdir", volcano_dir]
             iargs = iargs + sys.argv[1:]
             args = create_parser(iargs, namespace)
 
@@ -55,16 +55,22 @@ def main(iargs=None, namespace=None):
             # TODO Try to force the style arg into the Plotter Objects
             args.style = 'bar'
             bar_config = PlotConfiguration(args)
+            args.style = 'strength'
+            strength_config = PlotConfiguration(args)
             args.style = 'annual'
             annual_config = PlotConfiguration(args)
 
             precipitation = get_precipitation_data(bar_config)
 
-            fig = plt.figure(constrained_layout=True)
+            fig = plt.figure(figsize=(10, 5), constrained_layout=True)
             main_gs = gridspec.GridSpec(1, 1, figure=fig)
             BarPlotter(fig, main_gs[0], bar_config).plot(precipitation)
 
-            fig = plt.figure(constrained_layout=True)
+            fig = plt.figure(figsize=(10, 5), constrained_layout=True)
+            main_gs = gridspec.GridSpec(1, 1, figure=fig)
+            BarPlotter(fig, main_gs[0], strength_config).plot(precipitation)
+
+            fig = plt.figure(figsize=(10, 5), constrained_layout=True)
             main_gs = gridspec.GridSpec(1, 1, figure=fig)
             AnnualPlotter(fig, main_gs[0], annual_config).plot(precipitation)
 
@@ -72,7 +78,7 @@ def main(iargs=None, namespace=None):
         map_config = PlotConfiguration(args)
         map_precipitation = get_precipitation_data(map_config)
 
-        fig = plt.figure(constrained_layout=True)
+        fig = plt.figure(figsize=(10, 5), constrained_layout=True)
         main_gs = gridspec.GridSpec(1, 1, figure=fig)
         MapPlotter(fig, main_gs[0], map_config).plot(map_precipitation)
 
