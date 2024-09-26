@@ -15,7 +15,7 @@ SCRATCH_DIR = os.environ.get('SCRATCHDIR')
 VOLCANO_FILE = os.environ.get('PRECIP_HOME') + '/src/precip/Holocene_Volcanoes_precip_cfg.xlsx'
 DEFAULT_STYLES = ['map', 'bar', 'annual', 'strength']
 # DEFAULT_STYLES = ['bar', 'annual', 'strength']        # FA 7/2025  map gives problems woth GMT
-BINS = [1, 2, 3, 4]
+BINS = [4, 3, 2, 1]
 
 def get_volcanoes():
     df = pd.read_excel(VOLCANO_FILE, skiprows=1)
@@ -45,14 +45,6 @@ def main(iargs=None, namespace=None):
             print('skipping ', volcano, ' ', volcano_dir)
             continue
 
-        args.style = 'map'
-        map_config = PlotConfiguration(args)
-        map_precipitation = get_precipitation_data(map_config)
-
-        fig = plt.figure(figsize=(10, 5), constrained_layout=True)
-        main_gs = gridspec.GridSpec(1, 1, figure=fig)
-        MapPlotter(fig, main_gs[0], map_config).plot(map_precipitation)
-
         for bins in BINS:
             os.makedirs(volcano_dir, exist_ok=True)
             iargs = ['--volcano-name', volcano, '--bins', str(bins), "--no-show", "--save", "volcano-id","--outdir", volcano_dir]
@@ -80,6 +72,14 @@ def main(iargs=None, namespace=None):
             fig = plt.figure(figsize=(10, 5), constrained_layout=True)
             main_gs = gridspec.GridSpec(1, 1, figure=fig)
             AnnualPlotter(fig, main_gs[0], annual_config).plot(precipitation)
+
+        args.style = 'map'
+        map_config = PlotConfiguration(args)
+        map_precipitation = get_precipitation_data(map_config)
+
+        fig = plt.figure(figsize=(10, 5), constrained_layout=True)
+        main_gs = gridspec.GridSpec(1, 1, figure=fig)
+        MapPlotter(fig, main_gs[0], map_config).plot(map_precipitation)
 
 
 
