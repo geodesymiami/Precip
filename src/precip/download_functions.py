@@ -1,18 +1,13 @@
 import requests
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-import sys
 import os
-import re
 import concurrent.futures
 import threading
 import subprocess
 import time
-import netCDF4 as nc
 from precip.helper_functions import ask_user
 from precip.config import JSON_DOWNLOAD_URL, FINAL06, FINAL07, PATH_JETSTREAM
-import paramiko
-import tempfile
 
 
 def download_volcano_json(json_path, json_download_url=JSON_DOWNLOAD_URL):
@@ -166,110 +161,6 @@ def dload_site_list_parallel(folder, date_list, parallel=5):
     print('')
     print('All files have been downloaded')
     print('-----------------------------------------------')
-
-    # if ask_user('check'):
-    #     check_nc4_files(folder)    
-
-
-def check_nc4_files(folder, ssh):
-    files = []
-
-    if ssh:
-        stdin, stdout, stderr = ssh.exec_command(f'ls {PATH_JETSTREAM}/*.nc4')
-        files = stdout.read().decode().splitlines()
-
-        client = ssh.open_sftp()
-
-    else:
-        # Get a list of all .nc4 files in the directory
-        files = [folder + '/' + f for f in os.listdir(folder) if f.endswith('.nc4')]
-
-        client = None
-
-    corrupted_files = []
-    print('Checking for corrupted files...')
-
-    # Check if each file exists and is not corrupted
-    for file in files:
-        try:
-            # Try to open the file with netCDF4
-            print(f"\rChecking file: {file}", end="")
-
-            if client is not None:
-                with tempfile.NamedTemporaryFile(suffix='.nc4', delete=True) as tmp:
-
-                    # Download the file to your local system
-                    client.get(file, tmp.name)
-
-                    # Open the NetCDF file
-                    ds = nc.Dataset(tmp.name)
-
-            else:
-                ds = nc.Dataset(file)
-
-            ds.close()
-
-        except:
-            print(f"File is corrupted: {file}")
-
-            if client is not None:
-                client.remove(file)
-
-            else:
-                # Delete the corrupted file
-                os.remove(file)
-
-            print(f"Corrupted file has been deleted: {file}")
-            corrupted_files.append(file)
-
-    if len(corrupted_files) > 0:
-        print(f"Corrupted files found: {corrupted_files}")
-        print(f"Total corrupted files: {len(corrupted_files)}")
-        print('Retrying download of corrupted files...')
-        date_list=[]
-
-        for f in corrupted_files:
-            d = re.search('\d{8}', f)
-            date_list.append(datetime.strptime(d.group(0), "%Y%m%d").date())
-
-        if client is not None:
-            download_jetstream(date_list, ssh)
-
-        else:
-            dload_site_list_parallel(folder, date_list)
-
-    else:
-        print('')
-        print('No corrupted files found')
-
-    print('All files have been checked')
-    print('-----------------------------------------------')
-
-
-def connect_jetstream():
-    # Create a new SSH client“
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-    # TODO change to your own credentials
-    hostname = '149.165.154.65'
-    username = 'exouser'
-    path_id_rsa = os.getenv('HOME') + '/.ssh/id_rsa'
-
-    ssh_key = path_id_rsa + '_jetstream' if os.path.exists(path_id_rsa + '_jetstream') else path_id_rsa
-
-    for i in range(3):
-        try:
-            # Connect to the server
-            ssh.connect(hostname=hostname, username=username, key_filename=ssh_key)
-            return ssh
-
-        except Exception as e:
-            print(f"Attempt {i+1} failed to connect to the server: {e}")
-            if i < 2:
-                continue
-            else:
-                return None
 
 
 def download_jetstream(ssh, url, pathJetstream):
