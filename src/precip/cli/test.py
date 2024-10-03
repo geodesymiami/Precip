@@ -13,6 +13,7 @@ import pandas as pd
 
 import gc
 import cProfile
+import pstats
 
 SCRATCH_DIR = os.environ.get('SCRATCHDIR')
 VOLCANO_FILE = os.environ.get('PRECIP_HOME') + '/src/precip/Holocene_Volcanoes_precip_cfg.xlsx'
@@ -90,4 +91,12 @@ def main(iargs=None, namespace=None):
 
 
 if __name__ == '__main__':
-    cProfile.run('main()', os.path.join(os.getcwd(), 'profile_stats.txt'))
+    profiler = cProfile.Profile()
+    profiler.enable()
+
+    main()
+
+    profiler.disable()
+    stats = pstats.Stats(profiler, stream=open(os.path.join(os.getcwd(), 'profile_stats.txt'), 'w'))
+    stats.sort_stats('cumulative')
+    stats.print_stats()
