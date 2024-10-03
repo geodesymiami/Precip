@@ -90,4 +90,4 @@ def main(iargs=None, namespace=None):
 
 
 if __name__ == '__main__':
-    cProfile.run('main()', os.path.join(os.getcwd(), 'profile_stats'))
+    cProfile.run('main()', os.path.join(os.getcwd(), 'profile_stats.txt'))
