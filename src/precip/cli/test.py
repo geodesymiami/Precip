@@ -84,9 +84,10 @@ def main(iargs=None, namespace=None):
         main_gs = gridspec.GridSpec(1, 1, figure=fig)
         MapPlotter(fig, main_gs[0], map_config).plot(map_precipitation)
 
-
+    precipitation = None
+    map_precipitation = None
     gc.collect()
 
 
 if __name__ == '__main__':
-    cProfile.run('main()')
+    cProfile.run('main()', os.path.join(os.getcwd(), 'profile_stats'))
