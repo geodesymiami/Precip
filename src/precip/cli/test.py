@@ -88,7 +88,5 @@ def main(iargs=None, namespace=None):
     gc.collect()
 
 
-
-
 if __name__ == '__main__':
-    cProfile.run('main()',os.path.join( os.getcwd(),'precipitation.out'))
+    cProfile.run('main()')
