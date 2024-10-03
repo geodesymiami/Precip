@@ -10,7 +10,9 @@ from precip.cli.plot_precipitation import create_parser
 from precip.utils.argument_parsers import add_save_arguments
 from precip.data_extraction_functions import get_precipitation_data
 import pandas as pd
-import time
+
+import gc
+import cProfile
 
 SCRATCH_DIR = os.environ.get('SCRATCHDIR')
 VOLCANO_FILE = os.environ.get('PRECIP_HOME') + '/src/precip/Holocene_Volcanoes_precip_cfg.xlsx'
@@ -37,7 +39,6 @@ def main(iargs=None, namespace=None):
     os.makedirs(plot_dir, exist_ok=True)
 
     volcanoes = get_volcanoes()
-    start_time = time.time()
 
     for volcano, info in volcanoes.items():
         id = info['id']
@@ -62,7 +63,6 @@ def main(iargs=None, namespace=None):
             annual_config = PlotConfiguration(args)
 
             precipitation = get_precipitation_data(bar_config)
-            print(f"Time taken to fetch {volcano} precipitation data: {time.time() - start_time} seconds")
 
             fig = plt.figure(figsize=(10, 5), constrained_layout=True)
             main_gs = gridspec.GridSpec(1, 1, figure=fig)
@@ -79,15 +79,16 @@ def main(iargs=None, namespace=None):
         args.style = 'map'
         map_config = PlotConfiguration(args)
         map_precipitation = get_precipitation_data(map_config)
-        print(f"Time taken to fetch {volcano} map_precipitation data: {time.time() - start_time} seconds")
 
         fig = plt.figure(figsize=(10, 5), constrained_layout=True)
         main_gs = gridspec.GridSpec(1, 1, figure=fig)
         MapPlotter(fig, main_gs[0], map_config).plot(map_precipitation)
-        print(f"Time taken to {volcano} map plot: {time.time() - start_time} seconds")
+
+
+    gc.collect()
 
 
 
 
 if __name__ == '__main__':
-    main()
+    cProfile.run('main()',os.path.join( os.getcwd(),'precipitation.out'))
