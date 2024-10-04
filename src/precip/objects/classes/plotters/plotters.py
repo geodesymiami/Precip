@@ -70,7 +70,6 @@ class MapPlotter(Plotter):
         if self.config.show_flag:
             plt.show()
         else:
-            plt.close(self.fig)
             return self.ax
 
 
@@ -205,7 +204,6 @@ class BarPlotter(EventsPlotter):
         if self.config.show_flag:
             plt.show()
         else:
-            plt.close(self.fig)
             return self.ax
 
 
@@ -343,9 +341,6 @@ class AnnualPlotter(EventsPlotter):
 
         if self.config.show_flag:
             plt.show()
-        else:
-            plt.close(self.fig)
-
 
 
     def modify_dataframe(self, data):
