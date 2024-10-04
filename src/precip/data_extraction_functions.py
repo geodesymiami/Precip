@@ -2,6 +2,9 @@ from precip.helper_functions import check_missing_dates, str_to_masked_array
 from precip.objects.classes.credentials_settings.credentials import PrecipVMCredentials
 from precip.cli.download_precipitation import download_precipitation
 
+# TODO for profiling
+import time
+
 
 def get_precipitation_data(inps):
     from precip.objects.classes.database.database import Database
@@ -73,9 +76,14 @@ def get_precipitation_data(inps):
 
         #Check table
         SQLite3Operations(database).check_table()
+        # TODO for profiling
+        start_time = time.time()
 
         #Get data
         precipitation = Database(SQLite3Operations(database)).get_data(Queries.extract_precipitation(inps.latitude, inps.longitude, inps.date_list))
+        print()
+        print("Elapsed time database extracion: ", time.time() - start_time, "seconds")
+        print()
 
         #Check missing dates
         missing_dates = check_missing_dates(inps.date_list, precipitation['Date'])
@@ -92,9 +100,16 @@ def get_precipitation_data(inps):
                 print(e.args[0])
                 missing_files = e.args[1]  # Dates to be downloaded
                 download_precipitation(inps.use_ssh, missing_files, inps.gpm_dir)
-                
+
+                # TODO for profiling
+                start_time = time.time()
+
                 # Retry to get the data
                 data = NC4DataSource(LocalNC4Data(inps.gpm_dir)).get_data(inps.latitude, inps.longitude, missing_dates)
+                # TODO for profiling
+                print()
+                print("Elapsed time file extracion: ", time.time() - start_time, "seconds")
+                print()
 
             #Load data into the database
             Database(SQLite3Operations(database)).load_data(inps.latitude, inps.longitude, data)

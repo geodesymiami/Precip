@@ -11,9 +11,9 @@ from precip.utils.argument_parsers import add_save_arguments
 from precip.data_extraction_functions import get_precipitation_data
 import pandas as pd
 
+# TODO for profiling
+import time
 import gc
-import cProfile
-import pstats
 
 SCRATCH_DIR = os.environ.get('SCRATCHDIR')
 VOLCANO_FILE = os.environ.get('PRECIP_HOME') + '/src/precip/Holocene_Volcanoes_precip_cfg.xlsx'
@@ -77,6 +77,7 @@ def main(iargs=None, namespace=None):
             main_gs = gridspec.GridSpec(1, 1, figure=fig)
             AnnualPlotter(fig, main_gs[0], annual_config).plot(precipitation)
 
+        precipitation = None
         args.style = 'map'
         map_config = PlotConfiguration(args)
         map_precipitation = get_precipitation_data(map_config)
@@ -85,18 +86,9 @@ def main(iargs=None, namespace=None):
         main_gs = gridspec.GridSpec(1, 1, figure=fig)
         MapPlotter(fig, main_gs[0], map_config).plot(map_precipitation)
 
-    precipitation = None
     map_precipitation = None
     gc.collect()
 
 
 if __name__ == '__main__':
-    profiler = cProfile.Profile()
-    profiler.enable()
-
     main()
-
-    profiler.disable()
-    stats = pstats.Stats(profiler, stream=open(os.path.join(os.getcwd(), 'profile_stats.txt'), 'w'))
-    stats.sort_stats('cumulative')
-    stats.print_stats()
