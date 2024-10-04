@@ -67,7 +67,7 @@ def main(iargs=None, namespace=None):
             args.style = 'annual'
             annual_config = PlotConfiguration(args)
 
-            if not precipitation:
+            if precipitation is None:
                 precipitation = get_precipitation_data(bar_config)
 
             fig = plt.figure(figsize=(10, 5), constrained_layout=True)
