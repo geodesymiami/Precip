@@ -49,6 +49,10 @@ def main(iargs=None, namespace=None):
             print('skipping ', volcano, ' ', volcano_dir)
             continue
 
+        print('Processing ', volcano, ' ', volcano_dir)
+
+        precipitation = None
+
         for bins in BINS:
             os.makedirs(volcano_dir, exist_ok=True)
             iargs = ['--volcano-name', volcano, '--bins', str(bins), "--no-show", "--save", "volcano-id","--outdir", volcano_dir]
@@ -63,19 +67,23 @@ def main(iargs=None, namespace=None):
             args.style = 'annual'
             annual_config = PlotConfiguration(args)
 
-            precipitation = get_precipitation_data(bar_config)
+            if not precipitation:
+                precipitation = get_precipitation_data(bar_config)
 
             fig = plt.figure(figsize=(10, 5), constrained_layout=True)
             main_gs = gridspec.GridSpec(1, 1, figure=fig)
             BarPlotter(fig, main_gs[0], bar_config).plot(precipitation)
+            plt.close(fig)
 
             fig = plt.figure(figsize=(10, 5), constrained_layout=True)
             main_gs = gridspec.GridSpec(1, 1, figure=fig)
             BarPlotter(fig, main_gs[0], strength_config).plot(precipitation)
+            plt.close(fig)
 
             fig = plt.figure(figsize=(10, 5), constrained_layout=True)
             main_gs = gridspec.GridSpec(1, 1, figure=fig)
             AnnualPlotter(fig, main_gs[0], annual_config).plot(precipitation)
+            plt.close(fig)
 
         precipitation = None
         args.style = 'map'
@@ -85,6 +93,7 @@ def main(iargs=None, namespace=None):
         fig = plt.figure(figsize=(10, 5), constrained_layout=True)
         main_gs = gridspec.GridSpec(1, 1, figure=fig)
         MapPlotter(fig, main_gs[0], map_config).plot(map_precipitation)
+        plt.close(fig)
 
     map_precipitation = None
     gc.collect()

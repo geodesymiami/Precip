@@ -93,8 +93,15 @@ def get_precipitation_data(inps):
             from precip.objects.classes.data_extractor.nc4_datasource import NC4DataSource
 
             try:
+                # TODO for profiling
+                start_time = time.time()
+
                 #Get missing data from files
                 data = NC4DataSource(LocalNC4Data(inps.gpm_dir)).get_data(inps.latitude, inps.longitude, missing_dates)
+
+                print()
+                print("Elapsed time file extracion: ", time.time() - start_time, "seconds")
+                print()
 
             except ValueError as e:
                 print(e.args[0])
