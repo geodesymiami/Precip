@@ -85,7 +85,8 @@ def main(iargs=None, namespace=None):
             AnnualPlotter(fig, main_gs[0], annual_config).plot(precipitation)
             plt.close(fig)
 
-        precipitation = None
+        del precipitation
+        gc.collect()
         args.style = 'map'
         map_config = PlotConfiguration(args)
         map_precipitation = get_precipitation_data(map_config)
@@ -95,7 +96,7 @@ def main(iargs=None, namespace=None):
         MapPlotter(fig, main_gs[0], map_config).plot(map_precipitation)
         plt.close(fig)
 
-    map_precipitation = None
+    del map_precipitation
     gc.collect()
 
 
