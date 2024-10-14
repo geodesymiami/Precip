@@ -70,20 +70,44 @@ def main(iargs=None, namespace=None):
             if precipitation is None:
                 precipitation = get_precipitation_data(bar_config)
 
+            # TODO for profiling
+            start_time = time.time()
+
             fig = plt.figure(figsize=(10, 5), constrained_layout=True)
             main_gs = gridspec.GridSpec(1, 1, figure=fig)
             BarPlotter(fig, main_gs[0], bar_config).plot(precipitation)
             plt.close(fig)
+
+            # TODO for profiling
+            print()
+            print("Elapsed time bar config: ", time.time() - start_time, "seconds")
+            print()
+
+            # TODO for profiling
+            start_time = time.time()
 
             fig = plt.figure(figsize=(10, 5), constrained_layout=True)
             main_gs = gridspec.GridSpec(1, 1, figure=fig)
             BarPlotter(fig, main_gs[0], strength_config).plot(precipitation)
             plt.close(fig)
 
+            # TODO for profiling
+            print()
+            print("Elapsed time strength config: ", time.time() - start_time, "seconds")
+            print()
+
+            # TODO for profiling
+            start_time = time.time()
+
             fig = plt.figure(figsize=(10, 5), constrained_layout=True)
             main_gs = gridspec.GridSpec(1, 1, figure=fig)
             AnnualPlotter(fig, main_gs[0], annual_config).plot(precipitation)
             plt.close(fig)
+
+            # TODO for profiling
+            print()
+            print("Elapsed time annual config: ", time.time() - start_time, "seconds")
+            print()
 
         del precipitation
         gc.collect()

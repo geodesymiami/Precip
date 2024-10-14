@@ -118,8 +118,16 @@ def get_precipitation_data(inps):
                 print("Elapsed time file extracion: ", time.time() - start_time, "seconds")
                 print()
 
+            # TODO for profiling
+            start_time = time.time()
+
             #Load data into the database
             Database(SQLite3Operations(database)).load_data(inps.latitude, inps.longitude, data)
+
+            # TODO for profiling
+            print()
+            print("Elapsed time file upload: ", time.time() - start_time, "seconds")
+            print()
 
             #Get data
             precipitation = Database(SQLite3Operations(database)).get_data(Queries.extract_precipitation(inps.latitude, inps.longitude, inps.date_list))
