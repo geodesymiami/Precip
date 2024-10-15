@@ -11,6 +11,8 @@ class Database(AbstractDataLoader):
 
 
     def get_data(self, query: str):
+        print('Extracting Values from Database ...')
+
         data = self.operator.select_data(query)
 
         columns = [column[0] for column in self.operator.database.cursor.description]
@@ -21,6 +23,8 @@ class Database(AbstractDataLoader):
     def load_data(self, latitude: str, longitude: str, dataframe: pd.DataFrame):
         # Convert the 'Precipitation' column to a string
         dataframe['Precipitation'] = dataframe['Precipitation'].apply(lambda x: json.dumps(x.tolist()))
+
+        print('Inserting Values in Database ...')
 
         for index, row in dataframe.iterrows():
             if not self.operator.record_exists(latitude, longitude, row['Date']):
