@@ -45,7 +45,7 @@ def main(iargs=None, namespace=None):
         id = info['id']
         volcano_dir = os.path.join(plot_dir, str(id))
 
-        if (volcano == 'Cotopaxi'):
+        if (volcano == 'Cotopaxi') or os.path.exists(volcano_dir):
             print('skipping ', volcano, ' ', volcano_dir)
             continue
 
