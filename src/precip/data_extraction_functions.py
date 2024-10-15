@@ -4,6 +4,7 @@ from precip.cli.download_precipitation import download_precipitation
 
 # TODO for profiling
 import time
+from datetime import datetime
 
 
 def get_precipitation_data(inps):
@@ -76,13 +77,17 @@ def get_precipitation_data(inps):
 
         #Check table
         SQLite3Operations(database).check_table()
+
         # TODO for profiling
         start_time = time.time()
+        print('Start db extraction at:', datetime.fromtimestamp(start_time))
+
 
         #Get data
         precipitation = Database(SQLite3Operations(database)).get_data(Queries.extract_precipitation(inps.latitude, inps.longitude, inps.date_list))
+
         print()
-        print("Elapsed time database extracion: ", time.time() - start_time, "seconds")
+        print("Elapsed time database extraction: ", time.time() - start_time, "seconds")
         print()
 
         #Check missing dates
@@ -95,6 +100,7 @@ def get_precipitation_data(inps):
             try:
                 # TODO for profiling
                 start_time = time.time()
+                print('Start file extraction at:', datetime.fromtimestamp(start_time))
 
                 #Get missing data from files
                 data = NC4DataSource(LocalNC4Data(inps.gpm_dir)).get_data(inps.latitude, inps.longitude, missing_dates)
@@ -110,9 +116,11 @@ def get_precipitation_data(inps):
 
                 # TODO for profiling
                 start_time = time.time()
+                print('Start file extraction at:', datetime.fromtimestamp(start_time))
 
                 # Retry to get the data
                 data = NC4DataSource(LocalNC4Data(inps.gpm_dir)).get_data(inps.latitude, inps.longitude, missing_dates)
+
                 # TODO for profiling
                 print()
                 print("Elapsed time file extracion: ", time.time() - start_time, "seconds")
@@ -120,6 +128,7 @@ def get_precipitation_data(inps):
 
             # TODO for profiling
             start_time = time.time()
+            print('Start db upload at:', datetime.fromtimestamp(start_time))
 
             #Load data into the database
             Database(SQLite3Operations(database)).load_data(inps.latitude, inps.longitude, data)
