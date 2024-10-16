@@ -27,7 +27,10 @@ class Database(AbstractDataLoader):
         print('Inserting Values in Database ...')
 
         for index, row in dataframe.iterrows():
-            if not self.operator.record_exists(latitude, longitude, row['Date']):
-                self.operator.insert_data(latitude, longitude, row['Date'], row['Precipitation'])
+            self.operator.insert_data(latitude, longitude, row['Date'], row['Precipitation'])
 
         print('Values Inserted in Database')
+
+
+    def remove_data(self, query: str):
+        self.operator.remove_duplicates(query)

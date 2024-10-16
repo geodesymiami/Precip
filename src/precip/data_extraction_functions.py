@@ -82,9 +82,27 @@ def get_precipitation_data(inps):
         start_time = time.time()
         print('Start db extraction at:', datetime.fromtimestamp(start_time))
 
-
         #Get data
         precipitation = Database(SQLite3Operations(database)).get_data(Queries.extract_precipitation(inps.latitude, inps.longitude, inps.date_list))
+
+        ################# Make as function ###################
+
+        # Identify duplicates
+        duplicates = precipitation[precipitation['Date'].duplicated(keep=False)]
+
+        # Remove duplicates from DataFrame
+        precipitation = precipitation[~precipitation['Date'].isin(duplicates['Date'])]
+
+        if not duplicates.empty:
+            # Remove duplicates from SQLite database
+            print('Removing duplicates from Database ...')
+
+            for date in duplicates['Date']:
+                Database(SQLite3Operations(database)).remove_data(Queries.remove_records(inps.latitude, inps.longitude, date))
+
+            print('Duplicates Removed from Database')
+
+        ######################################################
 
         print()
         print("Elapsed time database extraction: ", time.time() - start_time, "seconds")

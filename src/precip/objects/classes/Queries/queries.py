@@ -30,8 +30,23 @@ class Queries:
         return f"INSERT INTO {table} (Date, Precipitation, Latitude, Longitude) VALUES ('{date}', '{precipitation}', '{lat}', '{lon}')"
 
     @staticmethod
+    def insert_ignore_precipitation(latitude, longitude, date, precipitation, table='volcanoes'):
+        lat = f"{latitude[0]}:{latitude[1]}"
+        lon = f"{longitude[0]}:{longitude[1]}"
+
+        return f"INSERT OR IGNORE INTO {table} (Date, Precipitation, Latitude, Longitude) VALUES ('{date}', '{precipitation}', '{lat}', '{lon}')"
+
+
+    @staticmethod
     def select_row(latitude, longitude, date, table='volcanoes'):
         lat = f"{latitude[0]}:{latitude[1]}"
         lon = f"{longitude[0]}:{longitude[1]}"
 
         return f"SELECT 1 FROM {table} WHERE Latitude = '{lat}' AND Longitude = '{lon}' AND Date = '{date}' LIMIT 1"
+
+    @staticmethod
+    def remove_records(latitude, longitude, date, table='volcanoes'):
+        lat = f"{latitude[0]}:{latitude[1]}"
+        lon = f"{longitude[0]}:{longitude[1]}"
+
+        return f"DELETE FROM {table} WHERE Latitude = '{lat}' AND Longitude = '{lon}' AND Date = '{date}'"
