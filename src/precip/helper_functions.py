@@ -1,4 +1,5 @@
 import re
+import os
 import math
 import json
 from datetime import datetime, date
@@ -10,6 +11,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import cm
 import netCDF4 as nc
+from collections import Counter
 from precip.config import PATH_JETSTREAM
 
 
@@ -559,6 +561,38 @@ def adapt_events(eruption_dates, date_list):
     return valid_eruption_dates
 
 
+def check_duplicate_files(files):
+    """
+    Check for duplicate files in the given list.
+
+    Args:
+        files (list): A list of file names.
+
+    Returns:
+        list: A list of unique file names.
+
+    """
+    file_dates = [datetime.strptime(re.search('\d{8}', file).group(0), "%Y%m%d").date() for file in files]
+
+    # Assuming file_dates is your list of datetime objects
+    counter = Counter(file_dates)
+    duplicate_dates = [item for item, count in counter.items() if count > 1]
+
+    for date in duplicate_dates:
+        date_string = date.strftime('%Y%m%d')
+        files_with_date = [file for file in files if date_string in file]
+
+        # Final > Late & V7 > V6
+        # New files are only v07 as of 2024/10/16
+        if any('.V07' in file for file in files_with_date):
+            to_remove = [file for file in files_with_date if '.V06' in file]
+
+        for f in to_remove:
+            files.remove(f)
+            os.remove(f)
+
+    return files
+
 def check_dates_downloaded(date_list, files):
     """
     Check if all dates in the given date_list have corresponding files in the files list.
@@ -575,7 +609,6 @@ def check_dates_downloaded(date_list, files):
     """
     file_to_use = []
     missing = []
-    stop = False
 
     file_dates = [datetime.strptime(re.search('\d{8}', file).group(0), "%Y%m%d").date() for file in files]
 

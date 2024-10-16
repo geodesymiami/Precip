@@ -5,6 +5,7 @@ import netCDF4 as nc
 import numpy as np
 import re
 from datetime import datetime
+from precip.helper_functions import check_duplicate_files
 
 
 class LocalNC4Data(AbstractDataFromFile):
@@ -15,11 +16,10 @@ class LocalNC4Data(AbstractDataFromFile):
     def check_duplicates(self):
         print(f"Checking for duplicate files in {self.path} ...")
 
-        if len(self.files) != len(set(self.files)):
-            print("There are duplicate files in the list.")
+        l1 = len(self.files)
+        self.files = check_duplicate_files(self.files)
 
-        else:
-            print("There are no duplicate files in the list.")
+        print(f"Removed {l1 - len(self.files)} duplicate files")
 
 
     def process_file(self, file, date_list, lon, lat, longitude, latitude):
