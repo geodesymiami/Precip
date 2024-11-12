@@ -42,12 +42,16 @@ class LocalNC4Data(AbstractDataFromFile):
             subset = data[:,
                         np.where(lon == longitude[0])[0][0]:np.where(lon == longitude[1])[0][0]+1,
                         np.where(lat == latitude[0])[0][0]:np.where(lat == latitude[1])[0][0]+1]
-            try:
+
+            masked_subset = np.ma.masked_invalid(subset)
+
+            if np.ma.is_masked(masked_subset):
+                invalid_positions = np.where(masked_subset.mask)
+                os.remove(file)
+                raise ValueError(f"Error converting {file} to float at positions {invalid_positions}, file has been deleted")
+
+            else:
                 subset = subset.astype(float)
-
-            except ValueError:
-                raise ValueError(f"Error converting {file} to float at {ReadNC4Properties(file).get_date('date')}")
-
 
         return (str(date), subset)
 
