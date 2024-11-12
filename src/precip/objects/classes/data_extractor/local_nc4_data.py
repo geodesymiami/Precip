@@ -42,7 +42,12 @@ class LocalNC4Data(AbstractDataFromFile):
             subset = data[:,
                         np.where(lon == longitude[0])[0][0]:np.where(lon == longitude[1])[0][0]+1,
                         np.where(lat == latitude[0])[0][0]:np.where(lat == latitude[1])[0][0]+1]
-            subset = subset.astype(float)
+            try:
+                subset = subset.astype(float)
+
+            except ValueError:
+                raise ValueError(f"Error converting {file} to float at {ReadNC4Properties(file).get_date('date')}")
+
 
         return (str(date), subset)
 
