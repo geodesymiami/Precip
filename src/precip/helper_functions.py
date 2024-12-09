@@ -128,23 +128,26 @@ def adapt_coordinates(latitude, longitude):
         latitude = [latitude, latitude]
 
     for i in range(len(latitude)):
+        latitude_float = float(latitude[i])
 
-        la = int(float(latitude[i]) *  10) /  10.0
+        la = int(latitude_float *  10) /  10.0
 
         if -89.95 <= la <= 89.95:
 
-            val = 0.05 if la > 0 else -0.05
+            val = 0.05 if (latitude_float > 0) else -0.05
             latitude[i] = round(la + val, 2)
 
         else:
             raise ValueError(f'Values not in the Interval (-89.95, 89.95)')
 
     for i in range(len(longitude)):
-        lo = int(float(longitude[i]) *  10) /  10.0
+        longitude_float = float(longitude[i])
+
+        lo = int(longitude_float *  10) /  10.0
 
         if -179.95 <= lo <= 179.95:
 
-            val = 0.05 if lo > 0 else  -0.05
+            val = 0.05 if (longitude_float > 0) else  -0.05
             longitude[i] = round(lo + val, 2)
         else:
             raise ValueError(f'Values not in the Interval (-179.5, 179.5)')
@@ -561,6 +564,7 @@ def adapt_events(eruption_dates, date_list):
     return valid_eruption_dates
 
 
+# TODO to add to check_precipitation_files
 def check_duplicate_files(files):
     """
     Check for duplicate files in the given list.
