@@ -1,3 +1,11 @@
+# TODOs
+- [ ] Change printed EXAMPLE msg
+- [ ] Review/Change Notebook tutorials
+- [ ] Apply changes to --ssh case
+- [ ] Remove old version data from db
+- [ ] Add option to easily remove data
+- [ ] Change db table to include Version of GPM DATA
+
 # Precip
 
 Python code to display precipitation globally using [GPM dataset](https://gpm.nasa.gov/data/visualizations/precip-apps).
