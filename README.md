@@ -30,10 +30,29 @@ export PATH=${PRECIP_HOME}/src/Precip/cli:$PATH
 export PYTHONPATH=${PRECIP_HOME}/src:$PYTHONPATH
 ```
 ## Install requirements
+
+### Create a new virtual environment (**Optional**)
+Create a virtual env named `precipitation` with `conda`(recommended) or `python`: 
+```bash
+conda create -n precipitation #Choose your preferred name
+```
+Or
+```bash
+python -m venv precipitation #Choose your preferred name
+```
+---
+### Install modules from requirements.txt file
+If you have `conda`:
 ```bash
 cd $PRECIP_HOME
 conda install --yes -c conda-forge --file requirements.txt
 ```
+Or if you don't:
+```bash
+cd $PRECIP_HOME
+pip install -r tools/PlotData/requirements.txt
+```
+
 # Enable download of GPM data
 In order to be able to download GPM data locally, you need to have an active **EarthData account**.
 
