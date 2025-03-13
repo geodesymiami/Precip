@@ -31,7 +31,8 @@ export PYTHONPATH=${PRECIP_HOME}/src:$PYTHONPATH
 ```
 ## Install requirements
 ```bash
-while read requirement; do conda install --yes $requirement; done < requirements.txt
+cd $PRECIP_HOME
+conda install --yes -c conda-forge --file requirements.txt
 ```
 # Enable download of GPM data
 In order to be able to download GPM data locally, you need to have an active **EarthData account**.
