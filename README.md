@@ -23,6 +23,7 @@ git clone git@github.com:geodesymiami/Precip.git $HOME/code/Precip
 - Set environment variables (temp):
 ```bash
 export PRECIP_HOME=$HOME/code/Precip
+export PRECIP_DIR=$SCRATCHDIR/gpm_data
 ```
 - Prepend to your `$PATH`
 ```bash
