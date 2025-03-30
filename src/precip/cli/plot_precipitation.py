@@ -12,6 +12,7 @@
 
 import os
 import argparse
+import pandas as pd
 from datetime import datetime
 from precip.objects.classes.configuration import PlotConfiguration
 from precip.objects.classes.plotters.plotters import MapPlotter, BarPlotter, AnnualPlotter
@@ -28,14 +29,14 @@ Date format: YYYYMMDD
 
 Example:
 
-Plot bar style for Merapi volcano from {START_DATE} to {END_DATE} (change values in config.py) with 3 color/s and 30 days (default is 90) rolling window:
-    plot_precipitation.py Merapi --style bar --roll 30 --bins 3 --log
+Plot bar style for volcano with id 353060 from {START_DATE} to {END_DATE} (change values in config.py) with 3 color/s and 30 days (default is 90) rolling window:
+    plot_precipitation.py --id 353060 --style bar --roll 30 --bins 3 --log
 
 Plot bar style at specific location from 2019-01-01 to 2021-09-29 with 1 color/s (default) and 90 days (default) rolling window, add El Nino/La Nina event, save it in specific folder:
     plot_precipitation.py --style bar --lalo 19.5,-156.5 --period 20190101:20210929 --elnino --outdir path/to/dir
 
-Plot strength style for Merapi volcano with 1 color/s (default) and 90 days (default) rolling window; don't show plot and save it in current folder:
-    plot_precipitation.py Merapi --style strength --period 20190101:20210929 --no-show --save
+Plot strength style for volcano with 1 color/s (default) and 90 days (default) rolling window; don't show plot and save it in current folder:
+    plot_precipitation.py --id 353060 --style strength --period 20190101:20210929 --no-show --save
 
 Plot annual style at specific location from 2019-01-01 to 2021-09-29 with 2 color/s and 10 days rolling window; add events on 2020-09-29 and 2021-09-29:
     plot_precipitation.py --style annual --start-date 20190101 --end-date 20210929 --latitude 19.5 --longitude -156.5 --roll 10 --bins 2 --add-event 20200929 20210929
@@ -43,14 +44,11 @@ Plot annual style at specific location from 2019-01-01 to 2021-09-29 with 2 colo
 Plot msp style at specific location from {START_DATE} (default) to 2021-09-29:
     plot_precipitation.py --style map --end-date 20210929 --polygon 'POLYGON((113.4496 -8.0893,113.7452 -8.0893,113.7452 -7.817,113.4496 -7.817,113.4496 -8.0893))'
 
-Plot map style of Merapi with 3 levels (default is 1) of BLACK isolines (default is white), colorbar 'RdBu' (default is 'viridis'):
-    plot_precipitation.py Merapi --style map --isolines 3 --isolines-color black --colorbar 'RdBu'
+Plot map style of volcano with 3 levels (default is 1) of BLACK isolines (default is white), colorbar 'RdBu' (default is 'viridis'):
+    plot_precipitation.py --id 353060 --style map --isolines 3 --isolines-color black --colorbar 'RdBu'
 
-Plot map style of Merapi with precipitation values between -3 and 3, and interpolate:
-    plot_precipitation.py Merapi --style map --vlim -3 3 --interpolate 3
-
-List all volcanoes from the json file/API:
-    plot_precipitation.py --list
+Plot map style of Volcano with precipitation values between -3 and 3, and interpolate:
+    plot_precipitation.py --id 353060 --style map --vlim -3 3 --interpolate 3
 
 """
 
@@ -62,18 +60,29 @@ def create_parser(iargs=None, namespace=None):
         formatter_class=argparse.RawTextHelpFormatter,
         epilog=EXAMPLE)
 
-    parser.add_argument('name',
+    parser.add_argument('--id',
                         nargs='?',
-                        type=str,
-                        help='Volcano name')
-    parser.add_argument('--volcano-name',
-                        nargs=1,
+                        type=int,
+                        default=None,
+                        help='Volcano id')
+    parser.add_argument('--name',
+                        dest='volcano_name',
+                        nargs='?',
                         type=str,
                         metavar=('NAME'),
                         help='Name of the volcano')
+    parser.add_argument("--vei",
+                        nargs="?",
+                        type=int,
+                        default=1,
+                        help="Minimum volcanic explosivity index")
     parser.add_argument('--style',
                         choices=['daily','weekly','monthly','yearly','map','bar','annual','strength'],
                         help='Choose plot type')
+    parser.add_argument('--add-event',
+                        nargs='*',
+                        metavar=('YYYYMMDD, YYYY-MM-DD'),
+                        help='Add event to the time series')
     parser.add_argument('--use-ssh',
                         action='store_true',
                         dest='use_ssh',
@@ -87,10 +96,10 @@ def create_parser(iargs=None, namespace=None):
 
     inps = parser.parse_args(iargs, namespace)
 
-    if inps.name:
-        inps.volcano_name = [inps.name]
-
     inps.dir = PRECIP_DIR
+
+    if not inps.id:
+        inps.id = inps.volcano_name
 
     # FA: Assuming that inps.start_date and inps.end_date will be later consider function: inps.start_date, inps.end_date=get_processing_dates(inps)
     if not inps.period:

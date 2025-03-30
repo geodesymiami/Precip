@@ -19,7 +19,12 @@ class PlotConfiguration:
     def configure_arguments(self, inps):
         self.gpm_dir = inps.dir
         self.volcano_json_dir = os.path.join(inps.dir, JSON_VOLCANO)
-        self.date_list =  generate_date_list(inps.start_date, inps.end_date, inps.average)
+        if hasattr(inps, 'average'):
+            self.average = inps.average
+        else:
+            self.average = None
+
+        self.date_list =  generate_date_list(inps.start_date, inps.end_date, self.average)
         self.eruption_dates = []
 
         if len(self.date_list) <= self.roll and not inps.style == 'map':
@@ -29,8 +34,8 @@ class PlotConfiguration:
         if inps.latitude and inps.longitude:
             self.latitude, self.longitude = adapt_coordinates(inps.latitude, inps.longitude)
 
-        elif inps.volcano_name:
-            self.eruption_dates, lalo, self.id = extract_volcanoes_info(self.volcano_json_dir, inps.volcano_name[0])
+        elif inps.id:
+            self.eruption_dates, lalo, self.volcano_name = extract_volcanoes_info(self.volcano_json_dir, inps.id, inps.vei)
             self.latitude, self.longitude = adapt_coordinates(lalo[0], lalo[1])
 
             if inps.style == 'map':
@@ -47,6 +52,9 @@ class PlotConfiguration:
                 if inps.bins:
                     self.colors = color_scheme(self.bins)
                     self.quantile = quantile_name(self.bins)
+
+        elif inps.name:
+            self.eruption_dates, lalo, self.volcano_name = extract_volcanoes_info(self.volcano_json_dir, inps.id, inps.vei)
 
         self.plot_labels()
 

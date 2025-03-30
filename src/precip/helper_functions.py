@@ -213,7 +213,7 @@ def weekly_monthly_yearly_precipitation(dictionary, time_period=None, cumulate=F
         raise KeyError('Error: Precipitation field not found in the dictionary')
 
 
-def generate_date_list(start, end=None, average='M'):
+def generate_date_list(start, end=None, average=None):
     """
     Generate a list of dates based on the given start and end dates.
 
@@ -629,3 +629,40 @@ def check_dates_downloaded(date_list, files):
         raise ValueError('Some dates are missing. Starting download of the missing files.', missing)
     else:
         return file_to_use
+
+
+def create_eruption_csv(file, dataframe, attach=None):
+    if attach:
+        # Check if attach is a list or similar iterable
+        if not isinstance(attach, (list, pd.Series)):
+            raise ValueError("attach must be a list or pandas Series of dates")
+
+        # Check if dataframe is a pandas DataFrame
+        if not isinstance(dataframe, pd.DataFrame):
+            raise ValueError("dataframe must be a pandas DataFrame")
+
+        # Check if 'Date' column exists in dataframe
+        if 'Date' not in dataframe.columns:
+            raise ValueError("dataframe must contain a 'Date' column")
+
+        # Convert 'Date' column to datetime
+        dataframe['Date'] = pd.to_datetime(dataframe['Date'])
+
+        # Ensure attach contains valid date values
+        try:
+            attach_dates = pd.to_datetime(attach)
+        except Exception as e:
+            raise ValueError("attach must contain valid date values") from e
+
+        # Process the dataframe
+        dataframe = from_nested_to_float(dataframe)
+        dataframe['eruptions'] = dataframe['Date'].isin(attach_dates)
+
+    # Open the CSV file for writing
+    # Ensure the dataframe is a pandas DataFrame
+    if not isinstance(dataframe, pd.DataFrame):
+        raise ValueError("The provided data is not a pandas DataFrame")
+
+    # Write the DataFrame to a CSV file
+    dataframe.to_csv(file, index=False)
+    print(f"File saved at {file}")

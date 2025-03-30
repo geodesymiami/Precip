@@ -45,7 +45,7 @@ def main(iargs=None, namespace=None):
         id = info['id']
         volcano_dir = os.path.join(plot_dir, str(id))
 
-        if (volcano == 'Cotopaxi') or os.path.exists(volcano_dir):
+        if (volcano != 'Grimsvotn') or os.path.exists(volcano_dir):
             print('skipping ', volcano, ' ', volcano_dir)
             continue
 
@@ -120,7 +120,7 @@ def main(iargs=None, namespace=None):
         MapPlotter(fig, main_gs[0], map_config).plot(map_precipitation)
         plt.close(fig)
 
-    del map_precipitation
+        del map_precipitation
     gc.collect()
 
 

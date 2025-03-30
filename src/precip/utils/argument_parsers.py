@@ -72,10 +72,6 @@ def add_plot_parameters_arguments(parser):
         argparse.ArgumentParser: The argument parser object with added plot parameters arguments.
     """
     plot_parameters = parser.add_argument_group('Plot parameters')
-    plot_parameters.add_argument('--add-event',
-                        nargs='*',
-                        metavar=('YYYYMMDD, YYYY-MM-DD'),
-                        help='Add event to the time series')
     plot_parameters.add_argument('--log',
                         action='store_true',
                         help='Enable logaritmic scale')

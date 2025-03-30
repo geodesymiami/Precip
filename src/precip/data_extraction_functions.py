@@ -85,6 +85,7 @@ def get_precipitation_data(inps):
         #Get data
         precipitation = Database(SQLite3Operations(database)).get_data(Queries.extract_precipitation(inps.latitude, inps.longitude, inps.date_list))
 
+        # TODO apply to ssh case too
         ################# Make as function ###################
 
         # Identify duplicates
@@ -96,11 +97,13 @@ def get_precipitation_data(inps):
         if not duplicates.empty:
             # Remove duplicates from SQLite database
             print('Removing duplicates from Database ...')
-
+            # TODO remove data with invalid values
             for date in duplicates['Date']:
                 Database(SQLite3Operations(database)).remove_data(Queries.remove_records(inps.latitude, inps.longitude, date))
 
             print('Duplicates Removed from Database')
+
+        # precipitation['Precipitation'].isfloat
 
         ######################################################
 
