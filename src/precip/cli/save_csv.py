@@ -1,3 +1,15 @@
+#!/usr/bin/env python3
+
+#############################################################################
+# Data from:                                                                #
+# Huffman, G.J., E.F. Stocker, D.T. Bolvin, E.J. Nelkin, Jackson Tan (2023),#
+# GPM IMERG Final Precipitation L3 1 day 0.1 degree x 0.1 degree V07,       #
+# GPM IMERG Late Precipitation L3 1 day 0.1 degree x 0.1 degree V06,        #
+# Edited by Andrey Savtchenko, Greenbelt, MD,                               #
+# Goddard Earth Sciences Data and Information Services Center (GES DISC),   #
+# Accessed: [Data Access Date], 10.5067/GPM/IMERGDF/DAY/07                  #
+#############################################################################
+
 import os
 from precip.config import JSON_VOLCANO
 from precip.helper_functions import generate_date_list, adapt_coordinates
