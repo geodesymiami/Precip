@@ -1,3 +1,11 @@
+# TODOs
+- [ ] Change printed EXAMPLE msg
+- [ ] Review/Change Notebook tutorials
+- [ ] Apply changes to --ssh case
+- [ ] Remove old version data from db
+- [ ] Add option to easily remove data
+- [ ] Change db table to include Version of GPM DATA
+
 # Precip
 
 Python code to display precipitation globally using [GPM dataset](https://gpm.nasa.gov/data/visualizations/precip-apps).
@@ -15,6 +23,7 @@ git clone git@github.com:geodesymiami/Precip.git $HOME/code/Precip
 - Set environment variables (temp):
 ```bash
 export PRECIP_HOME=$HOME/code/Precip
+export PRECIP_DIR=$SCRATCHDIR/gpm_data
 ```
 - Prepend to your `$PATH`
 ```bash
@@ -22,9 +31,29 @@ export PATH=${PRECIP_HOME}/src/Precip/cli:$PATH
 export PYTHONPATH=${PRECIP_HOME}/src:$PYTHONPATH
 ```
 ## Install requirements
+
+### Create a new virtual environment (**Optional**)
+Create a virtual env named `precipitation` with `conda`(recommended) or `python`: 
 ```bash
-while read requirement; do conda install --yes $requirement; done < requirements.txt
+conda create -n precipitation #Choose your preferred name
 ```
+Or
+```bash
+python -m venv precipitation #Choose your preferred name
+```
+---
+### Install modules from requirements.txt file
+If you have `conda`:
+```bash
+cd $PRECIP_HOME
+conda install --yes -c conda-forge --file requirements.txt
+```
+Or if you don't:
+```bash
+cd $PRECIP_HOME
+pip install -r tools/PlotData/requirements.txt
+```
+
 # Enable download of GPM data
 In order to be able to download GPM data locally, you need to have an active **EarthData account**.
 
