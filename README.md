@@ -1,7 +1,7 @@
 # TODOs
 - [ ] Change printed EXAMPLE msg
 - [ ] Review/Change Notebook tutorials
-- [ ] Apply changes to --ssh case
+- [X] Apply changes to --ssh case
 - [ ] Remove old version data from db
 - [ ] Add option to easily remove data
 - [ ] Change db table to include Version of GPM DATA
