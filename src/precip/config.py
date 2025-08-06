@@ -7,6 +7,7 @@ PATH_JETSTREAM = '/var/www/html/data/HDF5EOS/gpm_data/'
 JSON_DOWNLOAD_URL = 'https://webservices.volcano.si.edu/geoserver/GVP-VOTW/wms?service=WFS&version=1.0.0&request=GetFeature&typeName=GVP-VOTW:E3WebApp_Eruptions1960&outputFormat=application%2Fjson'
 JSON_VOLCANO = 'volcanoes.json'
 DATABASE = 'volcanoes.db'
+RELIABLE_VERSION = 7
 
 #End Date may vary, check on https://disc.gsfc.nasa.gov/datasets?keywords=%22IMERG%20Late%22&page=1
 if True:

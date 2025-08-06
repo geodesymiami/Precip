@@ -12,7 +12,7 @@ import pandas as pd
 from matplotlib import cm
 import netCDF4 as nc
 from collections import Counter
-from precip.config import PATH_JETSTREAM
+from precip.config import PATH_JETSTREAM, RELIABLE_VERSION
 
 
 def date_to_decimal_year(date_str):
@@ -564,7 +564,6 @@ def adapt_events(eruption_dates, date_list):
     return valid_eruption_dates
 
 
-# TODO to add to check_precipitation_files
 def check_duplicate_files(files):
     """
     Check for duplicate files in the given list.
@@ -588,8 +587,9 @@ def check_duplicate_files(files):
 
         # Final > Late & V7 > V6
         # New files are only v07 as of 2024/10/16
-        if any('.V07' in file for file in files_with_date):
-            to_remove = [file for file in files_with_date if '.V06' in file]
+        version_map = {file: int(re.search(r'V(\d{2})', file).group(1)) for file in files_with_date if re.search(r'V(\d{2})', file)}
+        if any(version == RELIABLE_VERSION for version in version_map.values()):
+            to_remove = [file for file, version in version_map.items() if version == 6]
 
         for f in to_remove:
             files.remove(f)
@@ -600,14 +600,14 @@ def check_duplicate_files(files):
 def check_dates_downloaded(date_list, files):
     """
     Check if all dates in the given date_list have corresponding files in the files list.
-    
+
     Args:
         date_list (list): A list of dates to check.
         files (list): A list of file names.
-        
+
     Returns:
         list: A list of file names that correspond to the dates in date_list.
-        
+
     Raises:
         ValueError: If any dates in date_list are missing files.
     """

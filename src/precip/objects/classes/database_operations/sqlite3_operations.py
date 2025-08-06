@@ -18,22 +18,15 @@ class SQLite3Operations(AbstractDatabaseOperations):
         self.database.cursor.execute('SELECT name FROM sqlite_master WHERE type="table" AND name=?', (table,))
 
         if not self.database.cursor.fetchone():
-            self.database.cursor.execute(f"""
-            CREATE TABLE {table} (
-                Date TEXT,
-                Precipitation TEXT,
-                Latitude REAL,
-                Longitude REAL
-            )
-        """)
+            self.database.cursor.execute(Queries.create_table(table))
             self.database.connection.commit()
 
         print('Table checked')
 
 
-    def insert_data(self, latitude: str, longitude: str, date: str, precipitation: str):
+    def insert_data(self, latitude: str, longitude: str, date: str, precipitation: str, version: int):
         try:
-            self.database.cursor.execute(Queries.insert_ignore_precipitation(latitude, longitude, date, precipitation))
+            self.database.cursor.execute(Queries.insert_ignore_precipitation(latitude, longitude, date, precipitation, version))
             self.database.connection.commit()
 
         except IntegrityError:

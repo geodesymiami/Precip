@@ -1,5 +1,6 @@
 from precip.objects.interfaces.data_managers.abstract_dataloader import AbstractDataLoader
 from precip.objects.interfaces.database.abstract_database_operations import AbstractDatabaseOperations
+from tqdm import tqdm
 import pandas as pd
 import json
 
@@ -11,7 +12,8 @@ class Database(AbstractDataLoader):
 
 
     def get_data(self, query: str):
-        print('Extracting Values from Database ...')
+        print('-' * 50)
+        print('Extracting Values from Database ...\n')
 
         data = self.operator.select_data(query)
 
@@ -24,12 +26,14 @@ class Database(AbstractDataLoader):
         # Convert the 'Precipitation' column to a string
         dataframe['Precipitation'] = dataframe['Precipitation'].apply(lambda x: json.dumps(x.tolist()))
 
-        print('Inserting Values in Database ...')
+        print('-' * 50)
+        print('Inserting Values in Database ...\n')
 
-        for index, row in dataframe.iterrows():
-            self.operator.insert_data(latitude, longitude, row['Date'], row['Precipitation'])
+        # Wrap the iterrows() loop with tqdm
+        for index, row in tqdm(dataframe.iterrows(), total=len(dataframe), desc="Inserting data", unit="row"):
+            self.operator.insert_data(latitude, longitude, row['Date'], row['Precipitation'], row['Version'])
 
-        print('Values Inserted in Database')
+        print('Values Inserted in Database\n')
 
 
     def remove_data(self, query: str):

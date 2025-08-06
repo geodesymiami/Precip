@@ -91,7 +91,7 @@ class PlotConfiguration:
             )
 
         if self.volcano_name:
-            title = f'{self.volcano_name[0]} - Latitude: {self.latitude}, Longitude: {self.longitude}'
+            title = f'{self.volcano_name} - Latitude: {self.latitude}, Longitude: {self.longitude}'
 
         else:
             title = f'Latitude: {self.latitude}, Longitude: {self.longitude}'
@@ -104,7 +104,7 @@ class PlotConfiguration:
     def save_config(self):
         if self.volcano_name:
                 if self.save == 'volcano-name':
-                    save_name = self.volcano_name[0]
+                    save_name = self.volcano_name
 
                 elif self.save == 'volcano-id':
                     save_name = self.id

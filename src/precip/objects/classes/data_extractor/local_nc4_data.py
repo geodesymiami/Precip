@@ -14,12 +14,13 @@ class LocalNC4Data(AbstractDataFromFile):
 
 
     def check_duplicates(self):
-        print(f"Checking for duplicate files in {self.path} ...")
+        print('-' * 50)
+        print(f"Checking for duplicate files in {self.path} ...\n")
 
         l1 = len(self.files)
         self.files = check_duplicate_files(self.files)
 
-        print(f"Removed {l1 - len(self.files)} duplicate files")
+        print(f"Removed {l1 - len(self.files)} duplicate files\n")
 
 
     def process_file(self, file, date_list, lon, lat, longitude, latitude):
@@ -29,6 +30,8 @@ class LocalNC4Data(AbstractDataFromFile):
         #FASTER
         d = re.search('\d{8}', file)
         date = datetime.strptime(d.group(0), "%Y%m%d").date()
+
+        version = int(re.search(r'V(\d{2})', file).group(1))
 
         if date not in date_list:
             return None
@@ -53,7 +56,7 @@ class LocalNC4Data(AbstractDataFromFile):
             else:
                 subset = subset.astype(float)
 
-        return (str(date), subset)
+        return (str(date), subset, version)
 
 
     def list_files(self):
