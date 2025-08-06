@@ -2,9 +2,8 @@
 - [ ] Change printed EXAMPLE msg
 - [ ] Review/Change Notebook tutorials
 - [X] Apply changes to --ssh case
-- [ ] Remove old version data from db
-- [ ] Add option to easily remove data
-- [ ] Change db table to include Version of GPM DATA
+- [X] Extract data based on version
+- [X] Change db table to include Version of GPM DATA
 
 # Precip
 
