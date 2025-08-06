@@ -228,6 +228,7 @@ def parse_coordinates(coordinates):
     """
     if isinstance(coordinates, str):
         coordinates = coordinates.replace("'", '').replace('"', '')
+        coordinates = coordinates.replace('–', '-').replace('—', '-')  # Replace en dash and em dash with hyphen
 
         try:
             if ',' in coordinates:

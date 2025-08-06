@@ -43,11 +43,11 @@ def add_location_arguments(parser):
     """
     location = parser.add_argument_group('Location of the volcano or area of interest')
     location.add_argument('--latitude',
-                        nargs='?',
+                        nargs='*',
                         metavar=('LATITUDE or LATITUDE:LATITUDE'),
                         help='Latitude')
     location.add_argument('--longitude',
-                        nargs='?',
+                        nargs='*',
                         metavar=('LONGITUDE or LONGITUDE:LONGITUDE'),
                         help='Longitude')
     location.add_argument('--lalo',
