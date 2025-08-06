@@ -38,23 +38,23 @@ class PlotConfiguration:
             self.eruption_dates, lalo, self.volcano_name = extract_volcanoes_info(self.volcano_json_dir, inps.id, inps.vei)
             self.latitude, self.longitude = adapt_coordinates(lalo[0], lalo[1])
 
-            if inps.style == 'map':
-                self.roll = 1
-                self.volcano_position = [self.latitude[0], self.longitude[0]]
-
-                self.latitude = [round(min(self.latitude) - 2, 2), round(max(self.latitude) + 2, 2)]
-                self.longitude = [round(min(self.longitude) - 2, 2), round(max(self.longitude) + 2, 2)]
-
-            else:
-                if inps.add_event:
-                    self.eruption_dates.extend(inps.add_event if isinstance(inps.add_event, list) else list(inps.add_event))
-
-                if inps.bins:
-                    self.colors = color_scheme(self.bins)
-                    self.quantile = quantile_name(self.bins)
-
         elif inps.name:
             self.eruption_dates, lalo, self.volcano_name = extract_volcanoes_info(self.volcano_json_dir, inps.id, inps.vei)
+
+        if inps.style == 'map':
+            self.roll = 1
+            self.volcano_position = [self.latitude[0], self.longitude[0]]
+
+            self.latitude = [round(min(self.latitude) - 2, 2), round(max(self.latitude) + 2, 2)]
+            self.longitude = [round(min(self.longitude) - 2, 2), round(max(self.longitude) + 2, 2)]
+
+        else:
+            if inps.add_event:
+                self.eruption_dates.extend(inps.add_event if isinstance(inps.add_event, list) else list(inps.add_event))
+
+            if inps.bins:
+                self.colors = color_scheme(self.bins)
+                self.quantile = quantile_name(self.bins)
 
         self.plot_labels()
 
