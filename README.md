@@ -50,7 +50,7 @@ conda install --yes -c conda-forge --file requirements.txt
 Or if you don't:
 ```bash
 cd $PRECIP_HOME
-pip install -r tools/PlotData/requirements.txt
+pip install -r requirements.txt
 ```
 
 # Enable download of GPM data
