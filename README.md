@@ -112,7 +112,7 @@ echo "HTTP.COOKIEJAR=%USERPROFILE%/.urs_cookies" >> %USERPROFILE%\.dodsrc
 # Examples
 You can run the code through command line by simply runnig the following command:
 ```bash
-plot_precipitation.py Merapi --style bar --period=20060101:20070101
+plot_precipitation.py --name Merapi --style bar --period=20060101:20070101
 ```
 This line will show the precipitation over **Merapi** volcano from **01 January 2006** to **2007** as a **bar** plot, with vertical lines representing the eruptions.
 
