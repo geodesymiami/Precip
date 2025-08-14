@@ -69,7 +69,7 @@ Otherwise you can use a mockup account, just copy paste the following code in yo
 ```bash
 cd $HOME
 touch .netrc
-echo "machine urs.earthdata.nasa.gov login emrehavazli password 4302749" >> .netrc
+echo "machine urs.earthdata.nasa.gov login emrehavazli password 4302749" >> .netrc #Choose your username and password
 chmod 0600 .netrc
 ```
 ### Create `.urs_cookies` file
@@ -89,10 +89,11 @@ echo "HTTP.COOKIEJAR=$HOME/.urs_cookies" >> $HOME/.dodsrc
 ### Create `.netrc` file
 - Open Notepad
 - Enter (without quotes):
+```
+machine urs.earthdata.nasa.gov login emrehavazli password 4302749 #Choose your username and password
+```
 
-machine urs.earthdata.nasa.gov login emrehavazli password 4302749
-
-Save as C:\.netrc
+Save as `C:\.netrc`
 
 ### Create `.urs_cookies` file
 From terminal (`Win` + **R**, type _cmd_ )
