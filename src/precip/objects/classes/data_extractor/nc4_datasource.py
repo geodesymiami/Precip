@@ -2,6 +2,7 @@ from precip.objects.interfaces.data_managers.abstract_datasource import Abstract
 from precip.objects.interfaces.data_managers.abstract_data_from_file import AbstractDataFromFile
 from precip.helper_functions import generate_coordinate_array, check_dates_downloaded
 import pandas as pd
+from tqdm import tqdm
 
 
 class NC4DataSource(AbstractDataSource):
@@ -10,6 +11,9 @@ class NC4DataSource(AbstractDataSource):
 
 
     def get_data(self, latitude, longitude, date_list):
+        print('-' * 50)
+        print('Extracting Values from NetCDF4 Files ...\n')
+
         lon, lat = generate_coordinate_array()
         self.data_extracted.list_files()
         self.data_extracted.check_duplicates()
@@ -18,13 +22,14 @@ class NC4DataSource(AbstractDataSource):
         finaldf = pd.DataFrame()
         results = []
 
-        for file in self.data_extracted.files:
+        # Initialize tqdm progress bar
+        for file in tqdm(self.data_extracted.files, desc="Processing files", unit="file"):
             result = self.data_extracted.process_file(file, date_list, lon, lat, longitude, latitude)
 
             if result is not None:
                 results.append(result)
 
-        df1 = pd.DataFrame(results, columns=['Date', 'Precipitation'])
+        df1 = pd.DataFrame(results, columns=['Date', 'Precipitation', 'Version'])
         finaldf = pd.concat([finaldf, df1], ignore_index=True, sort=False)
 
         finaldf = finaldf.sort_values(by='Date', ascending=True).reset_index(drop=True)

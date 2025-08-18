@@ -13,7 +13,7 @@ class JetStream(AbstractCloudManager):
 
         # TODO Tailored to my(disilvestro) environment
         self.path_id_rsa = os.path.join(os.getenv('HOME'), credential.rsa_key)
-        self.ssh_key = self.path_id_rsa + '_jetstream' if os.path.exists(self.path_id_rsa + '_jetstream') else self.path_id_rsa
+        self.ssh_key = self.path_id_rsa
 
 
     def connect(self) -> None:
@@ -24,7 +24,8 @@ class JetStream(AbstractCloudManager):
                 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 ssh.connect(hostname=self.hostname, username=self.username, key_filename=self.ssh_key)
                 self.ssh = ssh
-                print('Connected to the server')
+                print('-'*50)
+                print('Connected to the server\n')
                 break
 
             except paramiko.SSHException as e:
@@ -36,7 +37,8 @@ class JetStream(AbstractCloudManager):
 
     def open_sftp(self):
         self.sftp = self.ssh.open_sftp()
-        print('SFTP connection opened')
+        print('-'*50)
+        print('SFTP connection opened\n')
 
 
     def check_connected(self) -> bool:

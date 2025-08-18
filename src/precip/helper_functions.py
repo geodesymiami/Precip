@@ -1,4 +1,5 @@
 import re
+import os
 import math
 import json
 from datetime import datetime, date
@@ -10,7 +11,8 @@ import numpy as np
 import pandas as pd
 from matplotlib import cm
 import netCDF4 as nc
-from precip.config import PATH_JETSTREAM
+from collections import Counter
+from precip.config import PATH_JETSTREAM, RELIABLE_VERSION
 
 
 def date_to_decimal_year(date_str):
@@ -126,23 +128,26 @@ def adapt_coordinates(latitude, longitude):
         latitude = [latitude, latitude]
 
     for i in range(len(latitude)):
+        latitude_float = float(latitude[i])
 
-        la = int(float(latitude[i]) *  10) /  10.0
+        la = int(latitude_float *  10) /  10.0
 
         if -89.95 <= la <= 89.95:
 
-            val = 0.05 if la > 0 else -0.05
+            val = 0.05 if (latitude_float > 0) else -0.05
             latitude[i] = round(la + val, 2)
 
         else:
             raise ValueError(f'Values not in the Interval (-89.95, 89.95)')
 
     for i in range(len(longitude)):
-        lo = int(float(longitude[i]) *  10) /  10.0
+        longitude_float = float(longitude[i])
+
+        lo = int(longitude_float *  10) /  10.0
 
         if -179.95 <= lo <= 179.95:
 
-            val = 0.05 if lo > 0 else  -0.05
+            val = 0.05 if (longitude_float > 0) else  -0.05
             longitude[i] = round(lo + val, 2)
         else:
             raise ValueError(f'Values not in the Interval (-179.5, 179.5)')
@@ -208,7 +213,7 @@ def weekly_monthly_yearly_precipitation(dictionary, time_period=None, cumulate=F
         raise KeyError('Error: Precipitation field not found in the dictionary')
 
 
-def generate_date_list(start, end=None, average='M'):
+def generate_date_list(start, end=None, average=None):
     """
     Generate a list of dates based on the given start and end dates.
 
@@ -559,23 +564,55 @@ def adapt_events(eruption_dates, date_list):
     return valid_eruption_dates
 
 
+def check_duplicate_files(files):
+    """
+    Check for duplicate files in the given list.
+
+    Args:
+        files (list): A list of file names.
+
+    Returns:
+        list: A list of unique file names.
+
+    """
+    file_dates = [datetime.strptime(re.search('\d{8}', file).group(0), "%Y%m%d").date() for file in files]
+
+    # Assuming file_dates is your list of datetime objects
+    counter = Counter(file_dates)
+    duplicate_dates = [item for item, count in counter.items() if count > 1]
+
+    for date in duplicate_dates:
+        date_string = date.strftime('%Y%m%d')
+        files_with_date = [file for file in files if date_string in file]
+
+        # Final > Late & V7 > V6
+        # New files are only v07 as of 2024/10/16
+        version_map = {file: int(re.search(r'V(\d{2})', file).group(1)) for file in files_with_date if re.search(r'V(\d{2})', file)}
+        if any(version == RELIABLE_VERSION for version in version_map.values()):
+            to_remove = [file for file, version in version_map.items() if version == 6]
+
+        for f in to_remove:
+            files.remove(f)
+            os.remove(f)
+
+    return files
+
 def check_dates_downloaded(date_list, files):
     """
     Check if all dates in the given date_list have corresponding files in the files list.
-    
+
     Args:
         date_list (list): A list of dates to check.
         files (list): A list of file names.
-        
+
     Returns:
         list: A list of file names that correspond to the dates in date_list.
-        
+
     Raises:
         ValueError: If any dates in date_list are missing files.
     """
     file_to_use = []
     missing = []
-    stop = False
 
     file_dates = [datetime.strptime(re.search('\d{8}', file).group(0), "%Y%m%d").date() for file in files]
 
@@ -592,3 +629,40 @@ def check_dates_downloaded(date_list, files):
         raise ValueError('Some dates are missing. Starting download of the missing files.', missing)
     else:
         return file_to_use
+
+
+def create_eruption_csv(file, dataframe, attach=None):
+    if attach:
+        # Check if attach is a list or similar iterable
+        if not isinstance(attach, (list, pd.Series)):
+            raise ValueError("attach must be a list or pandas Series of dates")
+
+        # Check if dataframe is a pandas DataFrame
+        if not isinstance(dataframe, pd.DataFrame):
+            raise ValueError("dataframe must be a pandas DataFrame")
+
+        # Check if 'Date' column exists in dataframe
+        if 'Date' not in dataframe.columns:
+            raise ValueError("dataframe must contain a 'Date' column")
+
+        # Convert 'Date' column to datetime
+        dataframe['Date'] = pd.to_datetime(dataframe['Date'])
+
+        # Ensure attach contains valid date values
+        try:
+            attach_dates = pd.to_datetime(attach)
+        except Exception as e:
+            raise ValueError("attach must contain valid date values") from e
+
+        # Process the dataframe
+        dataframe = from_nested_to_float(dataframe)
+        dataframe['eruptions'] = dataframe['Date'].isin(attach_dates)
+
+    # Open the CSV file for writing
+    # Ensure the dataframe is a pandas DataFrame
+    if not isinstance(dataframe, pd.DataFrame):
+        raise ValueError("The provided data is not a pandas DataFrame")
+
+    # Write the DataFrame to a CSV file
+    dataframe.to_csv(file, index=False)
+    print(f"File saved at {file}")

@@ -11,47 +11,30 @@
 #############################################################################
 
 import os
+from precip.config import JSON_VOLCANO
+from precip.helper_functions import generate_date_list, adapt_coordinates
+from precip.volcano_functions import extract_volcanoes_info
 import argparse
-import pandas as pd
 from datetime import datetime
-from precip.objects.classes.configuration import PlotConfiguration
-from precip.objects.classes.plotters.plotters import MapPlotter, BarPlotter, AnnualPlotter
-from matplotlib import pyplot as plt
-from matplotlib import gridspec
 from precip.data_extraction_functions import get_precipitation_data
-from precip.utils.argument_parsers import add_plot_parameters_arguments, add_date_arguments, add_location_arguments, add_save_arguments, add_map_parameters_arguments
-from precip.config import END_DATE,START_DATE
+from precip.helper_functions import create_eruption_csv
+from precip.utils.argument_parsers import add_date_arguments, add_location_arguments, add_save_arguments
+
 
 PRECIP_DIR = os.getenv('PRECIP_DIR')
 
 EXAMPLE = f"""
-Date format: YYYYMMDD
-
 Example:
 
-Plot bar style for volcano with id 353060 from {START_DATE} to {END_DATE} (change values in config.py) with 3 color/s and 30 days (default is 90) rolling window:
-    plot_precipitation.py --id 353060 --style bar --roll 30 --bins 3 --log
+Save precipitation data over a volcano specifing the period and output directory:
+save_csv.py --id 353060 --period 20200101:20201231 --outdir /path/to/output/directory
 
-Plot bar style at specific location from 2019-01-01 to 2021-09-29 with 1 color/s (default) and 90 days (default) rolling window, add El Nino/La Nina event, save it in specific folder:
-    plot_precipitation.py --style bar --lalo 19.5,-156.5 --period 20190101:20210929 --elnino --outdir path/to/dir
+Add an event manually to the time series, save to current directory:
+save_csv.py --id 353060 --add-event 20170310
 
-Plot strength style for volcano with 1 color/s (default) and 90 days (default) rolling window; don't show plot and save it in current folder:
-    plot_precipitation.py --id 353060 --style strength --period 20190101:20210929 --no-show --save
-
-Plot annual style at specific location from 2019-01-01 to 2021-09-29 with 2 color/s and 10 days rolling window; add events on 2020-09-29 and 2021-09-29:
-    plot_precipitation.py --style annual --start-date 20190101 --end-date 20210929 --latitude 19.5 --longitude -156.5 --roll 10 --bins 2 --add-event 20200929 20210929
-
-Plot msp style at specific location from {START_DATE} (default) to 2021-09-29:
-    plot_precipitation.py --style map --end-date 20210929 --polygon 'POLYGON((113.4496 -8.0893,113.7452 -8.0893,113.7452 -7.817,113.4496 -7.817,113.4496 -8.0893))'
-
-Plot map style of volcano with 3 levels (default is 1) of BLACK isolines (default is white), colorbar 'RdBu' (default is 'viridis'):
-    plot_precipitation.py --id 353060 --style map --isolines 3 --isolines-color black --colorbar 'RdBu'
-
-Plot map style of Volcano with precipitation values between -3 and 3, and interpolate:
-    plot_precipitation.py --id 353060 --style map --vlim -3 3 --interpolate 3
-
+Select the minimum volcanic explosivity index:
+save_csv.py --id 353060 --vei 2
 """
-
 
 def create_parser(iargs=None, namespace=None):
     """ Creates command line argument parser object. """
@@ -62,23 +45,14 @@ def create_parser(iargs=None, namespace=None):
 
     parser.add_argument('--id',
                         nargs='?',
-                        type=int,
+                        type=float,
                         default=None,
-                        help='Volcano id')
-    parser.add_argument('--name',
-                        dest='volcano_name',
-                        nargs='?',
-                        type=str,
-                        metavar=('NAME'),
-                        help='Name of the volcano')
+                        help='Volcano name')
     parser.add_argument("--vei",
                         nargs="?",
                         type=int,
                         default=1,
                         help="Minimum volcanic explosivity index")
-    parser.add_argument('--style',
-                        choices=['daily','weekly','monthly','yearly','map','bar','annual','strength'],
-                        help='Choose plot type')
     parser.add_argument('--add-event',
                         nargs='*',
                         metavar=('YYYYMMDD, YYYY-MM-DD'),
@@ -88,20 +62,16 @@ def create_parser(iargs=None, namespace=None):
                         dest='use_ssh',
                         help='Use ssh')
 
-    parser = add_location_arguments(parser)
     parser = add_date_arguments(parser)
-    parser = add_plot_parameters_arguments(parser)
-    parser = add_map_parameters_arguments(parser)
     parser = add_save_arguments(parser)
+    parser = add_location_arguments(parser)
 
     inps = parser.parse_args(iargs, namespace)
 
     inps.dir = PRECIP_DIR
+    inps.gpm_dir = inps.dir
 
-    if not inps.id:
-        inps.id = inps.volcano_name
 
-    # FA: Assuming that inps.start_date and inps.end_date will be later consider function: inps.start_date, inps.end_date=get_processing_dates(inps)
     if not inps.period:
         inps.start_date = datetime.strptime(inps.start_date, '%Y%m%d').date()
 
@@ -119,7 +89,6 @@ def create_parser(iargs=None, namespace=None):
         inps.end_date = datetime.strptime(dates[1], '%Y%m%d').date()
 
     if not inps.polygon:
-
         if inps.latitude:
             if len(inps.latitude) == 1:
                 inps.latitude = parse_coordinates(inps.latitude[0])
@@ -146,39 +115,11 @@ def create_parser(iargs=None, namespace=None):
             inps.longitude = parse_coordinates(coordinates[1])
             inps.latitude, inps.longitude = [min(inps.latitude), max(inps.latitude)], [min(inps.longitude), max(inps.longitude)]
 
+
     else:
-            inps.latitude, inps.longitude = parse_polygon(inps.polygon)
+        inps.latitude, inps.longitude = parse_polygon(inps.polygon)
 
-    # FA: Not sure why to introduce inps.average = 'W'. You can use use 'if inps.style == 'weekly'' later in the code?
-    if inps.style == 'weekly':
-        inps.average = 'W'
-
-    elif inps.style == 'monthly':
-        inps.average = 'M'
-
-    elif inps.style == 'yearly':
-        inps.average = 'Y'
-
-    elif inps.style == 'annual':
-        inps.average = 'D'
-
-    elif inps.style == 'map':
-        inps.add_event = None
-
-    if inps.add_event:
-        try:
-            inps.add_event = tuple(datetime.strptime(date_string, '%Y-%m-%d').date() for date_string in inps.add_event)
-
-        except ValueError:
-            try:
-                inps.add_event = tuple(datetime.strptime(date_string, '%Y%m%d').date() for date_string in inps.add_event)
-
-            except ValueError:
-                msg = 'Date format not valid, it must be in the format YYYYMMDD or YYYY-MM-DD'
-                raise ValueError(msg)
-
-    if not inps.bins:
-        inps.bins = 4 if inps.bins > 4 else inps.bins
+    inps.date_list =  generate_date_list(inps.start_date, inps.end_date)
 
     return inps
 
@@ -228,7 +169,6 @@ def parse_coordinates(coordinates):
     """
     if isinstance(coordinates, str):
         coordinates = coordinates.replace("'", '').replace('"', '')
-        coordinates = coordinates.replace('–', '-').replace('—', '-')  # Replace en dash and em dash with hyphen
 
         try:
             if ',' in coordinates:
@@ -257,71 +197,29 @@ def parse_coordinates(coordinates):
         return coordinates
 
 
-###################### TEST AREA ##########################
-# from matplotlib import pyplot as plt
-# from matplotlib import gridspec
-# import sys
-# from precip.plotter_functions import get_precipitation_data
-# from precip.helper_functions import generate_date_list, adapt_coordinates
-# from precip.objects.configuration import PlotConfiguration
-# from precip.objects.plotters import MapPlotter, BarPlotter, AnnualPlotter
-# from precip.manager_functions import handle_plotters
-
-# def main(iargs=None, namespace=None, ax=None):
-#     inps = create_parser(iargs, namespace)
-#     inps.dir = PRECIP_DIR
-#     os.makedirs(PRECIP_DIR, exist_ok=True)
-
-#     if not inps.show_flag:
-#         # plt.switch_backend('Agg')
-#         pass
-
-
-#     fig = plt.figure(constrained_layout=True)
-#     main_gs = gridspec.GridSpec(2, 1, figure=fig)
-
-#     fig = handle_plotters(inps, main_gs[0], fig)
-
-#     inps.style = 'annual'
-
-#     fig = handle_plotters(inps, main_gs[1], fig)
-
-#     plt.show()
-
-
-# if __name__ == "__main__":
-#     main()
-
-#sys.exit(0)
-
-#################### END TEST AREA ########################
-
-def main(iargs=None, namespace=None, main_gs=None, fig=None):
-
+def main(iargs=None, namespace=None):
+    # TODO finish pls
     inps = create_parser(iargs, namespace)
 
     os.makedirs(PRECIP_DIR, exist_ok=True)
+    if inps.id:
+        volcano_json_dir = os.path.join(inps.dir, JSON_VOLCANO)
+        eruption_dates, lalo, name = extract_volcanoes_info(volcano_json_dir, inps.id, inps.vei)
+        inps.latitude, inps.longitude = adapt_coordinates(lalo[0], lalo[1])
+        if inps.add_event:
+            eruption_dates.extend(inps.add_event if isinstance(inps.add_event, list) else list(inps.add_event))
 
-    input_config = PlotConfiguration(inps)
-    precipitation = get_precipitation_data(input_config)
+    inps.latitude, inps.longitude = adapt_coordinates(inps.latitude, inps.longitude)
 
-    if main_gs is None:
-        fig = plt.figure(constrained_layout=True)
-        main_gs = gridspec.GridSpec(1, 1, figure=fig)
-        main_gs = main_gs[0]
+    precipitation = get_precipitation_data(inps)
 
-    if inps.style == 'map':
-        graph = MapPlotter(fig, main_gs, input_config)
+    if name:
+        name = name.replace(',', '').replace(' ', '')
+    else:
+        name = inps.latitude, inps.longitude
+    file = os.path.join(inps.outdir, f'{name}_{inps.start_date}_{inps.end_date}.csv')
+    create_eruption_csv(file, precipitation, eruption_dates)
 
-    if inps.style in ['daily', 'weekly', 'monthly', 'bar', 'strength']:
-        graph = BarPlotter(fig, main_gs, input_config)
-
-    if inps.style == 'annual':
-        graph = AnnualPlotter(fig, main_gs, input_config)
-
-    graph.plot(precipitation)
-
-    return fig
 
 if __name__ == "__main__":
     main()

@@ -19,7 +19,12 @@ class PlotConfiguration:
     def configure_arguments(self, inps):
         self.gpm_dir = inps.dir
         self.volcano_json_dir = os.path.join(inps.dir, JSON_VOLCANO)
-        self.date_list =  generate_date_list(inps.start_date, inps.end_date, inps.average)
+        if hasattr(inps, 'average'):
+            self.average = inps.average
+        else:
+            self.average = None
+
+        self.date_list =  generate_date_list(inps.start_date, inps.end_date, self.average)
         self.eruption_dates = []
 
         if len(self.date_list) <= self.roll and not inps.style == 'map':
@@ -29,24 +34,27 @@ class PlotConfiguration:
         if inps.latitude and inps.longitude:
             self.latitude, self.longitude = adapt_coordinates(inps.latitude, inps.longitude)
 
-        elif inps.volcano_name:
-            self.eruption_dates, lalo, self.id = extract_volcanoes_info(self.volcano_json_dir, inps.volcano_name[0])
+        elif inps.id:
+            self.eruption_dates, lalo, self.volcano_name = extract_volcanoes_info(self.volcano_json_dir, inps.id, inps.vei)
             self.latitude, self.longitude = adapt_coordinates(lalo[0], lalo[1])
 
-            if inps.style == 'map':
-                self.roll = 1
-                self.volcano_position = [self.latitude[0], self.longitude[0]]
+        elif inps.name:
+            self.eruption_dates, lalo, self.volcano_name = extract_volcanoes_info(self.volcano_json_dir, inps.id, inps.vei)
 
-                self.latitude = [round(min(self.latitude) - 2, 2), round(max(self.latitude) + 2, 2)]
-                self.longitude = [round(min(self.longitude) - 2, 2), round(max(self.longitude) + 2, 2)]
+        if inps.style == 'map':
+            self.roll = 1
+            self.volcano_position = [self.latitude[0], self.longitude[0]]
 
-            else:
-                if inps.add_event:
-                    self.eruption_dates.extend(inps.add_event if isinstance(inps.add_event, list) else list(inps.add_event))
+            self.latitude = [round(min(self.latitude) - 2, 2), round(max(self.latitude) + 2, 2)]
+            self.longitude = [round(min(self.longitude) - 2, 2), round(max(self.longitude) + 2, 2)]
 
-                if inps.bins:
-                    self.colors = color_scheme(self.bins)
-                    self.quantile = quantile_name(self.bins)
+        else:
+            if inps.add_event:
+                self.eruption_dates.extend(inps.add_event if isinstance(inps.add_event, list) else list(inps.add_event))
+
+            if inps.bins:
+                self.colors = color_scheme(self.bins)
+                self.quantile = quantile_name(self.bins)
 
         self.plot_labels()
 
@@ -83,7 +91,7 @@ class PlotConfiguration:
             )
 
         if self.volcano_name:
-            title = f'{self.volcano_name[0]} - Latitude: {self.latitude}, Longitude: {self.longitude}'
+            title = f'{self.volcano_name} - Latitude: {self.latitude}, Longitude: {self.longitude}'
 
         else:
             title = f'Latitude: {self.latitude}, Longitude: {self.longitude}'
@@ -96,7 +104,7 @@ class PlotConfiguration:
     def save_config(self):
         if self.volcano_name:
                 if self.save == 'volcano-name':
-                    save_name = self.volcano_name[0]
+                    save_name = self.volcano_name
 
                 elif self.save == 'volcano-id':
                     save_name = self.id
@@ -106,4 +114,4 @@ class PlotConfiguration:
 
         strStart = str(self.start_date).replace('-', '') if not isinstance(self.start_date, str) else self.start_date.replace('-', '')
         strEnd = str(self.end_date).replace('-', '') if not isinstance(self.end_date, str) else self.end_date.replace('-', '')
-        self.save_path = f'{self.outdir}/{save_name}_{strStart}_{strEnd}_{self.style}_{self.bins}.png'
+        self.save_path = f'{self.outdir}/{save_name}_{self.style}_bin_{self.bins}.png'

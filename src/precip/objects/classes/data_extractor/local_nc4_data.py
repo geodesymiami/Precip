@@ -5,6 +5,7 @@ import netCDF4 as nc
 import numpy as np
 import re
 from datetime import datetime
+from precip.helper_functions import check_duplicate_files
 
 
 class LocalNC4Data(AbstractDataFromFile):
@@ -13,13 +14,13 @@ class LocalNC4Data(AbstractDataFromFile):
 
 
     def check_duplicates(self):
-        print(f"Checking for duplicate files in {self.path} ...")
+        print('-' * 50)
+        print(f"Checking for duplicate files in {self.path} ...\n")
 
-        if len(self.files) != len(set(self.files)):
-            print("There are duplicate files in the list.")
+        l1 = len(self.files)
+        self.files = check_duplicate_files(self.files)
 
-        else:
-            print("There are no duplicate files in the list.")
+        print(f"Removed {l1 - len(self.files)} duplicate files\n")
 
 
     def process_file(self, file, date_list, lon, lat, longitude, latitude):
@@ -29,6 +30,8 @@ class LocalNC4Data(AbstractDataFromFile):
         #FASTER
         d = re.search('\d{8}', file)
         date = datetime.strptime(d.group(0), "%Y%m%d").date()
+
+        version = int(re.search(r'V(\d{2})', file).group(1))
 
         if date not in date_list:
             return None
@@ -42,9 +45,18 @@ class LocalNC4Data(AbstractDataFromFile):
             subset = data[:,
                         np.where(lon == longitude[0])[0][0]:np.where(lon == longitude[1])[0][0]+1,
                         np.where(lat == latitude[0])[0][0]:np.where(lat == latitude[1])[0][0]+1]
-            subset = subset.astype(float)
 
-        return (str(date), subset)
+            masked_subset = np.ma.masked_invalid(subset)
+
+            if np.ma.is_masked(masked_subset):
+                invalid_positions = np.where(masked_subset.mask)
+                os.remove(file)
+                raise ValueError(f"Error converting {file} to float at positions {invalid_positions}, file has been deleted")
+
+            else:
+                subset = subset.astype(float)
+
+        return (str(date), subset, version)
 
 
     def list_files(self):

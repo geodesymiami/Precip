@@ -9,7 +9,7 @@ class Queries:
 
     @staticmethod
     def create_table(table: str):
-        return f"CREATE TABLE {table} (Date TEXT, Precipitation TEXT, Latitude REAL, Longitude REAL)"
+        return f"CREATE TABLE {table} (Date TEXT, Precipitation TEXT, Latitude REAL, Longitude REAL, Version INTEGER)"
 
     @staticmethod
     def check_table(table: str):
@@ -20,14 +20,21 @@ class Queries:
         lat = f"{latitude[0]}:{latitude[1]}"
         lon = f"{longitude[0]}:{longitude[1]}"
 
-        return f"SELECT Date, Precipitation FROM volcanoes WHERE Latitude = '{lat}' AND Longitude = '{lon}' and Date between '{date_list[0]}' and '{date_list[-1]}'"
+        return f"SELECT Date, Precipitation, Version FROM volcanoes WHERE Latitude = '{lat}' AND Longitude = '{lon}' and Date between '{date_list[0]}' and '{date_list[-1]}'"
 
     @staticmethod
     def insert_precipitation(latitude, longitude, date, precipitation, table='volcanoes'):
         lat = f"{latitude[0]}:{latitude[1]}"
         lon = f"{longitude[0]}:{longitude[1]}"
 
-        return f"INSERT INTO {table} (Date, Precipitation, Latitude, Longitude) VALUES ('{date}', '{precipitation}', '{lat}', '{lon}')"
+        return f"INSERT INTO {table} (Date, Precipitation, Latitude, Longitude, Version) VALUES ('{date}', '{precipitation}', '{lat}', '{lon}')"
+
+    @staticmethod
+    def insert_ignore_precipitation(latitude, longitude, date, precipitation, version, table='volcanoes'):
+        lat = f"{latitude[0]}:{latitude[1]}"
+        lon = f"{longitude[0]}:{longitude[1]}"
+
+        return f"INSERT OR IGNORE INTO {table} (Date, Precipitation, Latitude, Longitude, Version) VALUES ('{date}', '{precipitation}', '{lat}', '{lon}', '{version}')"
 
     @staticmethod
     def select_row(latitude, longitude, date, table='volcanoes'):
@@ -35,3 +42,10 @@ class Queries:
         lon = f"{longitude[0]}:{longitude[1]}"
 
         return f"SELECT 1 FROM {table} WHERE Latitude = '{lat}' AND Longitude = '{lon}' AND Date = '{date}' LIMIT 1"
+
+    @staticmethod
+    def remove_records(latitude, longitude, date, table='volcanoes'):
+        lat = f"{latitude[0]}:{latitude[1]}"
+        lon = f"{longitude[0]}:{longitude[1]}"
+
+        return f"DELETE FROM {table} WHERE Latitude = '{lat}' AND Longitude = '{lon}' AND Date = '{date}'"

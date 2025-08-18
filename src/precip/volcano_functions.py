@@ -63,19 +63,22 @@ def volcanoes_list(jsonfile):
 
     volcanoName = []
     volcanoId = []
+    volcanoCoordinates = []
 
     for j in data['features']:
-        if j['properties']['VolcanoName'] not in volcanoName:
+        if j['properties']['VolcanoNumber'] not in volcanoId:
             volcanoName.append(j['properties']['VolcanoName'])
             volcanoId.append(j['properties']['VolcanoNumber'])
+            volcanoCoordinates.append(j['geometry']['coordinates'])
 
-    for volcano, id in zip(volcanoName, volcanoId):
-        print(f'{volcano}, id: {id}')
+
+    for volcano, id, coord in zip(volcanoName, volcanoId, volcanoCoordinates):
+        print(f'{volcano}, id: {id}, coordinates: {coord[0]}, {coord[1]}')
 
     return volcanoName
 
 
-def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
+def extract_volcanoes_info(jsonfile, volcanoId, vei=1, strength=False):
     """
     Extracts information about a specific volcano from a JSON file.
 
@@ -97,10 +100,33 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
     first_day = datetime.strptime(START_DATE, '%Y%m%d').date()
     last_day = datetime.strptime(END_DATE, '%Y%m%d').date()
 
+    try:
+        volcanoId = int(volcanoId)
+    except ValueError:
+        id = []
+        coords = []
+        # Iterate over the features in the data
+        for j in data['features']:
+            if j['properties']['VolcanoName'] == volcanoId:
+                if j['properties']['VolcanoNumber'] not in id:
+                    id.append(j['properties']['VolcanoNumber'])
+                    coords.append(j['geometry']['coordinates'])
+
+        if len(id) > 1:
+            print(f'Multiple volcanoes found with name: {volcanoId}')
+            print('Please select one of the following volcano ids:')
+            for id, coord in zip(id, coords):
+                print(f'id: {id}, coordinates: {coord[0]}, {coord[1]}')
+            exit()
+        else:
+            volcanoId = id[0]
+
     # Iterate over the features in the data
     for j in data['features']:
-        if j['properties']['VolcanoName'] == volcanoName:
-            id = j['properties']['VolcanoNumber']
+        if j['properties']['VolcanoNumber'] == volcanoId:
+            if j['properties']['ExplosivityIndexMax'] < vei:
+                continue
+
             name = (j['properties']['VolcanoName'])
             start = datetime.strptime((j['properties']['StartDate']), '%Y%m%d').date()
 
@@ -112,7 +138,7 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
             except:
                 end = 'None'
 
-            print(f'{name} (id: {id}) eruption started {start} and ended {end}')
+            print(f'{name} (id: {volcanoId}) eruption started {start} and ended {end}')
 
             # If the start date is within the date range
             if start >= first_day and start <= last_day:
@@ -124,8 +150,8 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
 
     if name == '':
         volc_dict = get_volcanoes()
-        coordinates = [volc_dict[volcanoName]['latitude'], volc_dict[volcanoName]['longitude']]
-        id = volc_dict[volcanoName]['id']
+        coordinates = [volc_dict[volcanoId]['latitude'], volc_dict[volcanoId]['longitude']]
+        name = volc_dict[volcanoId]['name']
 
     if strength:
     # If no start dates were found within the date range
@@ -152,7 +178,7 @@ def extract_volcanoes_info(jsonfile, volcanoName, strength=False):
 
     print('')
 
-    return start_dates, coordinates, id
+    return start_dates, coordinates, name
 
 
 def get_volcanoes():
@@ -167,8 +193,8 @@ def get_volcanoes():
     df = df[df['Precip'] != False]
 
     volcano_dict = {
-        r['Volcano Name'] : {
-            'id': r['Volcano Number'],
+        r['Volcano Number']: {
+            'name': r['Volcano Name'],
             'latitude': r['Latitude'],
             'longitude': r['Longitude']
         } for _, r in df.iterrows()}
