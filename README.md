@@ -1,10 +1,9 @@
 # TODOs
 - [ ] Change printed EXAMPLE msg
 - [ ] Review/Change Notebook tutorials
-- [ ] Apply changes to --ssh case
-- [ ] Remove old version data from db
-- [ ] Add option to easily remove data
-- [ ] Change db table to include Version of GPM DATA
+- [X] Apply changes to --ssh case
+- [X] Extract data based on version
+- [X] Change db table to include Version of GPM DATA
 
 # Precip
 
@@ -51,7 +50,7 @@ conda install --yes -c conda-forge --file requirements.txt
 Or if you don't:
 ```bash
 cd $PRECIP_HOME
-pip install -r tools/PlotData/requirements.txt
+pip install -r requirements.txt
 ```
 
 # Enable download of GPM data
@@ -70,7 +69,7 @@ Otherwise you can use a mockup account, just copy paste the following code in yo
 ```bash
 cd $HOME
 touch .netrc
-echo "machine urs.earthdata.nasa.gov login emrehavazli password 4302749" >> .netrc
+echo "machine urs.earthdata.nasa.gov login emrehavazli password 4302749" >> .netrc #Choose your username and password
 chmod 0600 .netrc
 ```
 ### Create `.urs_cookies` file
@@ -90,10 +89,11 @@ echo "HTTP.COOKIEJAR=$HOME/.urs_cookies" >> $HOME/.dodsrc
 ### Create `.netrc` file
 - Open Notepad
 - Enter (without quotes):
+```
+machine urs.earthdata.nasa.gov login emrehavazli password 4302749 #Choose your username and password
+```
 
-machine urs.earthdata.nasa.gov login emrehavazli password 4302749
-
-Save as C:\.netrc
+Save as `C:\.netrc`
 
 ### Create `.urs_cookies` file
 From terminal (`Win` + **R**, type _cmd_ )
@@ -113,7 +113,7 @@ echo "HTTP.COOKIEJAR=%USERPROFILE%/.urs_cookies" >> %USERPROFILE%\.dodsrc
 # Examples
 You can run the code through command line by simply runnig the following command:
 ```bash
-plot_precipitation.py Merapi --style bar --period=20060101:20070101
+plot_precipitation.py --name Merapi --style bar --period=20060101:20070101
 ```
 This line will show the precipitation over **Merapi** volcano from **01 January 2006** to **2007** as a **bar** plot, with vertical lines representing the eruptions.
 
