@@ -30,6 +30,10 @@ def download_volcano_json(json_path, json_download_url=JSON_DOWNLOAD_URL):
         with open(json_path, 'wb') as f:
             f.write(result.content)
 
+    except requests.exceptions.ConnectionError as err:
+        print(f"Connection error: {err}")
+        raise ValueError("Failed to connect to the server. Please check your network or the URL.")
+
     except requests.exceptions.HTTPError as err:
         if err.response.status_code == 404:
             msg = f'Error: {err.response.status_code} Url Not Found'
