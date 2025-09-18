@@ -38,9 +38,10 @@ def get_volcano_json(jsonfile, url):
 
     except requests.exceptions.RequestException as err:
         print("Error: ", err)
-        print("Loading from local file")
+        print("Loading from local file\n")
 
         if not os.path.exists(jsonfile):
+            print(f'Error: {jsonfile} does not exist. Downloading...\n')
             download_volcano_json(jsonfile, JSON_DOWNLOAD_URL)
 
         f = open(jsonfile)
